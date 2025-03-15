@@ -34,12 +34,14 @@ CREATE TABLE Tipos_Solicitudes (
 -- Tabla: Trabajadores
 CREATE TABLE Trabajadores (
     rut VARCHAR(20) PRIMARY KEY,
+    nombres VARCHAR(255) NOT NULL,
+    apellidos VARCHAR(255) NOT NULL,
     correo_institucional VARCHAR(255) NOT NULL,
     area_id INT,
     rol VARCHAR(50) NOT NULL,
-    FOREIGN KEY (rut) REFERENCES Usuarios(rut),
     FOREIGN KEY (area_id) REFERENCES Areas(id_area)
 );
+
 
 -- Tabla: Solicitudes
 CREATE TABLE Solicitudes (
@@ -65,7 +67,6 @@ CREATE TABLE Respuestas (
     FOREIGN KEY (id_solicitud) REFERENCES Solicitudes(id_solicitud),
     FOREIGN KEY (rut_trabajador) REFERENCES Trabajadores(rut)
 );
-
 
 Poblar 4 tablas:
 
@@ -158,27 +159,28 @@ INSERT INTO Usuarios (rut, nombres, apellidos, correo) VALUES
 ('31.234.567-9', 'Florencia', 'Contreras', 'florencia.contreras@example.com');
 
 -- Poblar la tabla Trabajadores
-INSERT INTO Trabajadores (rut, correo_institucional, area_id, rol) VALUES
-('12.345.678-9', 'juan.perez@municipalidad.cl', 1, 'Administrador'),
-('13.456.789-0', 'maria.gonzalez@municipalidad.cl', 2, 'Trabajador'),
-('14.567.890-1', 'pedro.rodriguez@municipalidad.cl', 3, 'Trabajador'),
-('15.678.901-2', 'ana.lopez@municipalidad.cl', 4, 'Trabajador'),
-('16.789.012-3', 'carlos.martinez@municipalidad.cl', 5, 'Trabajador'),
-('17.890.123-4', 'sofia.hernandez@municipalidad.cl', 6, 'Trabajador'),
-('18.901.234-5', 'diego.ramirez@municipalidad.cl', 7, 'Trabajador'),
-('19.012.345-6', 'isabela.torres@municipalidad.cl', 8, 'Trabajador'),
-('20.123.456-7', 'mateo.vargas@municipalidad.cl', 9, 'Trabajador'),
-('21.234.567-8', 'valentina.silva@municipalidad.cl', 10, 'Trabajador'),
-('22.345.678-0', 'sebastian.castro@municipalidad.cl', 1, 'Trabajador'),
-('23.456.789-1', 'camila.reyes@municipalidad.cl', 2, 'Trabajador'),
-('24.567.890-2', 'nicolas.diaz@municipalidad.cl', 3, 'Trabajador'),
-('25.678.901-3', 'lucia.ortiz@municipalidad.cl', 4, 'Trabajador'),
-('26.789.012-4', 'benjamin.guzman@municipalidad.cl', 5, 'Trabajador'),
-('27.890.123-5', 'emilia.mendoza@municipalidad.cl', 6, 'Trabajador'),
-('28.901.234-6', 'joaquin.paredes@municipalidad.cl', 7, 'Trabajador'),
-('29.012.345-7', 'renata.soto@municipalidad.cl', 8, 'Trabajador'),
-('30.123.456-8', 'gaspar.alvarez@municipalidad.cl', 9, 'Trabajador'),
-('31.234.567-9', 'florencia.contreras@municipalidad.cl', 10, 'Trabajador');
+INSERT INTO Trabajadores (rut, nombres, apellidos, correo_institucional, area_id, rol) VALUES
+('12.345.678-9', 'Juan', 'Pérez', 'juan.perez@municipalidad.cl', 1, 'Administrador'),
+('13.456.789-0', 'María', 'González', 'maria.gonzalez@municipalidad.cl', 2, 'Trabajador'),
+('14.567.890-1', 'Pedro', 'Rodríguez', 'pedro.rodriguez@municipalidad.cl', 3, 'Trabajador'),
+('15.678.901-2', 'Ana', 'López', 'ana.lopez@municipalidad.cl', 4, 'Trabajador'),
+('16.789.012-3', 'Carlos', 'Martínez', 'carlos.martinez@municipalidad.cl', 5, 'Trabajador'),
+('17.890.123-4', 'Sofía', 'Hernández', 'sofia.hernandez@municipalidad.cl', 6, 'Trabajador'),
+('18.901.234-5', 'Diego', 'Ramírez', 'diego.ramirez@municipalidad.cl', 7, 'Trabajador'),
+('19.012.345-6', 'Isabela', 'Torres', 'isabela.torres@municipalidad.cl', 8, 'Trabajador'),
+('20.123.456-7', 'Mateo', 'Vargas', 'mateo.vargas@municipalidad.cl', 9, 'Trabajador'),
+('21.234.567-8', 'Valentina', 'Silva', 'valentina.silva@municipalidad.cl', 10, 'Trabajador'),
+('22.345.678-0', 'Sebastián', 'Castro', 'sebastian.castro@municipalidad.cl', 1, 'Trabajador'),
+('23.456.789-1', 'Camila', 'Reyes', 'camila.reyes@municipalidad.cl', 2, 'Trabajador'),
+('24.567.890-2', 'Nicolás', 'Díaz', 'nicolas.diaz@municipalidad.cl', 3, 'Trabajador'),
+('25.678.901-3', 'Lucía', 'Ortiz', 'lucia.ortiz@municipalidad.cl', 4, 'Trabajador'),
+('26.789.012-4', 'Benjamín', 'Guzmán', 'benjamin.guzman@municipalidad.cl', 5, 'Trabajador'),
+('27.890.123-5', 'Emilia', 'Mendoza', 'emilia.mendoza@municipalidad.cl', 6, 'Trabajador'),
+('28.901.234-6', 'Joaquín', 'Paredes', 'joaquin.paredes@municipalidad.cl', 7, 'Trabajador'),
+('29.012.345-7', 'Renata', 'Soto', 'renata.soto@municipalidad.cl', 8, 'Trabajador'),
+('30.123.456-8', 'Gaspar', 'Álvarez', 'gaspar.alvarez@municipalidad.cl', 9, 'Trabajador'),
+('31.234.567-9', 'Florencia', 'Contreras', 'florencia.contreras@municipalidad.cl', 10, 'Trabajador');
 
-
-
+- npm init -y
+- npm install express mysql2 jsonwebtoken bcryptjs cors dotenv
+- npm install --save-dev nodemon
