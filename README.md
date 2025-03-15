@@ -42,7 +42,6 @@ CREATE TABLE Trabajadores (
     FOREIGN KEY (area_id) REFERENCES Areas(id_area)
 );
 
-
 -- Tabla: Solicitudes
 CREATE TABLE Solicitudes (
     id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,7 +49,7 @@ CREATE TABLE Solicitudes (
     tipo_solicitud INT NOT NULL,
     fecha_envio DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(50) DEFAULT 'Pendiente',
-    archivo_adjunto VARCHAR(255),
+    archivo_adjunto TEXT,  -- Cambiado a TEXT para almacenar la lista de rutas JSON
     descripcion TEXT,
     FOREIGN KEY (rut_usuario) REFERENCES Usuarios(rut),
     FOREIGN KEY (tipo_solicitud) REFERENCES Tipos_Solicitudes(id_solicitud)
@@ -63,7 +62,7 @@ CREATE TABLE Respuestas (
     rut_trabajador VARCHAR(20) NOT NULL,
     fecha_respuesta DATETIME DEFAULT CURRENT_TIMESTAMP,
     respuesta TEXT,
-    archivo_adjunto VARCHAR(255),
+    archivo_adjunto TEXT,  -- Cambiado a TEXT para almacenar la lista de rutas JSON
     FOREIGN KEY (id_solicitud) REFERENCES Solicitudes(id_solicitud),
     FOREIGN KEY (rut_trabajador) REFERENCES Trabajadores(rut)
 );
@@ -181,6 +180,64 @@ INSERT INTO Trabajadores (rut, nombres, apellidos, correo_institucional, area_id
 ('30.123.456-8', 'Gaspar', 'Álvarez', 'gaspar.alvarez@municipalidad.cl', 9, 'Trabajador'),
 ('31.234.567-9', 'Florencia', 'Contreras', 'florencia.contreras@municipalidad.cl', 10, 'Trabajador');
 
-- npm init -y
-- npm install express mysql2 jsonwebtoken bcryptjs cors dotenv
-- npm install --save-dev nodemon
+## Configuración del Proyecto
+
+Sigue estos pasos para configurar el proyecto en tu entorno local:
+
+1.  **Clonar el Repositorio:**
+
+    Clona el repositorio de GitHub:
+
+    ```bash
+    git clone https://github.com/Rodrigo-Canales/Servicios-Municipales
+    ```
+
+2.  **Navegar a la Carpeta del Backend:**
+
+    Abre una terminal y navega a la carpeta `backend`:
+
+    ```bash
+    cd backend
+    ```
+
+3.  **Instalar las Dependencias:**
+
+    Instala todas las dependencias del proyecto utilizando npm:
+
+    ```bash
+    npm install
+    ```
+
+4.  **Crear el Archivo `.env`:**
+
+    Crea un archivo llamado `.env` en la carpeta `backend`.  Este archivo debe contener las siguientes variables de entorno:
+
+    ```
+    DB_HOST=localhost
+    DB_USER=tu_usuario_mysql
+    DB_PASSWORD=tu_contraseña_mysql
+    DB_NAME=municipalidad_solicitudes
+    ```
+
+    Reemplaza `tu_usuario_mysql`, `tu_contraseña_mysql` y `municipalidad_solicitudes` con los valores correctos para tu entorno de desarrollo local.
+
+5.  **Crear la Base de Datos:**
+
+    Crea una base de datos llamada `municipalidad_solicitudes` (o el nombre que hayas configurado en tu archivo `.env`) en tu servidor de base de datos local (por ejemplo, MySQL o MariaDB).
+
+6.  **Importar el Script de Creación de la Base de Datos:**
+
+    Ejecuta el script SQL para crear las tablas de la base de datos.  El script se encuentra en la raíz del repositorio.
+
+7.  **Iniciar el Servidor:**
+
+    Inicia el servidor Node.js:
+
+    ```bash
+    npm start
+    ```
+
+    El servidor se iniciará en el puerto 5000 (o el puerto que hayas configurado en tu archivo `.env`).
+
+**Nota:** Actualmente, el proyecto incluye solo el backend con las APIs para la gestión de solicitudes y respuestas. El frontend se desarrollará en una etapa posterior.
+
