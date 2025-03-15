@@ -8,35 +8,8 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = (app, db) => {
 
-    // Configuración de Multer
-    const storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            const fecha = new Date();
-            const anio = fecha.getFullYear();
-            const mes = fecha.toLocaleString('default', { month: 'long' });
-
-            const rutaCarpetaAnio = path.join(__dirname, '..', 'Directorio de Solicitudes', anio);
-            const rutaCarpetaMes = path.join(rutaCarpetaAnio, mes);
-
-            // Crea las carpetas si no existen
-            if (!fs.existsSync(rutaCarpetaAnio)) {
-                fs.mkdirSync(rutaCarpetaAnio);
-            }
-            if (!fs.existsSync(rutaCarpetaMes)) {
-                fs.mkdirSync(rutaCarpetaMes);
-            }
-
-            cb(null, rutaCarpetaMes);
-        },
-        filename: (req, file, cb) => {
-            const fecha = new Date();
-            const fechaFormateada = fecha.toISOString().replace(/[:]/g, '-');
-            const nombreArchivo = uuidv4() + '-' + file.originalname;
-            cb(null, nombreArchivo);
-        }
-    });
-
-    const upload = multer({ storage: storage });
+    // Configuración de Multer (no es necesario definir storage aquí, ya que se usa el de solicitudes.js)
+    const upload = multer(); // No necesitamos storage aquí, ya que se define en solicitudes.js
 
     // Ruta para Crear una Nueva Respuesta
     router.post('/', upload.array('archivos'), (req, res) => {
@@ -46,7 +19,7 @@ module.exports = (app, db) => {
         let rutasArchivos = [];
         if (req.files) {
             req.files.forEach(file => {
-                rutasArchivos.push(file.path);
+                rutasArchivos.push('/' + path.basename(file.path)); // Guarda solo el nombre del archivo y la carpeta
             });
         }
 
@@ -74,7 +47,7 @@ module.exports = (app, db) => {
                 try {
                     result.archivo_adjunto = JSON.parse(result.archivo_adjunto);
                 } catch (error) {
-                    result.archivo_adjunto = [];
+                    result.archivo_adjunto = []; // Si el campo está vacío o no es un JSON válido
                 }
             });
             res.json(results);
@@ -113,7 +86,7 @@ module.exports = (app, db) => {
         let rutasArchivos = [];
         if (req.files) {
             req.files.forEach(file => {
-                rutasArchivos.push(file.path);
+                rutasArchivos.push('/' + path.basename(file.path)); // Guarda solo el nombre del archivo y la carpeta
             });
         }
 
@@ -129,52 +102,6 @@ module.exports = (app, db) => {
                 return;
             }
             res.json({ message: 'Respuesta updated successfully' });
-        });
-    });
-
-        // Ruta para Eliminar una Respuesta
-    router.delete('/:id', (req, res) => {
-        const id = req.params.id;
-        const query = 'SELECT archivo_adjunto FROM Respuestas WHERE id_respuesta = ?';
-        db.query(query, [id], (err, results) => {
-            if (err) {
-                console.error('Error fetching respuesta:', err);
-                res.status(500).json({ error: 'Error fetching respuesta' });
-                return;
-            }
-            if (results.length === 0) {
-                res.status(404).json({ message: 'Respuesta not found' });
-                return;
-            }
-
-            // Eliminar los archivos adjuntos del sistema de archivos
-            try {
-                const archivosAdjuntos = JSON.parse(results[0].archivo_adjunto);
-                archivosAdjuntos.forEach(archivo => {
-                    fs.unlink(path.join(__dirname, '..', archivo), (err) => {
-                        if (err) {
-                            console.error('Error deleting file:', err);
-                        }
-                    });
-                });
-            } catch (error) {
-                console.error('Error parsing archivo_adjunto:', error);
-            }
-
-            // Eliminar la respuesta de la base de datos
-            const queryDelete = 'DELETE FROM Respuestas WHERE id_respuesta = ?';
-            db.query(queryDelete, [id], (err, result) => {
-                if (err) {
-                    console.error('Error deleting respuesta:', err);
-                    res.status(500).json({ error: 'Error deleting respuesta' });
-                    return;
-                }
-                if (result.affectedRows === 0) {
-                    res.status(404).json({ message: 'Respuesta not found' });
-                    return;
-                }
-                res.json({ message: 'Respuesta deleted successfully' });
-            });
         });
     });
 
@@ -223,6 +150,5 @@ module.exports = (app, db) => {
             });
         });
     });
-
     return router;
 };

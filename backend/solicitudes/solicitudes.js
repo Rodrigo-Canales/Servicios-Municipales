@@ -46,7 +46,7 @@ module.exports = (app, db) => {
         let rutasArchivos = [];
         if (req.files) {
             req.files.forEach(file => {
-                rutasArchivos.push(file.path);
+                rutasArchivos.push('/' + path.basename(file.path)); // Guarda solo el nombre del archivo y la carpeta
             });
         }
 
@@ -113,7 +113,7 @@ module.exports = (app, db) => {
         let rutasArchivos = [];
         if (req.files) {
             req.files.forEach(file => {
-                rutasArchivos.push(file.path);
+                rutasArchivos.push('/' + path.basename(file.path)); // Guarda solo el nombre del archivo y la carpeta
             });
         }
 
@@ -132,6 +132,7 @@ module.exports = (app, db) => {
         });
     });
 
+    // Ruta para Eliminar una Solicitud
     router.delete('/:id', (req, res) => {
         const id = req.params.id;
         const query = 'SELECT archivo_adjunto FROM Solicitudes WHERE id_solicitud = ?';
@@ -160,7 +161,7 @@ module.exports = (app, db) => {
                 console.error('Error parsing archivo_adjunto:', error);
             }
 
-            // Eliminar la solicitud de la base de datos
+            // Eliminar la respuesta de la base de datos
             const queryDelete = 'DELETE FROM Solicitudes WHERE id_solicitud = ?';
             db.query(queryDelete, [id], (err, result) => {
                 if (err) {
