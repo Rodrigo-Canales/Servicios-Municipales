@@ -239,5 +239,5 @@ Sigue estos pasos para configurar el proyecto en tu entorno local:
 
     El servidor se iniciará en el puerto 5000 (o el puerto que hayas configurado en tu archivo `.env`).
 
-**Nota:** Actualmente, el proyecto incluye solo el backend con las APIs para la gestión de solicitudes y respuestas. El frontend se desarrollará en una etapa posterior.
+**Nota:** Actualmente, el proyecto incluye solo el backend con las APIs para la gestión de las tablas. El frontend se desarrollará en una etapa posterior.
 
