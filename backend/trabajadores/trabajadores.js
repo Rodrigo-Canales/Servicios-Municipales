@@ -1,92 +1,84 @@
-const express = require('express');
-const router = express.Router();
+const express = require('express'); // Importamos Express
+const router = express.Router(); // Creamos un enrutador para definir las rutas relacionadas con "Trabajadores"
 
 module.exports = (app, db) => {
-    // Ruta para Obtener Todos los Trabajadores (Solo Administradores)
-    router.get('/', (req, res) => {
-        const query = 'SELECT * FROM Trabajadores';
-        db.query(query, (err, results) => {
-            if (err) {
+
+    router.get('/', (req, res) => { //  Ruta para Obtener Todos los Trabajadores (Solo Administradores)
+        const query = 'SELECT * FROM Trabajadores'; // Consulta SQL para obtener todos los trabajadores
+        db.query(query, (err, results) => { // Ejecutamos la consulta en la base de datos
+            if (err) { // Si hay un error en la consulta
                 console.error('Error fetching trabajadores:', err);
-                res.status(500).json({ error: 'Error fetching trabajadores' });
+                res.status(500).json({ error: 'Error fetching trabajadores' }); // Respondemos con error 500
                 return;
             }
-            res.json(results);
+            res.json(results); // Enviamos los resultados en formato JSON
         });
     });
 
-    // Ruta para Obtener un Trabajador por RUT
-    router.get('/:rut', (req, res) => {
-        const rut = req.params.rut;
-        const query = 'SELECT * FROM Trabajadores WHERE rut = ?';
-        db.query(query, [rut], (err, results) => {
-            if (err) {
+    router.get('/:rut', (req, res) => { //  Ruta para Obtener un Trabajador por RUT
+        const rut = req.params.rut; // Obtenemos el RUT desde los parámetros de la URL
+        const query = 'SELECT * FROM Trabajadores WHERE rut = ?'; // Consulta SQL para obtener un trabajador por RUT
+        db.query(query, [rut], (err, results) => { // Ejecutamos la consulta con el RUT proporcionado
+            if (err) { // Si hay un error en la consulta
                 console.error('Error fetching trabajador:', err);
-                res.status(500).json({ error: 'Error fetching trabajador' });
+                res.status(500).json({ error: 'Error fetching trabajador' }); // Respondemos con error 500
                 return;
             }
-            if (results.length === 0) {
-                res.status(404).json({ message: 'Trabajador not found' });
+            if (results.length === 0) { // Si no se encuentra un trabajador con ese RUT
+                res.status(404).json({ message: 'Trabajador not found' }); // Respondemos con error 404
                 return;
             }
-            res.json(results[0]);
+            res.json(results[0]); // Enviamos el primer resultado encontrado
         });
     });
 
-    // Ruta para Crear un Nuevo Trabajador (Solo Administradores)
-    router.post('/', (req, res) => {
-        const { rut, nombres, apellidos, correo_institucional, area_id, rol } = req.body;
-        const query = 'INSERT INTO Trabajadores (rut, nombres, apellidos, correo_institucional, area_id, rol) VALUES (?, ?, ?, ?, ?, ?)';
-        db.query(query, [rut, nombres, apellidos, correo_institucional, area_id, rol], (err, result) => {
-            if (err) {
+    router.post('/', (req, res) => { //  Ruta para Crear un Nuevo Trabajador (Solo Administradores)
+        const { rut, nombres, apellidos, correo_institucional, area_id, rol } = req.body; // Extraemos los datos del cuerpo de la solicitud
+        const query = 'INSERT INTO Trabajadores (rut, nombres, apellidos, correo_institucional, area_id, rol) VALUES (?, ?, ?, ?, ?, ?)'; // Consulta SQL para insertar un nuevo trabajador
+        db.query(query, [rut, nombres, apellidos, correo_institucional, area_id, rol], (err, result) => { // Ejecutamos la consulta con los datos proporcionados
+            if (err) { // Si hay un error en la consulta
                 console.error('Error creating trabajador:', err);
-                res.status(500).json({ error: 'Error creating trabajador' });
+                res.status(500).json({ error: 'Error creating trabajador' }); // Respondemos con error 500
                 return;
             }
-
-            // Obtener el ID del último registro insertado directamente del objeto result
-            const lastInsertId = result.insertId;
-
-            res.status(201).json({ message: 'Trabajador created successfully', id: lastInsertId });
+            const lastInsertId = result.insertId; // Obtenemos el ID del último registro insertado
+            res.status(201).json({ message: 'Trabajador created successfully', id: lastInsertId }); // Respondemos con éxito
         });
     });
 
-    // Ruta para Actualizar un Trabajador Existente (Solo Administradores)
-    router.put('/:rut', (req, res) => {
-        const rut = req.params.rut;
-        const { nombres, apellidos, correo_institucional, area_id, rol } = req.body;
-        const query = 'UPDATE Trabajadores SET nombres = ?, apellidos = ?, correo_institucional = ?, area_id = ?, rol = ? WHERE rut = ?';
-        db.query(query, [nombres, apellidos, correo_institucional, area_id, rol, rut], (err, result) => {
-            if (err) {
+    router.put('/:rut', (req, res) => { //  Ruta para Actualizar un Trabajador Existente (Solo Administradores)
+        const rut = req.params.rut; // Obtenemos el RUT desde los parámetros de la URL
+        const { nombres, apellidos, correo_institucional, area_id, rol } = req.body; // Extraemos los datos del cuerpo de la solicitud
+        const query = 'UPDATE Trabajadores SET nombres = ?, apellidos = ?, correo_institucional = ?, area_id = ?, rol = ? WHERE rut = ?'; // Consulta SQL para actualizar un trabajador
+        db.query(query, [nombres, apellidos, correo_institucional, area_id, rol, rut], (err, result) => { // Ejecutamos la consulta con los nuevos datos
+            if (err) { // Si hay un error en la consulta
                 console.error('Error updating trabajador:', err);
-                res.status(500).json({ error: 'Error updating trabajador' });
+                res.status(500).json({ error: 'Error updating trabajador' }); // Respondemos con error 500
                 return;
             }
-            if (result.affectedRows === 0) {
-                res.status(404).json({ message: 'Trabajador not found' });
+            if (result.affectedRows === 0) { // Si no se encuentra el trabajador para actualizar
+                res.status(404).json({ message: 'Trabajador not found' }); // Respondemos con error 404
                 return;
             }
-            res.json({ message: 'Trabajador updated successfully' });
+            res.json({ message: 'Trabajador updated successfully' }); // Respondemos con éxito
         });
     });
 
-    // Ruta para Eliminar un Trabajador (Solo Administradores)
-    router.delete('/:rut', (req, res) => {
-        const rut = req.params.rut;
-        const query = 'DELETE FROM Trabajadores WHERE rut = ?';
-        db.query(query, [rut], (err, result) => {
-            if (err) {
+    router.delete('/:rut', (req, res) => { //  Ruta para Eliminar un Trabajador (Solo Administradores)
+        const rut = req.params.rut; // Obtenemos el RUT desde los parámetros de la URL
+        const query = 'DELETE FROM Trabajadores WHERE rut = ?'; // Consulta SQL para eliminar un trabajador
+        db.query(query, [rut], (err, result) => { // Ejecutamos la consulta con el RUT proporcionado
+            if (err) { // Si hay un error en la consulta
                 console.error('Error deleting trabajador:', err);
-                res.status(500).json({ error: 'Error deleting trabajador' });
+                res.status(500).json({ error: 'Error deleting trabajador' }); // Respondemos con error 500
                 return;
             }
-            if (result.affectedRows === 0) {
-                res.status(404).json({ message: 'Trabajador not found' });
+            if (result.affectedRows === 0) { // Si no se encuentra el trabajador para eliminar
+                res.status(404).json({ message: 'Trabajador not found' }); // Respondemos con error 404
                 return;
             }
-            res.json({ message: 'Trabajador deleted successfully' });
+            res.json({ message: 'Trabajador deleted successfully' }); // Respondemos con éxito
         });
     });
-
-    return router;
+    return router; // Retornamos el enrutador configurado
 };
