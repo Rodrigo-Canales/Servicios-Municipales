@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS Solicitudes (
     id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
     id_tipo INT NOT NULL,
     fecha_hora_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Se llena automáticamente
-    estado ENUM('Pendiente', 'Aceptada', 'Rechazada') DEFAULT 'Pendiente',
+    estado ENUM('Pendiente', 'Aprobada', 'Rechazada') DEFAULT 'Pendiente';
     ruta_carpeta VARCHAR(255) NOT NULL,
     RUT_ciudadano VARCHAR(12) NOT NULL,  
     FOREIGN KEY (RUT_ciudadano) REFERENCES Usuarios(RUT),
@@ -93,18 +93,3 @@ Utilizar un componente de protección de rutas: Crea un componente de protecció
 
 npm start
 npm run server
-
-
-
-Dependencias:
-"bcrypt": "^5.1.1", Librería para encriptar contraseñas de forma segura usando hashing.
-"dotenv": "^16.4.7", // Permite cargar variables de entorno desde un archivo .env.
-"express": "^4.21.2", // Framework web para Node.js que facilita la creación de servidores HTTP.
-"express-validator": "^7.2.1", // Middleware para validar y sanitizar datos en las solicitudes HTTP.
-"helmet": "^8.1.0", // Ayuda a proteger la aplicación configurando encabezados de seguridad HTTP.
-"jsonwebtoken": "^9.0.2", // Permite crear y verificar tokens JWT para autenticación de usuarios.
-"multer": "^1.4.5-lts.1", // Middleware para manejar la carga de archivos en solicitudes HTTP.
-"mysql2": "^3.13.0", // Cliente de MySQL para Node.js que permite interactuar con bases de datos MySQL.
-"nodemon": "^3.1.9", // Herramienta que reinicia automáticamente el servidor cuando se detectan cambios en el código.
-"pdfkit": "^0.16.0", // Librería para generar archivos PDF dinámicamente desde el backend.
-"resend": "^4.1.2" // Servicio para enviar correos electrónicos de manera sencilla en Node.js.
