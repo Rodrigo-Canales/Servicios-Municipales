@@ -30,7 +30,7 @@ const upload = multer({ storage, fileFilter });
 // Obtener todas las solicitudes
 router.get('/', async (req, res) => {
     try {
-        const [solicitudes] = await db.promise().query(`
+        const [solicitudes] = await db.query(`
         SELECT 
             s.id_solicitud, 
             LPAD(s.id_solicitud, 10, '0') AS id_formateado,
@@ -54,7 +54,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        const [solicitud] = await db.promise().query(`
+        const [solicitud] = await db.query(`
         SELECT 
             s.id_solicitud, 
             LPAD(s.id_solicitud, 10, '0') AS id_formateado,
@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
         WHERE s.id_solicitud = ?
         `, [id]);
         if (solicitud.length === 0) {
-        return res.status(404).json({ message: 'Solicitud no encontrada' });
+            return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
         res.status(200).json({ solicitud: solicitud[0] });
     } catch (error) {
@@ -77,7 +77,8 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.put('/:id/estado', async (req, res) => {
+// Actualizar una solicitud
+router.put('/estado/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { estado } = req.body;
@@ -89,7 +90,7 @@ router.put('/:id/estado', async (req, res) => {
         }
 
         // Actualizar el estado en la base de datos
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'UPDATE Solicitudes SET estado = ? WHERE id_solicitud = ?',
             [estado, id]
         );
@@ -106,6 +107,7 @@ router.put('/:id/estado', async (req, res) => {
     }
 });
 
+
 // Crear una nueva solicitud
 router.post('/', upload.array('archivos'), async (req, res) => {
     try {
@@ -113,14 +115,14 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         const fecha = new Date();
 
         // Obtener el nombre del tipo de solicitud
-        const [tipoResult] = await db.promise().query(
+        const [tipoResult] = await db.query(  // Cambio aquí
         'SELECT nombre_tipo FROM tipos_solicitudes WHERE id_tipo = ?',
         [id_tipo]
         );
         const nombre_tipo = (tipoResult[0] && tipoResult[0].nombre_tipo) || 'Desconocido';
 
         // Insertar la solicitud en la BD
-        const [result] = await db.promise().query(
+        const [result] = await db.query(  // Cambio aquí
         'INSERT INTO Solicitudes (RUT_ciudadano, id_tipo, fecha_hora_envio, estado, ruta_carpeta) VALUES (?, ?, NOW(), ?, ?)',
         [rut_ciudadano, id_tipo, estado, '']
         );
@@ -129,7 +131,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         // Obtener nombre y apellido del ciudadano
         let nombreCompleto = rut_ciudadano;
         try {
-        const [rowsUsuario] = await db.promise().query(
+        const [rowsUsuario] = await db.query(  // Cambio aquí
             'SELECT nombres, apellidos FROM usuarios WHERE RUT = ?',
             [rut_ciudadano]
         );
@@ -204,7 +206,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         .moveDown(2);
 
     // Obtener fecha/hora de envío real desde la BD
-    const [solicitudRow] = await db.promise().query(
+    const [solicitudRow] = await db.query(  // Cambio aquí
         'SELECT fecha_hora_envio FROM Solicitudes WHERE id_solicitud = ?',
         [parseInt(id_solicitud)]
     );
@@ -303,7 +305,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
     pdfDoc.end();
 
     // Actualizar la ruta en la BD
-    await db.promise().query(
+    await db.query(  // Cambio aquí
         'UPDATE Solicitudes SET ruta_carpeta = ? WHERE id_solicitud = ?',
         [rutaSolicitud, parseInt(id_solicitud)]
     );

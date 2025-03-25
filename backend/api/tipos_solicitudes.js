@@ -5,7 +5,7 @@ const db = require('../config/db');
 // Obtener todos los tipos de solicitudes
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Tipos_Solicitudes');
+        const [rows] = await db.query('SELECT * FROM Tipos_Solicitudes');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error al obtener tipos de solicitudes:', error);
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Tipos_Solicitudes WHERE id_tipo = ?', [id]);
+        const [rows] = await db.query('SELECT * FROM Tipos_Solicitudes WHERE id_tipo = ?', [id]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Tipo de solicitud no encontrado' });
         }
@@ -32,7 +32,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     const { nombre_tipo, area_id } = req.body;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'INSERT INTO Tipos_Solicitudes (nombre_tipo, area_id) VALUES (?, ?)',
             [nombre_tipo, area_id]
         );
@@ -48,7 +48,7 @@ router.put('/:id', async (req, res) => {
     const id = req.params.id;
     const { nombre_tipo, area_id } = req.body;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'UPDATE Tipos_Solicitudes SET nombre_tipo = ?, area_id = ? WHERE id_tipo = ?',
             [nombre_tipo, area_id, id]
         );
@@ -66,7 +66,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'DELETE FROM Tipos_Solicitudes WHERE id_tipo = ?',
             [id]
         );

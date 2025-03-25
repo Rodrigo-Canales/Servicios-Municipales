@@ -1,13 +1,12 @@
-// backend/api/usuarios.js
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt'); // Importa bcrypt para hashear contraseñas
 const db = require('../config/db');
 
-// Obtener todos los usuarios (con precaución - solo para administradores)
+// Obtener todos los usuarios (solo para administradores, por ejemplo)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Usuarios');
+        const [rows] = await db.query('SELECT * FROM Usuarios');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -19,13 +18,13 @@ router.get('/', async (req, res) => {
 router.get('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Usuarios WHERE RUT = ?', [rut]);
+        const [rows] = await db.query('SELECT * FROM Usuarios WHERE RUT = ?', [rut]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
         // No devolver la contraseña hasheada por seguridad
         const usuario = { ...rows[0] };
-        delete usuario.hash_contrasena;
+        delete usuario.hash_contra;
         res.status(200).json(usuario);
     } catch (error) {
         console.error('Error al obtener usuario por RUT:', error);
@@ -36,43 +35,36 @@ router.get('/:rut', async (req, res) => {
 // Crear Usuario
 router.post('/', async (req, res) => {
     const { rut, nombres, apellidos, correo_electronico, password, rol, area_id } = req.body;
-
     try {
         let hashedPassword = null; 
         if (password) {
             const salt = await bcrypt.genSalt(10); // Generar un salt
-            hashedPassword = await bcrypt.hash(password, salt); // Aplicar el salt antes de hashear
+            hashedPassword = await bcrypt.hash(password, salt); // Hashear la contraseña
         }
-
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'INSERT INTO Usuarios (RUT, nombres, apellidos, correo_electronico, hash_contra, rol, area_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [rut, nombres, apellidos, correo_electronico || null, hashedPassword, rol || null, area_id || null]
         );
-
-        res.status(201).json({ message: 'Usuario creado exitosamente'});
+        res.status(201).json({ message: 'Usuario creado exitosamente' });
     } catch (error) {
         console.error('Error al crear usuario:', error);
         res.status(500).json({ message: 'Error al crear usuario' });
     }
 });
 
-//Actualizar Usuario 
+// Actualizar Usuario 
 router.put('/:rut', async (req, res) => {
     const rut = req.params.rut;
     const { correo_electronico, password, rol, area_id } = req.body;
-
     try {
-        // Hashear la contraseña si se proporciona
         let hashedPassword = null;
         if (password) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
-
-        const [result] = await db.promise().query(
-            'UPDATE Usuarios SET correo_electronico = ?, hash_contra = ?, rol = ?, area_id = ? WHERE RUT = ?', // Corregido: hash_contra
+        const [result] = await db.query(
+            'UPDATE Usuarios SET correo_electronico = ?, hash_contra = ?, rol = ?, area_id = ? WHERE RUT = ?',
             [correo_electronico, hashedPassword, rol, area_id, rut]
         );
-
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
@@ -83,15 +75,11 @@ router.put('/:rut', async (req, res) => {
     }
 });
 
-
 // Eliminar un usuario existente
 router.delete('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
-        const [result] = await db.promise().query(
-            'DELETE FROM Usuarios WHERE RUT = ?',
-            [rut]
-        );
+        const [result] = await db.query('DELETE FROM Usuarios WHERE RUT = ?', [rut]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }

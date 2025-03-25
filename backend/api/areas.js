@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const db = require('../config/db'); // Verifica si db está retornando una instancia con promesas
 
 // Obtener todas las áreas
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Areas');
+        // Verifica que db.query sea compatible con promesas
+        const [rows] = await db.query('SELECT * FROM Areas');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error al obtener áreas:', error);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const [rows] = await db.promise().query('SELECT * FROM Areas WHERE id_area = ?', [id]);
+        const [rows] = await db.query('SELECT * FROM Areas WHERE id_area = ?', [id]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Área no encontrada' });
         }
@@ -32,7 +33,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     const { nombre_area } = req.body;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'INSERT INTO Areas (nombre_area) VALUES (?)',
             [nombre_area]
         );
@@ -48,7 +49,7 @@ router.put('/:id', async (req, res) => {
     const id = req.params.id;
     const { nombre_area } = req.body;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'UPDATE Areas SET nombre_area = ? WHERE id_area = ?',
             [nombre_area, id]
         );
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'DELETE FROM Areas WHERE id_area = ?',
             [id]
         );

@@ -90,6 +90,15 @@ Verificar el rol del usuario en cada ruta: Además de verificar si el usuario ti
 Utilizar un componente de protección de rutas: Crea un componente de protección de rutas que se encargue de verificar el token JWT y el rol del usuario antes de permitir el acceso a una ruta protegida.
 (implementar eso en el frontend)
 
+Backend
+npm start (iniciar y si hay cambios hay que apagarlo y prenderlo de nuevo)
+npm run server (si uno hace un cambio se reinicia automáticamente gracias a nodemon)
 
-npm start
-npm run server
+
+NODE_ENV=development npm start
+NODE_ENV=production npm start
+
+
+
+Frontend
+npm run dev
