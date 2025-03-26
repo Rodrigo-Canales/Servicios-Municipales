@@ -75,7 +75,7 @@ const Login = ({ toggleTheme }) => {
                 destino = "/admin";
             } else if (data.rol === 'Trabajador') {
                 mensaje = "Inicio de sesión exitoso como Trabajador.";
-                destino = "/trabajador";
+                destino = "/trabajadores";
             } else {
                 Swal.fire({
                     title: 'Error',

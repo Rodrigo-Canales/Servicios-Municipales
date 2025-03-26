@@ -162,7 +162,7 @@ const Vecino = () => {
                         <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 }, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
 
                             {/* Título */}
-                            <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} gutterBottom color="text.primary" sx={{ fontWeight: "bold", textAlign: "center", mb: 2, flexShrink: 0 }}>
+                            <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} gutterBottom color="text.primary" sx={{ fontWeight: "bold", mb: 2, flexShrink: 0 }}>
                                 {nombreArea ? `Tipos de Solicitudes - ${nombreArea}` : "Selecciona un área"}
                             </Typography>
 

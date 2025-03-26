@@ -116,7 +116,7 @@ function Administrador() {
                 setLoading(true); // Activar loader principal
                 setError(null); // Limpiar errores previos
                 // Limpiar datos específicos de la sección *antes* de la nueva carga
-                 switch (section) {
+                switch (section) {
                     case 'solicitudes': setSolicitudes([]); break;
                     case 'areas': setAreas([]); break;
                     case 'tipos-solicitudes': setTiposSolicitudesAdmin([]); break;
@@ -151,7 +151,7 @@ function Administrador() {
                     console.log(`[useEffect] Fetch successful for ${section}. Setting data.`);
                     setDataFn(data); // Actualizar el estado con los nuevos datos
                 } else {
-                     console.log(`[useEffect] Fetch done, but component unmounted or section changed (${currentSection}). Discarding data for ${section}.`);
+                    console.log(`[useEffect] Fetch done, but component unmounted or section changed (${currentSection}). Discarding data for ${section}.`);
                 }
             } catch (err) {
                  // Si el componente sigue montado Y la sección no ha cambiado...
@@ -160,7 +160,7 @@ function Administrador() {
                     const apiError = err.response?.data?.message;
                     setError(apiError || err.message || `Error al cargar ${section}.`); // Mostrar error
                 } else {
-                     console.log(`[useEffect] Error occurred, but component unmounted or section changed (${currentSection}). Ignoring error for ${section}.`);
+                    console.log(`[useEffect] Error occurred, but component unmounted or section changed (${currentSection}). Ignoring error for ${section}.`);
                 }
             } finally {
                  // Si el componente sigue montado Y la sección no ha cambiado...
@@ -268,8 +268,8 @@ function Administrador() {
     // --- Submit Editar Estado ---
     const handleSubmitEditEstado = async () => {
         if (!solicitudParaEditar || !nuevoEstado || nuevoEstado === solicitudParaEditar.estado) {
-             console.warn("[handleSubmit] Submit prevented: No change or invalid state.");
-             return;
+            console.warn("[handleSubmit] Submit prevented: No change or invalid state.");
+            return;
         }
 
         setIsSubmitting(true); // Activar loader del botón
@@ -293,21 +293,21 @@ function Administrador() {
                         await mostrarAlertaExito('Estado Actualizado', 'El estado se actualizó y la tabla se ha recargado.');
                         handleCloseEditEstado(); // Cerrar modal SÓLO si todo fue bien
                     } else {
-                         console.log(`[handleSubmit] Refetch done, but section changed. State not updated.`);
+                        console.log(`[handleSubmit] Refetch done, but section changed. State not updated.`);
                          await mostrarAlertaExito('Estado Actualizado', 'El estado se guardó.'); // Notificar éxito aunque no se vea la tabla
-                         handleCloseEditEstado();
+                        handleCloseEditEstado();
                     }
                 } catch (refetchErr) {
                     console.error("[handleSubmit] Error during refetch:", refetchErr);
                      // PUT ok, GET falló. Informar al usuario.
-                     await mostrarAlertaError('Actualización Parcial', 'El estado se guardó, pero la tabla no pudo recargarse automáticamente.');
+                    await mostrarAlertaError('Actualización Parcial', 'El estado se guardó, pero la tabla no pudo recargarse automáticamente.');
                      handleCloseEditEstado(); // Cerrar modal, el dato está guardado en el backend
                 }
             } else {
                  // Si no estábamos en la sección 'solicitudes', solo mostrar éxito y cerrar
-                 console.log(`[handleSubmit] Update successful, but not viewing 'solicitudes'. No refetch needed.`);
-                 await mostrarAlertaExito('Estado Actualizado', 'El estado se guardó.');
-                 handleCloseEditEstado();
+                console.log(`[handleSubmit] Update successful, but not viewing 'solicitudes'. No refetch needed.`);
+                await mostrarAlertaExito('Estado Actualizado', 'El estado se guardó.');
+                handleCloseEditEstado();
             }
 
         } catch (err) {
@@ -363,7 +363,7 @@ function Administrador() {
     }, [currentSection]);
 
      // --- ColSpan Dinámico para Mensajes Vacíos/Error ---
-     const getCurrentColSpan = useCallback(() => {
+    const getCurrentColSpan = useCallback(() => {
         switch (currentSection) {
             case 'solicitudes': return 6;
             case 'areas': return 3;
@@ -384,7 +384,6 @@ function Administrador() {
                     toggleTheme={toggleTheme}
                     toggleSidebar={handleDrawerToggle}
                     title="Portal Administración"
-                    logoLink="/administrador" // O la ruta adecuada
                 />
 
                 {/* --- Sidebar --- */}
@@ -523,26 +522,26 @@ function Administrador() {
                                                 </TableHead>
                                             )}
                                             {currentSection === 'tipos-solicitudes' && (
-                                                 <TableHead>
-                                                     <TableRow>
-                                                         <TableCell sx={headerCellStyle}>ID</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Nombre Tipo</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Área</TableCell>
-                                                         <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell>
-                                                     </TableRow>
-                                                 </TableHead>
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell sx={headerCellStyle}>ID</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Nombre Tipo</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Área</TableCell>
+                                                        <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
                                             )}
-                                             {currentSection === 'usuarios' && (
-                                                 <TableHead>
-                                                     <TableRow>
-                                                         <TableCell sx={headerCellStyle}>RUT</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Nombre</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Apellido</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Email</TableCell>
-                                                         <TableCell sx={headerCellStyle}>Rol</TableCell>
-                                                         <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell>
-                                                     </TableRow>
-                                                 </TableHead>
+                                            {currentSection === 'usuarios' && (
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell sx={headerCellStyle}>RUT</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Nombre</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Apellido</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Email</TableCell>
+                                                        <TableCell sx={headerCellStyle}>Rol</TableCell>
+                                                        <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
                                             )}
 
                                             {/* --- Cuerpo de Tabla Dinámico --- */}
@@ -581,30 +580,30 @@ function Administrador() {
                                                             </TableRow>
                                                         ))}
                                                         {currentSection === 'tipos-solicitudes' && filteredData.map((tipo) => (
-                                                             <TableRow hover key={tipo.id_tipo} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                                 <TableCell sx={bodyCellStyle}>{tipo.id_tipo}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{tipo.nombre_tipo}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{tipo.nombre_area || tipo.area_id || '-'}</TableCell>
-                                                                 <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}>
-                                                                     <Tooltip title="Editar Tipo (Pendiente)">
-                                                                         <IconButton size="small" color="primary"><EditIcon fontSize="small"/></IconButton>
-                                                                     </Tooltip>
-                                                                 </TableCell>
-                                                             </TableRow>
+                                                            <TableRow hover key={tipo.id_tipo} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                                                <TableCell sx={bodyCellStyle}>{tipo.id_tipo}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{tipo.nombre_tipo}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{tipo.nombre_area || tipo.area_id || '-'}</TableCell>
+                                                                <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}>
+                                                                    <Tooltip title="Editar Tipo (Pendiente)">
+                                                                        <IconButton size="small" color="primary"><EditIcon fontSize="small"/></IconButton>
+                                                                    </Tooltip>
+                                                                </TableCell>
+                                                            </TableRow>
                                                         ))}
-                                                         {currentSection === 'usuarios' && filteredData.map((user) => (
-                                                             <TableRow hover key={user.RUT || `user-${user.id_usuario}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                                 <TableCell sx={bodyCellStyle}>{user.RUT || '-'}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{user.nombre || '-'}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{user.apellido || '-'}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{user.correo_electronico || '-'}</TableCell>
-                                                                 <TableCell sx={bodyCellStyle}>{user.rol || '-'}</TableCell>
-                                                                 <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}>
-                                                                     <Tooltip title="Editar Usuario (Pendiente)">
-                                                                         <IconButton size="small" color="primary"><EditIcon fontSize="small"/></IconButton>
-                                                                     </Tooltip>
-                                                                 </TableCell>
-                                                             </TableRow>
+                                                        {currentSection === 'usuarios' && filteredData.map((user) => (
+                                                            <TableRow hover key={user.RUT || `user-${user.id_usuario}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                                                <TableCell sx={bodyCellStyle}>{user.RUT || '-'}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{user.nombre || '-'}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{user.apellido || '-'}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{user.correo_electronico || '-'}</TableCell>
+                                                                <TableCell sx={bodyCellStyle}>{user.rol || '-'}</TableCell>
+                                                                <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}>
+                                                                    <Tooltip title="Editar Usuario (Pendiente)">
+                                                                        <IconButton size="small" color="primary"><EditIcon fontSize="small"/></IconButton>
+                                                                    </Tooltip>
+                                                                </TableCell>
+                                                            </TableRow>
                                                         ))}
                                                     </>
                                                 ) : (
