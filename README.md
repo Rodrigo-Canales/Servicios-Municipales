@@ -87,14 +87,12 @@ Utilizar un componente de protección de rutas: Crea un componente de protecció
 (implementar eso en el frontend)
 
 Backend
-npm start (iniciar y si hay cambios hay que apagarlo y prenderlo de nuevo)
-npm run server (si uno hace un cambio se reinicia automáticamente gracias a nodemon)
-
-
-NODE_ENV=development npm start
-NODE_ENV=production npm start
+-------
+    - npm start (iniciar y si hay cambios hay que apagarlo y prenderlo de nuevo)
+    - npm run server (si uno hace un cambio se reinicia automáticamente gracias a nodemon)
 
 
 
 Frontend
-npm run dev
+--------
+    - npm run dev

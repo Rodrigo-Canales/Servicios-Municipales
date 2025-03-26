@@ -27,6 +27,42 @@ const fileFilter = (req, file, cb) => {
 };
 const upload = multer({ storage, fileFilter });
 
+
+//obtener las solicitudes de un usuario en específico
+router.get('/vecino/:rut', async (req, res) => {
+    try {
+        const { rut } = req.params;
+
+        if (!rut) {
+            return res.status(400).json({ message: 'Falta el parámetro RUT del vecino.' });
+        }
+
+        // *** CORRECCIÓN FINAL: Eliminado COMPLETAMENTE el comentario inválido '//' ***
+        const query = `
+            SELECT 
+                s.id_solicitud, 
+                LPAD(s.id_solicitud, 10, '0') AS id_formateado,
+                s.RUT_ciudadano, 
+                t.nombre_tipo, 
+                s.fecha_hora_envio, 
+                s.estado 
+                /* Si quieres incluir ruta_carpeta, añade aquí: , s.ruta_carpeta */
+            FROM Solicitudes s 
+            JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
+            WHERE s.RUT_ciudadano = ?
+            ORDER BY s.fecha_hora_envio DESC 
+        `;
+
+        const [solicitudes] = await db.query(query, [rut]);
+
+        res.status(200).json({ solicitudes });
+
+    } catch (error) {
+        console.error(`Error al obtener solicitudes para el vecino ${req.params.rut}:`, error);
+        res.status(500).json({ message: 'Error interno al obtener las solicitudes del vecino' });
+    }
+});
+
 // Obtener todas las solicitudes
 router.get('/', async (req, res) => {
     try {

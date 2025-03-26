@@ -112,10 +112,3 @@ router.delete('/:rut', async (req, res) => {
 
 module.exports = router;
 
-
-
-
-
-//arregar el agregar como usuario y como trabajador
-
-// el eliminar, el actualizar y listar funciona

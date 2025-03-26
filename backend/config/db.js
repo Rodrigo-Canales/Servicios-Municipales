@@ -1,19 +1,26 @@
-const mysql = require('mysql2/promise');  // Importar la versión promise de mysql2
+const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Cargar las variables de entorno desde el archivo .env
-dotenv.config({ path: path.join('../.env.development') });
+// Cargar las variables de entorno
+require('dotenv').config();
 
-// Crear la conexión usando el pool de conexiones para manejo de múltiples conexiones
+console.log('Variables de entorno:', {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+});
+
+// Usar valores por defecto en caso de que las variables no se hayan cargado correctamente
 const connection = mysql.createPool({
-    host: process.env.DB_HOST,       
-    user: process.env.DB_USER,       
-    password: '',  // Deja la contraseña vacía password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,   
-    waitForConnections: true,  // Asegura que las conexiones se mantengan mientras se usan
-    connectionLimit: 10,       // Número máximo de conexiones en el pool
-    queueLimit: 0             // No hay límite de espera
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '', // Si no hay contraseña, se deja como cadena vacía
+    database: process.env.DB_NAME || 'servicios_municipales',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 connection.getConnection()
@@ -22,7 +29,7 @@ connection.getConnection()
     })
     .catch((err) => {
         console.error('Error conectando a la base de datos:', err);
-        process.exit(1); // Termina el proceso si hay error
+        process.exit(1);
     });
 
 module.exports = connection;

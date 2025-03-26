@@ -5,7 +5,7 @@ const cors = require('cors'); // Importar cors para manejar CORS
 const db = require('./config/db');
 
 // Cargar variables de entorno antes de usarlas
-dotenv.config({ path: path.resolve(__dirname, '.env.development') });
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,19 +25,6 @@ app.use(express.urlencoded({ extended: true })); // Parsear URL-encoded
 // Seguridad con Helmet (descomentarlo cuando sea necesario)
 const helmet = require('helmet');
 app.use(helmet()); // Usar Helmet para agregar cabeceras de seguridad
-
-// Configuración opcional de Content Security Policy (CSP)
-/*
-app.use(helmet.contentSecurityPolicy({
-    directives: {
-        defaultSrc: ["'self'"],
-        frameAncestors: ["'self'", "https://sitio-web-municipalidad.com"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "https://dominio-confiable.com"],
-    }
-}));
-*/
 
 // Importar y usar routers
 const usuariosRoutes = require('./api/usuarios');

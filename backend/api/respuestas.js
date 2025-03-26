@@ -9,3 +9,4 @@ module.exports = router;
 //crear solicitud (está arriba)
 //listar todas las respuestas
 //listar por id de repsuesta
+//obtener solo las solicitudes que tengan un estado pendiente 
