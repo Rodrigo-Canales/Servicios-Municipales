@@ -132,11 +132,11 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         let nombreCompleto = rut_ciudadano;
         try {
         const [rowsUsuario] = await db.query(  // Cambio aquí
-            'SELECT nombres, apellidos FROM usuarios WHERE RUT = ?',
+            'SELECT nombre, apellido FROM usuarios WHERE RUT = ?',
             [rut_ciudadano]
         );
         if (rowsUsuario.length > 0) {
-            nombreCompleto = `${rowsUsuario[0].nombres.trim()} ${rowsUsuario[0].apellidos.trim()}`;
+            nombreCompleto = `${rowsUsuario[0].nombre.trim()} ${rowsUsuario[0].apellido.trim()}`;
         }
         } catch (errUser) {
         console.error('Error al obtener nombre y apellido del ciudadano:', errUser);
@@ -322,3 +322,6 @@ router.post('/', upload.array('archivos'), async (req, res) => {
 });
 
 module.exports = router;
+
+
+// Todo funciona

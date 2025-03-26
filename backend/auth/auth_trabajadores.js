@@ -20,12 +20,12 @@ router.post('/login', async (req, res) => {
 
         const usuario = rows[0];
 
-        // Verificar que existe el hash de la contraseña
-        if (!usuario.hash_contra) {
+        // Verificar que existe el hash de la contraseña usando el nombre correcto del campo
+        if (!usuario.hash_password) {
             return res.status(400).json({ message: 'No se encontró contraseña almacenada para este usuario.' });
         }
 
-        const validPassword = await bcrypt.compare(password, usuario.hash_contra);
+        const validPassword = await bcrypt.compare(password, usuario.hash_password);
         if (!validPassword) {
             return res.status(404).json({ message: 'Correo o contraseña incorrectos' });
         }

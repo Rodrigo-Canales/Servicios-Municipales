@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-// (Este archivo está vacío por ahora, pero necesitamos exportar un router)
-// hacer una función que obtenga las rutas d etodos los archivos adjuntos de la solicitud
-// hacer una función que obtega todos los datos de la solicitud
-// hacer una función que obtenga todos los datos de la respuesta
-// hacer una función que obtenga todos los datos de la solicitud y la respuesta
-// hacer una función que obtenga todos los datos de la solicitud y la respuesta y los archivos adjuntos
+// hacer una función para crear una respuesta, tiene que crear una carpeta dentro de la carpeta de la solicitud, y dentro de esa crear una carpeta que se llame Respuesta/ y que cree un pedf "respuesta.pdf" que contenta la misma estructura del otro pdf, cabian los datos nomás, y dentro de la carpeta Respuesta/ se guardan los archvios adjutnos de la respuesta.
 module.exports = router;
+
+//Funciones por hacer
+
+//crear solicitud (está arriba)
+//listar todas las respuestas
+//listar por id de repsuesta

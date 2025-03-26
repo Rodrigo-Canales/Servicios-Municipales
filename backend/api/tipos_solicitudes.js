@@ -2,10 +2,14 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// Obtener todos los tipos de solicitudes
+// Obtener todos los tipos de solicitudes con el nombre del área
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM Tipos_Solicitudes');
+        const [rows] = await db.query(
+            `SELECT t.*, a.nombre_area 
+                FROM Tipos_Solicitudes t
+                INNER JOIN Areas a ON t.area_id = a.id_area`
+        );
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error al obtener tipos de solicitudes:', error);
@@ -13,11 +17,17 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Obtener un tipo de solicitud por ID
+// Obtener un tipo de solicitud por ID con el nombre del área
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const [rows] = await db.query('SELECT * FROM Tipos_Solicitudes WHERE id_tipo = ?', [id]);
+        const [rows] = await db.query(
+            `SELECT t.*, a.nombre_area 
+                FROM Tipos_Solicitudes t
+                INNER JOIN Areas a ON t.area_id = a.id_area
+                WHERE t.id_tipo = ?`,
+            [id]
+        );
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Tipo de solicitud no encontrado' });
         }
@@ -30,27 +40,27 @@ router.get('/:id', async (req, res) => {
 
 // Crear un nuevo tipo de solicitud
 router.post('/', async (req, res) => {
-    const { nombre_tipo, area_id } = req.body;
+    const { nombre_tipo, descripcion, area_id } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO Tipos_Solicitudes (nombre_tipo, area_id) VALUES (?, ?)',
-            [nombre_tipo, area_id]
+            'INSERT INTO Tipos_Solicitudes (nombre_tipo, descripcion, area_id) VALUES (?, ?, ?)',
+            [nombre_tipo, descripcion, area_id]
         );
         res.status(201).json({ message: 'Tipo de solicitud creado exitosamente', id: result.insertId });
     } catch (error) {
         console.error('Error al crear tipo de solicitud:', error);
         res.status(500).json({ message: 'Error al crear tipo de solicitud' });
     }
-}); 
+});
 
 // Actualizar un tipo de solicitud existente
 router.put('/:id', async (req, res) => {
     const id = req.params.id;
-    const { nombre_tipo, area_id } = req.body;
+    const { nombre_tipo, descripcion, area_id } = req.body;
     try {
         const [result] = await db.query(
-            'UPDATE Tipos_Solicitudes SET nombre_tipo = ?, area_id = ? WHERE id_tipo = ?',
-            [nombre_tipo, area_id, id]
+            'UPDATE Tipos_Solicitudes SET nombre_tipo = ?, descripcion = ?, area_id = ? WHERE id_tipo = ?',
+            [nombre_tipo, descripcion, area_id, id]
         );
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Tipo de solicitud no encontrado' });
@@ -60,7 +70,7 @@ router.put('/:id', async (req, res) => {
         console.error('Error al actualizar tipo de solicitud:', error);
         res.status(500).json({ message: 'Error al actualizar tipo de solicitud' });
     }
-}); 
+});
 
 // Eliminar un tipo de solicitud existente
 router.delete('/:id', async (req, res) => {
@@ -80,4 +90,25 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Obtener tipos de solicitudes por área
+router.get('/area/:areaId', async (req, res) => {
+    const areaId = req.params.areaId;
+    try {
+        const [rows] = await db.query(`
+            SELECT ts.id_tipo, ts.nombre_tipo, ts.descripcion, a.nombre_area
+            FROM Tipos_Solicitudes ts
+            JOIN Areas a ON ts.area_id = a.id_area
+            WHERE ts.area_id = ?
+        `, [areaId]);
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error al obtener tipos de solicitudes por área:', error);
+        res.status(500).json({ message: 'Error al obtener tipos de solicitudes por área' });
+    }
+});
+
+
 module.exports = router;
+
+
+//todas funcionan

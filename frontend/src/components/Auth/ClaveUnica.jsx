@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { Box, Button, Grid, Typography, List, ListItem } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
+import { useTheme } from '@mui/material/styles';
 import ThemeToggle from '../ThemeToggle';
 
 const ClaveUnica = ({ toggleTheme }) => {
+    const theme = useTheme();
 
     const handleLogin = async () => {
         try {
@@ -16,14 +18,14 @@ const ClaveUnica = ({ toggleTheme }) => {
 
     return (
         <Grid container sx={{ minHeight: '100vh' }}>
-            {/* Panel Izquierdo: Solo logo y nombre en fondo azul */}
+            {/* Panel Izquierdo: Solo logo y nombre en fondo con gradiente basado en el tema */}
             <Grid
                 item
                 xs={12}
                 md={5}
                 sx={{
-                    background: 'linear-gradient(135deg, rgb(13, 74, 135) 0%, rgb(17, 73, 136) 100%)',
-                    color: '#FFFFFF',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark || theme.palette.primary.main} 0%, ${theme.palette.primary.main} 100%)`,
+                    color: theme.palette.common.white,
                     p: 4,
                     display: 'flex',
                     flexDirection: 'column',

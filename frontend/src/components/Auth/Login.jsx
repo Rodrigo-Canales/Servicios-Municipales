@@ -2,10 +2,12 @@ import { useState } from "react";
 import { TextField, Button, Typography, Box, Grid, List, ListItem, IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import ThemeToggle from '../ThemeToggle';
-import Swal from 'sweetalert2';
+import { useTheme } from "@mui/material/styles";
+import ThemeToggle from "../ThemeToggle";
+import Swal from "sweetalert2";
 
 const Login = ({ toggleTheme }) => {
+    const theme = useTheme();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +40,7 @@ const Login = ({ toggleTheme }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+    
         if (errors.email || errors.password || !email || !password) {
             Swal.fire({
                 title: 'Error',
@@ -48,29 +50,32 @@ const Login = ({ toggleTheme }) => {
             });
             return;
         }
-
+    
+        
         try {
+            console.log("Datos enviados:", { correo_electronico: email, password: password });
             const response = await fetch('http://localhost:3001/api/auth/trabajadores/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ correo_electronico: email, password: password }),
             });
-
+    
             const data = await response.json();
-
+            console.log("Respuesta del servidor:", data); // <-- Agregado aquí para ver la respuesta
+    
             if (!response.ok) {
                 throw new Error(data.message || "Error desconocido. Intenta nuevamente.");
             }
-
+    
             let mensaje = "";
             let destino = "";
-
+    
             if (data.rol === 'Administrador') {
                 mensaje = "Inicio de sesión exitoso como Administrador.";
                 destino = "/admin";
             } else if (data.rol === 'Trabajador') {
                 mensaje = "Inicio de sesión exitoso como Trabajador.";
-                destino = "/vecino";
+                destino = "/trabajador";
             } else {
                 Swal.fire({
                     title: 'Error',
@@ -80,7 +85,7 @@ const Login = ({ toggleTheme }) => {
                 });
                 return;
             }
-
+    
             Swal.fire({
                 title: '¡Bienvenido!',
                 text: mensaje,
@@ -89,8 +94,9 @@ const Login = ({ toggleTheme }) => {
             }).then(() => {
                 navigate(destino);
             });
-
+    
         } catch (error) {
+            console.error("Error en el login:", error.message); // <-- También útil para ver errores
             Swal.fire({
                 title: 'Error',
                 text: error.message,
@@ -105,8 +111,9 @@ const Login = ({ toggleTheme }) => {
             <Grid 
                 item xs={12} md={5} 
                 sx={{ 
-                    background: 'linear-gradient(135deg, rgb(13, 74, 135) 0%, rgb(17, 73, 136) 100%)',
-                    color: '#FFFFFF', p: 4, 
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                    color: theme.palette.common.white,
+                    p: 4, 
                     display: 'flex', flexDirection: 'column', justifyContent: 'center'
                 }}
             >

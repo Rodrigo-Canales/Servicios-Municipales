@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt'); // Importa bcrypt para hashear contraseñas
+const bcrypt = require('bcrypt');
 const db = require('../config/db');
 
-// Obtener todos los usuarios (solo para administradores, por ejemplo)
+// Obtener todos los usuarios
 router.get('/', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM Usuarios');
@@ -22,9 +22,8 @@ router.get('/:rut', async (req, res) => {
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        // No devolver la contraseña hasheada por seguridad
         const usuario = { ...rows[0] };
-        delete usuario.hash_contra;
+        delete usuario.hash_password;
         res.status(200).json(usuario);
     } catch (error) {
         console.error('Error al obtener usuario por RUT:', error);
@@ -32,19 +31,30 @@ router.get('/:rut', async (req, res) => {
     }
 });
 
-// Crear Usuario
+// Crear Usuario (Permite usuarios con o sin contraseña)
 router.post('/', async (req, res) => {
-    const { rut, nombres, apellidos, correo_electronico, password, rol, area_id } = req.body;
+    const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;
+
     try {
-        let hashedPassword = null; 
+        let hashedPassword = null;
         if (password) {
-            const salt = await bcrypt.genSalt(10); // Generar un salt
-            hashedPassword = await bcrypt.hash(password, salt); // Hashear la contraseña
+            const salt = await bcrypt.genSalt(10);
+            hashedPassword = await bcrypt.hash(password, salt);
         }
+
         const [result] = await db.query(
-            'INSERT INTO Usuarios (RUT, nombres, apellidos, correo_electronico, hash_contra, rol, area_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [rut, nombres, apellidos, correo_electronico || null, hashedPassword, rol || null, area_id || null]
+            'INSERT INTO Usuarios (RUT, nombre, apellido, correo_electronico, hash_password, rol, area_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+                rut,
+                nombre,
+                apellido,
+                correo_electronico || null,
+                hashedPassword,
+                rol || 'Usuario',
+                area_id || null
+            ]
         );
+
         res.status(201).json({ message: 'Usuario creado exitosamente' });
     } catch (error) {
         console.error('Error al crear usuario:', error);
@@ -56,18 +66,28 @@ router.post('/', async (req, res) => {
 router.put('/:rut', async (req, res) => {
     const rut = req.params.rut;
     const { correo_electronico, password, rol, area_id } = req.body;
+
     try {
         let hashedPassword = null;
         if (password) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
-        const [result] = await db.query(
-            'UPDATE Usuarios SET correo_electronico = ?, hash_contra = ?, rol = ?, area_id = ? WHERE RUT = ?',
-            [correo_electronico, hashedPassword, rol, area_id, rut]
-        );
+
+        // Verificar si se necesita actualizar la contraseña o no
+        const query = password
+            ? 'UPDATE Usuarios SET correo_electronico = ?, hash_password = ?, rol = ?, area_id = ? WHERE RUT = ?'
+            : 'UPDATE Usuarios SET correo_electronico = ?, rol = ?, area_id = ? WHERE RUT = ?';
+
+        const values = password
+            ? [correo_electronico, hashedPassword, rol, area_id, rut]
+            : [correo_electronico, rol, area_id, rut];
+
+        const [result] = await db.query(query, values);
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
+
         res.status(200).json({ message: 'Usuario actualizado exitosamente' });
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
@@ -75,7 +95,7 @@ router.put('/:rut', async (req, res) => {
     }
 });
 
-// Eliminar un usuario existente
+// Eliminar Usuario
 router.delete('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
@@ -91,3 +111,11 @@ router.delete('/:rut', async (req, res) => {
 });
 
 module.exports = router;
+
+
+
+
+
+//arregar el agregar como usuario y como trabajador
+
+// el eliminar, el actualizar y listar funciona

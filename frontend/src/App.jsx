@@ -6,6 +6,7 @@ import ClaveUnica from './components/Auth/ClaveUnica';
 import Login from './components/Auth/Login';
 import Administrador from './components/Admin/Administrador';
 import Vecinos from './components/Vecinos/Vecino';
+import Trabajador from './components/Trabajador/Trabajador';
 
 function App() {
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -23,7 +24,8 @@ function App() {
                     <Route path="/loginClaveUnica" element={<ClaveUnica toggleTheme={toggleTheme} />} />
                     <Route path="/login" element={<Login toggleTheme={toggleTheme} />} />
                     <Route path="/admin" element={<Administrador />} />
-                    <Route path="/vecino" element={<Vecinos />} />
+                    <Route path="/vecino" element={<Vecinos toggleTheme={toggleTheme} />} />
+                    <Route path="/trabajador" element={<Trabajador toggleTheme={toggleTheme}/>} />
                 </Routes>
             </Router>
         </ThemeProvider>
