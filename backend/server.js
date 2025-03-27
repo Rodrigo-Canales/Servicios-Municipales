@@ -34,6 +34,7 @@ const solicitudesRoutes = require('./api/solicitudes');
 const tiposSolicitudesRoutes = require('./api/tipos_solicitudes');
 const authClaveUnicaRoutes = require('./auth/auth_claveunica');
 const authTrabajadoresRoutes = require('./auth/auth_trabajadores');
+const preguntasFrecuentesRoutes = require('./api/preguntas_frecuentes');
 
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/areas', areasRoutes);
@@ -42,10 +43,11 @@ app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/tipos_solicitudes', tiposSolicitudesRoutes);
 app.use('/api/auth/claveunica', authClaveUnicaRoutes);
 app.use('/api/auth/trabajadores', authTrabajadoresRoutes);
+app.use('/api/preguntas_frecuentes', preguntasFrecuentesRoutes);
 
 // Ruta raíz
 app.get('/', (req, res) => {
-    res.send('¡Hola Mundo!');
+    res.send('Servidor privado');
 });
 
 // Iniciar servidor

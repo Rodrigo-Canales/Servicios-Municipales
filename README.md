@@ -55,20 +55,19 @@ CREATE TABLE IF NOT EXISTS Respuestas (
     FOREIGN KEY (RUT_trabajador) REFERENCES Usuarios(RUT)
 );
 
+CREATE TABLE IF NOT EXISTS Preguntas_Frecuentes (
+    id_pregunta INT AUTO_INCREMENT PRIMARY KEY,
+    pregunta TEXT NOT NULL, -- Usar TEXT para preguntas potencialmente largas
+    respuesta TEXT NOT NULL, -- Usar TEXT para respuestas potencialmente largas
+    id_tipo INT NOT NULL,    -- Clave foránea para asociar con un tipo de solicitud
+    FOREIGN KEY (id_tipo) REFERENCES Tipos_Solicitudes(id_tipo)
+        ON DELETE CASCADE  -- Si se elimina el tipo de solicitud, eliminar sus preguntas frecuentes
+        ON UPDATE CASCADE  -- Si cambia el id_tipo (raro), actualizar aquí
+);
+
 
 -- Usa la base de datos creada previamente
 USE servicios_municipales;
-
--- Vaciar tablas existentes antes de insertar (OPCIONAL, ¡CUIDADO!)
-/*
-SET FOREIGN_KEY_CHECKS = 0; -- Deshabilitar temporalmente chequeo de claves foráneas
-TRUNCATE TABLE Respuestas;
-TRUNCATE TABLE Solicitudes;
-TRUNCATE TABLE Tipos_Solicitudes;
-TRUNCATE TABLE Usuarios;
-TRUNCATE TABLE Areas;
-SET FOREIGN_KEY_CHECKS = 1; -- Rehabilitar chequeo
-*/
 
 -- ------------------------------
 -- Poblar la tabla Áreas
@@ -152,9 +151,28 @@ INSERT INTO Respuestas (id_respuesta, id_solicitud, RUT_trabajador) VALUES
 ON DUPLICATE KEY UPDATE id_solicitud=VALUES(id_solicitud), RUT_trabajador=VALUES(RUT_trabajador); -- Evita error si ya existen
 
 ------------------------------
-// agregar una tabla de respuestas_frecuentes
-que estén vinculadas con el tipo de solicitud
+-- Poblar la tabla Preguntas Frecuentes
 ------------------------------
+INSERT INTO Preguntas_Frecuentes (id_tipo, pregunta, respuesta) VALUES
+-- Ejemplos para Reparación de calles (id_tipo = 1)
+(1, '¿Cuánto tiempo tarda la reparación de un bache?', 'El tiempo de reparación varía según la carga de trabajo y la urgencia, pero generalmente intentamos abordar los baches reportados dentro de 5 a 10 días hábiles.'),
+(1, '¿Puedo solicitar la repavimentación completa de mi calle?', 'La repavimentación completa se planifica según un catastro general del estado de las vías. Puede ingresar una solicitud para que se evalúe la condición de su calle.'),
+-- Ejemplos para Alumbrado público (id_tipo = 2)
+(2, 'Mi poste de luz no enciende, ¿qué hago?', 'Por favor, ingrese una solicitud indicando la dirección exacta o el número del poste (si es visible) para que nuestro equipo técnico pueda revisarlo.'),
+(2, '¿Puedo solicitar un nuevo punto de luz para mi pasaje?', 'Sí, puede ingresar una solicitud detallando la ubicación donde considera necesario un nuevo punto de luz. Se evaluará la factibilidad técnica y presupuestaria.'),
+-- Ejemplos para Limpieza (id_tipo = 3)
+(3, '¿Con qué frecuencia limpian los microbasurales?', 'Intentamos limpiar los puntos críticos identificados regularmente, pero dependemos de los reportes ciudadanos. Ingrese su solicitud para asegurar la limpieza del punto específico.'),
+-- Ejemplos para Árboles (id_tipo = 4)
+(4, '¿Necesito permiso para podar un árbol fuera de mi casa?', 'Sí, los árboles en la vía pública son gestionados por el municipio. Debe ingresar una solicitud para que el equipo de Ornato evalúe y realice la poda si corresponde.'),
+-- Ejemplos para Ruidos molestos (id_tipo = 5)
+(5, '¿Qué pasa después de denunciar ruidos molestos?', 'Inspectores municipales o personal de seguridad ciudadana pueden acudir al lugar para verificar la situación y cursar las infracciones correspondientes si la normativa se está incumpliendo.'),
+-- Ejemplos para Hora Médica (id_tipo = 15)
+(15, '¿Cómo pido hora para un especialista en el CESFAM?', 'La derivación a especialistas generalmente requiere una evaluación previa por médico general en el CESFAM. Solicite primero una hora con médico general para evaluar su caso.'),
+(15, '¿Puedo pedir hora por teléfono?', 'Dependiendo del CESFAM, puede haber horarios específicos para solicitar hora telefónicamente o a través de alguna plataforma online. Consulte directamente con su CESFAM para conocer las vías disponibles.')
+ON DUPLICATE KEY UPDATE pregunta=VALUES(pregunta), respuesta=VALUES(respuesta), id_tipo=VALUES(id_tipo); -- Evita duplicados si se ejecuta de nuevo
+
+
+
 
 
 proteger rutas:

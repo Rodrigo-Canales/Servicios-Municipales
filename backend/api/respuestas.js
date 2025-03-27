@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 
 transporter.verify(function(error, success) {
   if (error) { console.error("Error al conectar con el servicio de correo:", error); }
-  else { console.log("Servidor de correo listo para enviar mensajes."); }
+  else { console.log("✅ Servidor de correo listo para enviar mensajes."); }
 });
 
 // --- Funciones Auxiliares ---
