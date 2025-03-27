@@ -146,9 +146,9 @@ const SidebarAdmin = ({ currentSection, onSelectSection, onCloseDrawer }) => {
                     }}>
                         {openGestionar ? <ExpandLess /> : <ExpandMore />}
                         {/* Nota: SidebarVecino usa ExpandMore cuando está cerrado y rota -90. Aquí usamos la lógica inversa para que la flecha apunte hacia abajo al cerrar. Si quieres que sea idéntico a Vecino (flecha derecha al cerrar), invierte el icono y la rotación:
-                           transform: openGestionar ? 'rotate(0deg)' : 'rotate(-90deg)'
+                        transform: openGestionar ? 'rotate(0deg)' : 'rotate(-90deg)'
                            {openGestionar ? <ExpandLess /> : <ExpandMore />} // -> Cambia a ExpandMore por defecto y ExpandLess cuando está abierto si usas la rotación -90
-                           Decidí mantener la flecha abajo/arriba que es más intuitivo para un menú vertical, pero la rotación -90 está aplicada como en Vecino. Si prefieres la flecha derecha/abajo, descomenta la línea de abajo y comenta la de arriba.
+                        Decidí mantener la flecha abajo/arriba que es más intuitivo para un menú vertical, pero la rotación -90 está aplicada como en Vecino. Si prefieres la flecha derecha/abajo, descomenta la línea de abajo y comenta la de arriba.
                         */}
                          {/* {openGestionar ? <ExpandLess /> : <ExpandMore />} */}
                     </Box>

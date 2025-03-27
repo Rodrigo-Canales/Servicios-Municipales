@@ -22,11 +22,11 @@ CREATE TABLE IF NOT EXISTS Usuarios (
     FOREIGN KEY (area_id) REFERENCES Areas(id_area)
 );
 
--- Crear la tabla Tipos_Solicitudes (actualizada con el campo descripción)
+-- Crear la tabla Tipos_Solicitudes
 CREATE TABLE IF NOT EXISTS Tipos_Solicitudes (
     id_tipo INT AUTO_INCREMENT PRIMARY KEY,
     nombre_tipo VARCHAR(255) NOT NULL,
-    descripcion VARCHAR(500) DEFAULT NULL,  -- Nuevo campo descripción
+    descripcion VARCHAR(500) DEFAULT NULL,
     area_id INT NOT NULL,
     FOREIGN KEY (area_id) REFERENCES Areas(id_area)
 );
@@ -35,10 +35,12 @@ CREATE TABLE IF NOT EXISTS Tipos_Solicitudes (
 CREATE TABLE IF NOT EXISTS Solicitudes (
     id_solicitud INT AUTO_INCREMENT PRIMARY KEY,
     id_tipo INT NOT NULL,
-    fecha_hora_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Se llena automáticamente
+    fecha_hora_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('Pendiente', 'Aprobada', 'Rechazada') DEFAULT 'Pendiente',
     ruta_carpeta VARCHAR(255) NOT NULL,
-    RUT_ciudadano VARCHAR(12) NOT NULL,  
+    RUT_ciudadano VARCHAR(12) NOT NULL,
+    -- MODIFICADO: Añadir campo para correo específico de notificación
+    correo_notificacion VARCHAR(255) DEFAULT NULL, -- Email al que notificar sobre ESTA solicitud
     FOREIGN KEY (RUT_ciudadano) REFERENCES Usuarios(RUT),
     FOREIGN KEY (id_tipo) REFERENCES Tipos_Solicitudes(id_tipo)
 );
@@ -47,113 +49,112 @@ CREATE TABLE IF NOT EXISTS Solicitudes (
 CREATE TABLE IF NOT EXISTS Respuestas (
     id_respuesta INT AUTO_INCREMENT PRIMARY KEY,
     id_solicitud INT NOT NULL,
-    fecha_hora_respuesta TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Se llena automáticamente
-    RUT_trabajador VARCHAR(12) NOT NULL,  
+    fecha_hora_respuesta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    RUT_trabajador VARCHAR(12) NOT NULL,
     FOREIGN KEY (id_solicitud) REFERENCES Solicitudes(id_solicitud),
     FOREIGN KEY (RUT_trabajador) REFERENCES Usuarios(RUT)
 );
 
-      
+
 -- Usa la base de datos creada previamente
 USE servicios_municipales;
 
 -- Vaciar tablas existentes antes de insertar (OPCIONAL, ¡CUIDADO!)
--- Descomenta estas líneas SOLO si quieres empezar desde cero cada vez.
--- SET FOREIGN_KEY_CHECKS = 0; -- Deshabilitar temporalmente chequeo de claves foráneas
--- TRUNCATE TABLE Respuestas;
--- TRUNCATE TABLE Solicitudes;
--- TRUNCATE TABLE Tipos_Solicitudes;
--- TRUNCATE TABLE Usuarios;
--- TRUNCATE TABLE Areas;
--- SET FOREIGN_KEY_CHECKS = 1; -- Rehabilitar chequeo
+/*
+SET FOREIGN_KEY_CHECKS = 0; -- Deshabilitar temporalmente chequeo de claves foráneas
+TRUNCATE TABLE Respuestas;
+TRUNCATE TABLE Solicitudes;
+TRUNCATE TABLE Tipos_Solicitudes;
+TRUNCATE TABLE Usuarios;
+TRUNCATE TABLE Areas;
+SET FOREIGN_KEY_CHECKS = 1; -- Rehabilitar chequeo
+*/
 
 -- ------------------------------
--- Poblar la tabla Áreas (con más datos)
+-- Poblar la tabla Áreas
 -- ------------------------------
 INSERT INTO Areas (nombre_area) VALUES
-('Obras Públicas'),               -- ID 1 (asumido)
-('Medio Ambiente Aseo y Ornato'), -- ID 2 (asumido)
-('Seguridad Ciudadana'),          -- ID 3 (asumido)
-('Desarrollo Comunitario'),       -- ID 4 (asumido) - Nombre actualizado
-('Tránsito y Transporte Público'),-- ID 5 (asumido) - Nombre actualizado
-('Cultura'),                      -- ID 6 (asumido)
-('Educación'),                    -- ID 7 (asumido)
-('Salud Municipal');              -- ID 8 (asumido)
+('Obras Públicas'),               -- ID 1
+('Medio Ambiente Aseo y Ornato'), -- ID 2
+('Seguridad Ciudadana'),          -- ID 3
+('Desarrollo Comunitario'),       -- ID 4
+('Tránsito y Transporte Público'),-- ID 5
+('Cultura'),                      -- ID 6
+('Educación'),                    -- ID 7
+('Salud Municipal')               -- ID 8
+ON DUPLICATE KEY UPDATE nombre_area=nombre_area; -- Evita error si ya existen
 
 -- ------------------------------
--- Poblar la tabla Usuarios (actualizado con roles y más datos)
+-- Poblar la tabla Usuarios
 -- ------------------------------
--- NOTA: Los hashes son ejemplos, usar bcrypt en la aplicación real. Vecinos sin hash/pass.
 INSERT INTO Usuarios (RUT, nombre, apellido, correo_electronico, hash_password, rol, area_id) VALUES
--- Vecinos (antes 'Usuario')
+-- Vecinos
 ('11111111-1', 'Elena', 'Martínez', 'elena.m@email.com', NULL, 'Vecino', NULL),
 ('22222222-2', 'Roberto', 'Silva', 'r.silva@email.com', NULL, 'Vecino', NULL),
 ('12345678-9', 'Juan', 'Pérez', 'juan.perez@email.com', NULL, 'Vecino', NULL),
 ('23456789-0', 'María', 'González', 'maria.g@email.com', NULL, 'Vecino', NULL),
 ('98765432-1', 'Luisa', 'Fernández', 'luisa.f@email.com', NULL, 'Vecino', NULL),
-
--- Funcionarios (antes 'Trabajador') - Hashes de ejemplo para 'password123'
-('34567890-1', 'Carlos', 'López', 'c.lopez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1), -- Obras Públicas
-('45678901-2', 'Ana', 'Rodríguez', 'a.rodriguez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 2), -- Medio Ambiente
-('87654321-0', 'Jorge', 'Ramírez', 'j.ramirez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 5), -- Tránsito
-('76543210-9', 'Sofía', 'Castro', 's.castro@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 4), -- Desarrollo Comunitario
-('65432109-8', 'Andrés', 'Vargas', 'a.vargas@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1), -- Obras Públicas (otro)
-
+-- Funcionarios (Hashes de ejemplo para 'password123')
+('34567890-1', 'Carlos', 'López', 'c.lopez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1),
+('45678901-2', 'Ana', 'Rodríguez', 'a.rodriguez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 2),
+('87654321-0', 'Jorge', 'Ramírez', 'j.ramirez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 5),
+('76543210-9', 'Sofía', 'Castro', 's.castro@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 4),
+('65432109-8', 'Andrés', 'Vargas', 'a.vargas@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1),
 -- Administradores
 ('56789012-3', 'Pedro', 'Sánchez', 'p.sanchez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL),
-('10101010-1', 'Isidora', 'Díaz', 'i.diaz@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL);
+('10101010-1', 'Isidora', 'Díaz', 'i.diaz@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), apellido=VALUES(apellido), correo_electronico=VALUES(correo_electronico), hash_password=VALUES(hash_password), rol=VALUES(rol), area_id=VALUES(area_id); -- Evita error si ya existen
 
 -- ------------------------------
--- Poblar la tabla Tipos_Solicitudes (con más datos y descripción)
+-- Poblar la tabla Tipos_Solicitudes
 -- ------------------------------
-INSERT INTO Tipos_Solicitudes (nombre_tipo, descripcion, area_id) VALUES
-('Reparación de calles y veredas', 'Solicitud para reparar baches, grietas o daños en calles y aceras.', 1),
-('Mantención de alumbrado público', 'Informar sobre luminarias apagadas, intermitentes o dañadas.', 1),
-('Limpieza de microbasurales', 'Solicitud para retirar acumulación ilegal de basura en sitios eriazos o vía pública.', 2),
-('Poda o extracción de árboles', 'Solicitud para podar o retirar árboles en la vía pública que presenten riesgo o problemas.', 2),
-('Denuncia por ruidos molestos', 'Informar sobre ruidos excesivos que alteran la tranquilidad vecinal (fiestas, construcciones fuera de horario).', 3),
-('Solicitud de patrullaje preventivo', 'Pedir mayor presencia de seguridad ciudadana en un sector específico.', 3),
-('Inscripción a Taller Comunitario', 'Registrarse en talleres ofrecidos por el municipio (manualidades, deporte, etc.).', 4),
-('Postulación a Subsidio de Agua Potable', 'Solicitar información y postular al subsidio de agua potable.', 4),
-('Consulta sobre recorridos de locomoción colectiva', 'Obtener información actualizada sobre rutas y horarios del transporte público.', 5),
-('Instalación de señalética de tránsito', 'Solicitar la instalación o reparación de señales de Pare, Ceda el Paso, nombres de calles, etc.', 5),
-('Solicitud de permiso de evento cultural', 'Tramitar permisos para realizar eventos culturales en espacios públicos.', 6),
-('Consulta de actividades culturales', 'Información sobre la agenda cultural del municipio (conciertos, exposiciones, teatro).', 6),
-('Solicitud de matrícula escolar municipal', 'Proceso de inscripción para establecimientos educacionales municipales.', 7),
-('Información sobre becas estudiantiles', 'Consultar requisitos y plazos para becas municipales o gubernamentales.', 7),
-('Solicitud de hora médica en CESFAM', 'Pedir hora para atención médica general o especialidad en Centros de Salud Familiar.', 8),
-('Programa de vacunación', 'Información sobre campañas de vacunación y horarios.', 8);
+INSERT INTO Tipos_Solicitudes (id_tipo, nombre_tipo, descripcion, area_id) VALUES
+(1, 'Reparación de calles y veredas', 'Solicitud para reparar baches, grietas o daños en calles y aceras.', 1),
+(2, 'Mantención de alumbrado público', 'Informar sobre luminarias apagadas, intermitentes o dañadas.', 1),
+(3, 'Limpieza de microbasurales', 'Solicitud para retirar acumulación ilegal de basura en sitios eriazos o vía pública.', 2),
+(4, 'Poda o extracción de árboles', 'Solicitud para podar o retirar árboles en la vía pública que presenten riesgo o problemas.', 2),
+(5, 'Denuncia por ruidos molestos', 'Informar sobre ruidos excesivos que alteran la tranquilidad vecinal (fiestas, construcciones fuera de horario).', 3),
+(6, 'Solicitud de patrullaje preventivo', 'Pedir mayor presencia de seguridad ciudadana en un sector específico.', 3),
+(7, 'Inscripción a Taller Comunitario', 'Registrarse en talleres ofrecidos por el municipio (manualidades, deporte, etc.).', 4),
+(8, 'Postulación a Subsidio de Agua Potable', 'Solicitar información y postular al subsidio de agua potable.', 4),
+(9, 'Consulta sobre recorridos de locomoción colectiva', 'Obtener información actualizada sobre rutas y horarios del transporte público.', 5),
+(10, 'Instalación de señalética de tránsito', 'Solicitar la instalación o reparación de señales de Pare, Ceda el Paso, nombres de calles, etc.', 5),
+(11, 'Solicitud de permiso de evento cultural', 'Tramitar permisos para realizar eventos culturales en espacios públicos.', 6),
+(12, 'Consulta de actividades culturales', 'Información sobre la agenda cultural del municipio (conciertos, exposiciones, teatro).', 6),
+(13, 'Solicitud de matrícula escolar municipal', 'Proceso de inscripción para establecimientos educacionales municipales.', 7),
+(14, 'Información sobre becas estudiantiles', 'Consultar requisitos y plazos para becas municipales o gubernamentales.', 7),
+(15, 'Solicitud de hora médica en CESFAM', 'Pedir hora para atención médica general o especialidad en Centros de Salud Familiar.', 8),
+(16, 'Programa de vacunación', 'Información sobre campañas de vacunación y horarios.', 8)
+ON DUPLICATE KEY UPDATE nombre_tipo=VALUES(nombre_tipo), descripcion=VALUES(descripcion), area_id=VALUES(area_id); -- Evita error si ya existen
 
 -- ------------------------------
--- Poblar la tabla Solicitudes (con más datos)
+-- Poblar la tabla Solicitudes
 -- ------------------------------
--- Asumiendo IDs secuenciales para Tipos_Solicitudes (1 a 16) y RUTs de Vecinos
-INSERT INTO Solicitudes (id_tipo, estado, ruta_carpeta, RUT_ciudadano, fecha_hora_envio) VALUES
-(1, 'Pendiente', '/srv/sol/11111111-1/1', '11111111-1', NOW() - INTERVAL 7 DAY), -- Reparación calle
-(3, 'Aprobada', '/srv/sol/22222222-2/3', '22222222-2', NOW() - INTERVAL 5 DAY), -- Limpieza microbasural
-(5, 'Rechazada', '/srv/sol/12345678-9/5', '12345678-9', NOW() - INTERVAL 4 DAY), -- Ruidos molestos
-(8, 'Pendiente', '/srv/sol/23456789-0/8', '23456789-0', NOW() - INTERVAL 3 DAY), -- Subsidio Agua
-(2, 'Pendiente', '/srv/sol/98765432-1/2', '98765432-1', NOW() - INTERVAL 2 DAY), -- Alumbrado
-(10, 'Aprobada', '/srv/sol/11111111-1/10', '11111111-1', NOW() - INTERVAL 1 DAY), -- Señalética
-(15, 'Pendiente', '/srv/sol/22222222-2/15', '22222222-2', NOW()),             -- Hora Médica
-(4, 'Pendiente', '/srv/sol/12345678-9/4', '12345678-9', NOW() - INTERVAL 6 HOUR); -- Poda árbol
+-- MODIFICADO: Añadir columna correo_notificacion (ejemplos con NULL, puedes poner emails)
+INSERT INTO Solicitudes (id_solicitud, id_tipo, estado, ruta_carpeta, RUT_ciudadano, correo_notificacion, fecha_hora_envio) VALUES
+(1, 1, 'Pendiente', '/srv/sol/11111111-1/1', '11111111-1', 'elena.notif@email.com', NOW() - INTERVAL 7 DAY), -- Correo específico
+(2, 3, 'Aprobada', '/srv/sol/22222222-2/3', '22222222-2', NULL, NOW() - INTERVAL 5 DAY),
+(3, 5, 'Rechazada', '/srv/sol/12345678-9/5', '12345678-9', NULL, NOW() - INTERVAL 4 DAY),
+(4, 8, 'Pendiente', '/srv/sol/23456789-0/8', '23456789-0', NULL, NOW() - INTERVAL 3 DAY),
+(5, 2, 'Pendiente', '/srv/sol/98765432-1/2', '98765432-1', NULL, NOW() - INTERVAL 2 DAY),
+(6, 10, 'Aprobada', '/srv/sol/11111111-1/10', '11111111-1', 'elena.notif@email.com', NOW() - INTERVAL 1 DAY), -- Correo específico
+(7, 15, 'Pendiente', '/srv/sol/22222222-2/15', '22222222-2', NULL, NOW()),
+(8, 4, 'Pendiente', '/srv/sol/12345678-9/4', '12345678-9', 'juan.perez@email.com', NOW() - INTERVAL 6 HOUR) -- Usa el mismo correo del usuario
+ON DUPLICATE KEY UPDATE id_tipo=VALUES(id_tipo), estado=VALUES(estado), ruta_carpeta=VALUES(ruta_carpeta), RUT_ciudadano=VALUES(RUT_ciudadano), correo_notificacion=VALUES(correo_notificacion), fecha_hora_envio=VALUES(fecha_hora_envio); -- Evita error si ya existen
 
 -- ------------------------------
--- Poblar la tabla Respuestas (con más datos)
+-- Poblar la tabla Respuestas
 -- ------------------------------
--- Asumiendo IDs secuenciales para Solicitudes (1 a 8) y RUTs de Funcionarios/Admin
-INSERT INTO Respuestas (id_solicitud, RUT_trabajador) VALUES
-(2, '45678901-2'), -- Solicitud 2 (Limpieza) respondida por Ana Rodríguez (Medio Ambiente)
-(3, '56789012-3'), -- Solicitud 3 (Ruidos) respondida por Pedro Sánchez (Admin, quizás derivó)
-(6, '87654321-0'); -- Solicitud 6 (Señalética) respondida por Jorge Ramírez (Tránsito)
+INSERT INTO Respuestas (id_respuesta, id_solicitud, RUT_trabajador) VALUES
+(1, 2, '45678901-2'),
+(2, 3, '56789012-3'),
+(3, 6, '87654321-0')
+ON DUPLICATE KEY UPDATE id_solicitud=VALUES(id_solicitud), RUT_trabajador=VALUES(RUT_trabajador); -- Evita error si ya existen
 
--- ------------------------------
--- Fin de la Población
--- ------------------------------
-
-    
-
-
+------------------------------
+// agregar una tabla de respuestas_frecuentes
+que estén vinculadas con el tipo de solicitud
+------------------------------
 
 
 proteger rutas:
