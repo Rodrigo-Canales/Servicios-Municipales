@@ -73,8 +73,8 @@ const Login = ({ toggleTheme }) => {
             if (data.rol === 'Administrador') {
                 mensaje = "Inicio de sesión exitoso como Administrador.";
                 destino = "/admin";
-            } else if (data.rol === 'Trabajador') {
-                mensaje = "Inicio de sesión exitoso como Trabajador.";
+            } else if (data.rol === 'Funcionario') {
+                mensaje = "Inicio de sesión exitoso como Funcionario.";
                 destino = "/trabajadores";
             } else {
                 Swal.fire({
