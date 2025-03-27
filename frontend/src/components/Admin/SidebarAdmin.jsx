@@ -168,7 +168,7 @@ const SidebarAdmin = ({ currentSection, onSelectSection, onCloseDrawer }) => {
                         {/* Sub-Item Tipos Solicitudes */}
                         <AdminSubItemButton selected={isActive('tipos-solicitudes')} onClick={() => handleItemClick('tipos-solicitudes')}>
                             <ListItemIcon><TiposIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary="Tipos Solicitudes" />
+                            <ListItemText primary="Tipos de Solicitudes" />
                         </AdminSubItemButton>
 
                         {/* Sub-Item Solicitudes */}

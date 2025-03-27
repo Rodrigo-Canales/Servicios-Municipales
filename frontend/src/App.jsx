@@ -8,7 +8,7 @@ import Login from './components/Auth/Login';
 // Componentes Principales de Portal (Layouts)
 import Administrador from './components/Admin/Administrador'; // Layout/Página principal Admin
 import Vecinos from './components/Vecinos/Vecino';
-import Trabajador from './components/Trabajador/Trabajador';
+import Funcionario from './components/Funcionarios/Funcionario';
 
 function App() {
     return (
@@ -22,7 +22,7 @@ function App() {
                 <Route path="/vecinos" element={<Vecinos />} />
 
                 {/* Trabajadores */}
-                <Route path="/trabajadores" element={<Trabajador />} />
+                <Route path="/funcionarios" element={<Funcionario />} />
 
                 {/* Administración */}
                 {/* *** MODIFICADO: Una sola ruta para cargar el componente Administrador *** */}

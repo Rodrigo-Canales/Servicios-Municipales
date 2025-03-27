@@ -1,6 +1,6 @@
 import { Box, Toolbar } from "@mui/material";
 import Navbar from "../Navbar";
-import Sidebar from "../Trabajador/SidebarTrabajador";
+import Sidebar from "./SidebarFuncionario";
 
 const Trabajador = ({ children }) => {
     return (

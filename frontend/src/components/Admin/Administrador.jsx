@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
+import Swal from 'sweetalert2'; // Importar SweetAlert2
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Button, CircularProgress, Fade,
@@ -7,11 +8,12 @@ import {
     TextField, InputAdornment, Tooltip, Alert, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem, FormControl, InputLabel,
     Checkbox, FormControlLabel,
-    TablePagination // NUEVO: Importar TablePagination
+    TablePagination
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete'; 
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 // Importa componentes y utilidades (¡Asegúrate que las rutas sean correctas!)
@@ -30,7 +32,7 @@ const ENTITY_TYPES = {
     USUARIO: 'usuario',
 };
 const ROLES_PERMITIDOS = ['Administrador', 'Funcionario', 'Vecino'];
-const DEFAULT_ROWS_PER_PAGE = 10; // NUEVO: Filas por defecto
+const DEFAULT_ROWS_PER_PAGE = 10; // Filas por defecto para paginación
 
 // --- Componente Principal ---
 function Administrador() {
@@ -48,21 +50,23 @@ function Administrador() {
     const [tiposSolicitudesAdmin, setTiposSolicitudesAdmin] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
 
-    // --- Estados para el Modal de Edición Genérico ---
+    // --- Estados para Modales ---
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [editingItemType, setEditingItemType] = useState(null);
     const [formData, setFormData] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); // Para Edición
     const [showModalPassword, setShowModalPassword] = useState(false);
 
-    // --- Estados para el Modal de Agregar Genérico ---
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [addFormData, setAddFormData] = useState({});
-    const [isAdding, setIsAdding] = useState(false);
+    const [isAdding, setIsAdding] = useState(false); // Para Agregar
     const [showAddModalPassword, setShowAddModalPassword] = useState(false);
 
-    // --- NUEVO: Estados para Paginación ---
+    // --- Estado para Eliminación ---
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // --- Estados para Paginación ---
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
 
@@ -75,14 +79,14 @@ function Administrador() {
     const toggleTheme = useCallback(() => setMode((prev) => (prev === "light" ? "dark" : "light")), []);
     const handleDrawerToggle = useCallback(() => setMobileOpen(prev => !prev), []);
     const handleDrawerClose = useCallback(() => setMobileOpen(false), []);
-    // MODIFICADO: Resetear página al buscar
+    // Resetear página al buscar
     const handleSearchChange = useCallback((event) => {
         setSearchTerm(event.target.value);
-        setPage(0); // Resetear a la primera página al cambiar el término de búsqueda
+        setPage(0);
     }, []);
 
     // --- Handler Selección Sidebar ---
-    // MODIFICADO: Resetear página al cambiar sección
+    // Resetear página al cambiar sección
     const handleSelectSection = useCallback((sectionName) => {
         if (sectionName !== currentSection) {
             console.log(`[handleSelectSection] Changing section to ${sectionName}`);
@@ -90,8 +94,8 @@ function Administrador() {
             setSearchTerm("");
             setIsEditModalOpen(false);
             setIsAddModalOpen(false);
-            setPage(0); // Resetear a la primera página
-            setRowsPerPage(DEFAULT_ROWS_PER_PAGE); // Opcional: resetear filas por página también
+            setPage(0);
+            setRowsPerPage(DEFAULT_ROWS_PER_PAGE);
         }
         handleDrawerClose();
     }, [currentSection, handleDrawerClose]);
@@ -112,6 +116,7 @@ function Administrador() {
                 console.log(`[fetchGenericData] Success. Received ${potentialData.length} items for ${sectionIdentifier}`);
                 if (sectionIdentifier === 'usuarios') {
                     return potentialData.map(user => {
+                        // Asegurarse que ROL sí se incluya, solo quitar hash_password
                         const { hash_password: _discardedHash, ...userWithoutHash } = user;
                         return userWithoutHash;
                     });
@@ -140,14 +145,12 @@ function Administrador() {
             setSolicitudes([]); setAreas([]); setTiposSolicitudesAdmin([]); setUsuarios([]);
             return;
         }
-
         let isMounted = true;
         const section = currentSection;
-
         const loadData = async () => {
             console.log(`[useEffect] Loading data for section: ${section}`);
-            if (isMounted) { setLoading(true); setError(null); setPage(0); } // Reset page on new section load
-
+            if (isMounted) { setLoading(true); setError(null); setPage(0); } // Reset page
+            // Limpiar estados específicos antes de cargar nuevos datos
             switch (section) {
                 case 'solicitudes': setSolicitudes([]); break;
                 case 'areas': setAreas([]); break;
@@ -155,44 +158,34 @@ function Administrador() {
                 case 'usuarios': setUsuarios([]); break;
             }
             const needsAreas = section === 'tipos-solicitudes' || section === 'usuarios' || section === 'areas';
-
             let fetchFn; let setDataFn;
             switch (section) {
                 case 'solicitudes': fetchFn = fetchSolicitudes; setDataFn = setSolicitudes; break;
                 case 'areas': fetchFn = fetchAreas; setDataFn = setAreas; break;
                 case 'tipos-solicitudes': fetchFn = fetchTiposSolicitudesAdmin; setDataFn = setTiposSolicitudesAdmin; break;
                 case 'usuarios': fetchFn = fetchUsuarios; setDataFn = setUsuarios; break;
-                default:
-                    if (isMounted) { setError(`Sección desconocida: ${section}`); setLoading(false); }
-                    return;
+                default: if (isMounted) { setError(`Sección desconocida: ${section}`); setLoading(false); } return;
             }
-
             try {
-                // Si la sección NO es 'areas', ejecutar fetch principal primero
-                 if (section !== 'areas') {
-                     const primaryData = await fetchFn();
-                     if (isMounted && currentSection === section) { setDataFn(primaryData); }
-                     else { return; }
-                 }
-
-                // Cargar/Recargar áreas si es necesario
+                if (section !== 'areas') {
+                    const primaryData = await fetchFn();
+                    if (isMounted && currentSection === section) { setDataFn(primaryData); }
+                    else { return; }
+                }
                 if (needsAreas && isMounted && currentSection === section) {
-                    console.log(`[useEffect] Section ${section} needs areas. Fetching areas...`);
                     try {
                         const areasData = await fetchAreas();
                         if (isMounted && currentSection === section) {
-                             setAreas(areasData);
-                             // Si la sección actual ES 'areas', la data principal es esta
-                             if (section === 'areas') { setDataFn(areasData); }
+                            setAreas(areasData);
+                            if (section === 'areas') { setDataFn(areasData); }
                         }
                     } catch (areasErr) {
                         console.error(`[useEffect] Error fetching areas for section ${section}:`, areasErr);
                         if (isMounted && currentSection === section && !error) { setError('Error al cargar áreas.'); }
-                         if (section === 'areas' && isMounted && currentSection === section) { setDataFn([]); }
+                        if (section === 'areas' && isMounted && currentSection === section) { setDataFn([]); }
                     }
                 }
-
-            } catch (err) { // Error del fetch principal (si no es 'areas')
+            } catch (err) {
                 if (isMounted && currentSection === section) {
                     const apiError = err.response?.data?.message;
                     setError(apiError || err.message || `Error al cargar ${section}.`);
@@ -201,11 +194,10 @@ function Administrador() {
                 if (isMounted && currentSection === section) { setLoading(false); }
             }
         };
-
         loadData();
-
         return () => { isMounted = false; };
-    }, [currentSection, fetchSolicitudes, fetchAreas, fetchTiposSolicitudesAdmin, fetchUsuarios, error]); // No incluir page/rowsPerPage aquí
+    // Dependencias correctas
+    }, [currentSection, fetchSolicitudes, fetchAreas, fetchTiposSolicitudesAdmin, fetchUsuarios, error]);
 
     // --- Cerrar drawer en pantallas grandes ---
     useEffect(() => { if (isLargeScreen) setMobileOpen(false); }, [isLargeScreen]);
@@ -220,7 +212,6 @@ function Administrador() {
     }, [areas]);
 
     // --- Filtrado de Datos ---
-    // (La lógica de filtrado no cambia, pagination actúa sobre `filteredData`)
     const filteredData = useMemo(() => {
         if (loading || error || !currentSection) return [];
         let dataToFilter = [];
@@ -235,42 +226,18 @@ function Administrador() {
         if (!searchTerm.trim()) return dataToFilter;
         const lowerSearch = searchTerm.toLowerCase();
         try {
-            // La lógica de filtrado específica por sección permanece igual
-             switch (currentSection) {
-                 case 'solicitudes':
-                     return dataToFilter.filter(s =>
-                         s.id_formateado?.toString().toLowerCase().includes(lowerSearch) ||
-                         s.RUT_ciudadano?.toLowerCase().includes(lowerSearch) ||
-                         s.nombre_tipo?.toLowerCase().includes(lowerSearch) ||
-                         s.estado?.toLowerCase().includes(lowerSearch)
-                     );
-                 case 'areas':
-                     return dataToFilter.filter(a =>
-                         a.id_area?.toString().toLowerCase().includes(lowerSearch) ||
-                         a.nombre_area?.toLowerCase().includes(lowerSearch)
-                     );
-                 case 'tipos-solicitudes':
-                     return dataToFilter.filter(t =>
-                         t.id_tipo?.toString().toLowerCase().includes(lowerSearch) ||
-                         t.nombre_tipo?.toLowerCase().includes(lowerSearch) ||
-                         (t.area_id && (areaMap.get(t.area_id) || '').toLowerCase().includes(lowerSearch))
-                     );
-                 case 'usuarios':
-                     return dataToFilter.filter(u =>
-                         (u.RUT && u.RUT.toLowerCase().includes(lowerSearch)) ||
-                         (u.nombre && u.nombre.toLowerCase().includes(lowerSearch)) ||
-                         (u.apellido && u.apellido.toLowerCase().includes(lowerSearch)) ||
-                         (u.correo_electronico && u.correo_electronico.toLowerCase().includes(lowerSearch)) ||
-                         (u.rol && u.rol.toLowerCase().includes(lowerSearch)) ||
-                         (u.area_id && (areaMap.get(u.area_id) || '').toLowerCase().includes(lowerSearch))
-                     );
-                 default: return [];
-             }
-        } catch (filterError) {
-            console.error("[filteredData] Error during filtering:", filterError);
-            return [];
-        }
+            switch (currentSection) {
+                case 'solicitudes': return dataToFilter.filter(s => s.id_formateado?.toString().toLowerCase().includes(lowerSearch) || s.RUT_ciudadano?.toLowerCase().includes(lowerSearch) || s.nombre_tipo?.toLowerCase().includes(lowerSearch) || s.estado?.toLowerCase().includes(lowerSearch) || (s.ruta_carpeta && s.ruta_carpeta.toLowerCase().includes(lowerSearch)) );
+                case 'areas': return dataToFilter.filter(a => a.id_area?.toString().toLowerCase().includes(lowerSearch) || a.nombre_area?.toLowerCase().includes(lowerSearch) );
+                case 'tipos-solicitudes': return dataToFilter.filter(t => t.id_tipo?.toString().toLowerCase().includes(lowerSearch) || t.nombre_tipo?.toLowerCase().includes(lowerSearch) || (t.descripcion && t.descripcion.toLowerCase().includes(lowerSearch)) || (t.area_id && (areaMap.get(t.area_id) || '').toLowerCase().includes(lowerSearch)) );
+                case 'usuarios': return dataToFilter.filter(u => (u.RUT && u.RUT.toLowerCase().includes(lowerSearch)) || (u.nombre && u.nombre.toLowerCase().includes(lowerSearch)) || (u.apellido && u.apellido.toLowerCase().includes(lowerSearch)) || (u.correo_electronico && u.correo_electronico.toLowerCase().includes(lowerSearch)) || (u.rol && u.rol.toLowerCase().includes(lowerSearch)) || (u.area_id && (areaMap.get(u.area_id) || '').toLowerCase().includes(lowerSearch)) );
+                default: return [];
+            }
+        } catch (filterError) { console.error("[filteredData] Error during filtering:", filterError); return []; }
     }, [currentSection, searchTerm, solicitudes, areas, tiposSolicitudesAdmin, usuarios, loading, error, areaMap]);
+
+    // --- Helper para mapear tipo/sección a identificador ---
+    const sectionIdentifierFromType = (typeOrSection) => { const cleanType = typeOrSection?.replace(/-/g, '_'); switch (cleanType) { case ENTITY_TYPES.AREA: case 'areas': return 'areas'; case ENTITY_TYPES.TIPO_SOLICITUD: case 'tipos_solicitudes': return 'tipos-solicitudes'; case ENTITY_TYPES.USUARIO: case 'usuarios': return 'usuarios'; case ENTITY_TYPES.SOLICITUD: case 'solicitudes': return 'solicitudes'; default: return null; } };
 
     // --- Handlers Modal Edición ---
     const handleOpenEditModal = useCallback((item, type) => {
@@ -286,32 +253,15 @@ function Administrador() {
         }
         setFormData(initialFormData); setIsEditModalOpen(true);
     }, []);
-
-    const handleCloseEditModal = useCallback(() => {
-        if (!isSubmitting) {
-            setIsEditModalOpen(false);
-            setTimeout(() => { setEditingItem(null); setEditingItemType(null); setFormData({}); setShowModalPassword(false); }, 300);
-        }
-    }, [isSubmitting]);
-
-    const handleFormChange = useCallback((event) => {
-        const { name, value, type, checked } = event.target;
-        const newValue = type === 'checkbox' ? checked : value;
-        setFormData(prev => {
-            const updatedData = { ...prev, [name]: newValue };
-            if (name === 'deletePassword' && newValue === true) { updatedData.password = ''; }
-            return updatedData;
-        });
-    }, []);
-
+    const handleCloseEditModal = useCallback(() => { if (!isSubmitting) { setIsEditModalOpen(false); setTimeout(() => { setEditingItem(null); setEditingItemType(null); setFormData({}); setShowModalPassword(false); }, 300); } }, [isSubmitting]);
+    const handleFormChange = useCallback((event) => { const { name, value, type, checked } = event.target; const newValue = type === 'checkbox' ? checked : value; setFormData(prev => { const updatedData = { ...prev, [name]: newValue }; if (name === 'deletePassword' && newValue === true) { updatedData.password = ''; } return updatedData; }); }, []);
     const handleClickShowPasswordModal = useCallback(() => { setShowModalPassword((show) => !show); }, []);
     const handleMouseDownPasswordModal = useCallback((event) => { event.preventDefault(); }, []);
 
     // --- Submit Edición GENÉRICO ---
-    // MODIFICADO: Resetear página después de actualizar
+    // Incluye setPage y todas las funciones fetch/set para consistencia
     const handleSubmitEdit = useCallback(async () => {
         if (!editingItem || !editingItemType) return;
-
         let initialDataForComparison = {};
         switch (editingItemType) {
             case ENTITY_TYPES.SOLICITUD: initialDataForComparison = { estado: editingItem.estado || '' }; break;
@@ -320,247 +270,141 @@ function Administrador() {
             case ENTITY_TYPES.USUARIO: initialDataForComparison = { correo_electronico: editingItem.correo_electronico || '', rol: editingItem.rol || '', area_id: editingItem.area_id || '', password: '', deletePassword: false }; break;
             default: return;
         }
-
         let hasChanged = false;
-        for (const key in formData) {
-            if (!Object.prototype.hasOwnProperty.call(initialDataForComparison, key)) continue;
-            if (key === 'password' && formData.deletePassword === true) continue;
-            const initialValue = initialDataForComparison[key];
-            const currentValue = formData[key];
-            const comparisonInitial = key === 'area_id' ? (initialValue || '') : String(initialValue ?? '');
-            const comparisonCurrent = key === 'area_id' ? (currentValue || '') : String(currentValue ?? '');
-            if (comparisonCurrent !== comparisonInitial) { hasChanged = true; break; }
-        }
-
-        if (!hasChanged) {
-            mostrarAlertaExito("Sin cambios", "No se detectaron cambios para guardar.");
-            handleCloseEditModal(); return;
-        }
-
+        for (const key in formData) { if (!Object.prototype.hasOwnProperty.call(initialDataForComparison, key)) continue; if (key === 'password' && formData.deletePassword === true) continue; const initialValue = initialDataForComparison[key]; const currentValue = formData[key]; const comparisonInitial = key === 'area_id' ? (initialValue || '') : String(initialValue ?? ''); const comparisonCurrent = key === 'area_id' ? (currentValue || '') : String(currentValue ?? ''); if (comparisonCurrent !== comparisonInitial) { hasChanged = true; break; } }
+        if (!hasChanged) { mostrarAlertaExito("Sin cambios", "No se detectaron cambios para guardar."); handleCloseEditModal(); return; }
         setIsSubmitting(true);
-        let apiUrl = ''; let itemId = null; let payload = {};
-        let fetchFnAfterUpdate = null; let setDataFnAfterUpdate = null;
-        let successMessage = ''; let idField = ''; const httpMethod = 'put';
-
+        let apiUrl = ''; let itemId = null; let payload = {}; let fetchFnAfterUpdate = null; let setDataFnAfterUpdate = null; let successMessage = ''; let idField = ''; const httpMethod = 'put';
         try {
             switch (editingItemType) {
-                case ENTITY_TYPES.SOLICITUD:
-                    idField='id_solicitud'; itemId=editingItem[idField]; apiUrl=`/api/solicitudes/estado/${itemId}`; payload={estado: formData.estado};
-                    fetchFnAfterUpdate=fetchSolicitudes; setDataFnAfterUpdate=setSolicitudes; successMessage='Estado de solicitud actualizado.'; break;
-                case ENTITY_TYPES.AREA:
-                    idField='id_area'; itemId=editingItem[idField]; apiUrl=`/api/areas/${itemId}`; payload={nombre_area: formData.nombre_area};
-                    fetchFnAfterUpdate=fetchAreas; setDataFnAfterUpdate=setAreas; successMessage='Área actualizada.'; break;
-                case ENTITY_TYPES.TIPO_SOLICITUD:
-                    idField='id_tipo'; itemId=editingItem[idField]; apiUrl=`/api/tipos_solicitudes/${itemId}`; payload={nombre_tipo: formData.nombre_tipo, area_id: formData.area_id || null, descripcion: formData.descripcion || ''};
-                    fetchFnAfterUpdate=fetchTiposSolicitudesAdmin; setDataFnAfterUpdate=setTiposSolicitudesAdmin; successMessage='Tipo de solicitud actualizado.'; break;
-                case ENTITY_TYPES.USUARIO:
-                    idField = 'RUT'; itemId = editingItem[idField]; if (!itemId) throw new Error("RUT de usuario no encontrado.");
-                    apiUrl = `/api/usuarios/${encodeURIComponent(itemId)}`;
-                    payload = { correo_electronico: formData.correo_electronico, rol: formData.rol, area_id: formData.area_id || null };
-                    if (formData.deletePassword === true) { payload.deletePassword = true; }
-                    else if (formData.password?.trim()) { payload.password = formData.password; }
-                    fetchFnAfterUpdate = fetchUsuarios; setDataFnAfterUpdate = setUsuarios; successMessage = 'Usuario actualizado.';
-                    break;
+                case ENTITY_TYPES.SOLICITUD: idField='id_solicitud'; itemId=editingItem[idField]; apiUrl=`/api/solicitudes/estado/${itemId}`; payload={estado: formData.estado}; fetchFnAfterUpdate=fetchSolicitudes; setDataFnAfterUpdate=setSolicitudes; successMessage='Estado de solicitud actualizado.'; break;
+                case ENTITY_TYPES.AREA: idField='id_area'; itemId=editingItem[idField]; apiUrl=`/api/areas/${itemId}`; payload={nombre_area: formData.nombre_area}; fetchFnAfterUpdate=fetchAreas; setDataFnAfterUpdate=setAreas; successMessage='Área actualizada.'; break;
+                case ENTITY_TYPES.TIPO_SOLICITUD: idField='id_tipo'; itemId=editingItem[idField]; apiUrl=`/api/tipos_solicitudes/${itemId}`; payload={nombre_tipo: formData.nombre_tipo, area_id: formData.area_id || null, descripcion: formData.descripcion || ''}; fetchFnAfterUpdate=fetchTiposSolicitudesAdmin; setDataFnAfterUpdate=setTiposSolicitudesAdmin; successMessage='Tipo de solicitud actualizado.'; break;
+                case ENTITY_TYPES.USUARIO: idField = 'RUT'; itemId = editingItem[idField]; if (!itemId) throw new Error("RUT de usuario no encontrado."); apiUrl = `/api/usuarios/${encodeURIComponent(itemId)}`; payload = { correo_electronico: formData.correo_electronico, rol: formData.rol, area_id: formData.area_id || null }; if (formData.deletePassword === true) { payload.deletePassword = true; } else if (formData.password?.trim()) { payload.password = formData.password; } fetchFnAfterUpdate = fetchUsuarios; setDataFnAfterUpdate = setUsuarios; successMessage = 'Usuario actualizado.'; break;
                 default: throw new Error(`Tipo desconocido: ${editingItemType}`);
             }
-
-            const loggedPayload = editingItemType === ENTITY_TYPES.USUARIO ? { ...payload, password: payload.password ? '***' : undefined } : payload;
-            console.log(`[handleSubmitEdit] Sending ${httpMethod.toUpperCase()} to ${apiUrl} with payload:`, loggedPayload);
-
+            const loggedPayload = editingItemType === ENTITY_TYPES.USUARIO ? { ...payload, password: payload.password ? '***' : undefined } : payload; console.log(`[handleSubmitEdit] Sending ${httpMethod.toUpperCase()} to ${apiUrl} with payload:`, loggedPayload);
             await axios[httpMethod](apiUrl, payload);
-
             const currentSectionMatches = sectionIdentifierFromType(editingItemType) === currentSection;
-
             if (currentSectionMatches && fetchFnAfterUpdate && setDataFnAfterUpdate) {
                 try {
                     const updatedData = await fetchFnAfterUpdate();
-                    if (currentSection === sectionIdentifierFromType(editingItemType)) { // Re-check
-                         setDataFnAfterUpdate(updatedData);
-                         setPage(0); // NUEVO: Resetear página después de actualizar datos
-                         await mostrarAlertaExito('Actualizado', `${successMessage} La tabla se ha recargado.`);
-                    } else { await mostrarAlertaExito('Actualizado', successMessage); }
-                } catch (refetchErr) {
-                    console.error("[handleSubmitEdit] Error during refetch:", refetchErr);
-                    await mostrarAlertaError('Actualización Parcial', `${successMessage} pero la tabla no pudo recargarse.`);
-                }
+                    if (sectionIdentifierFromType(editingItemType) === currentSection) { setDataFnAfterUpdate(updatedData); setPage(0); await mostrarAlertaExito('Actualizado', `${successMessage} La tabla se ha recargado.`); }
+                    else { await mostrarAlertaExito('Actualizado', successMessage); }
+                } catch (refetchErr) { console.error("[handleSubmitEdit] Error during refetch:", refetchErr); await mostrarAlertaError('Actualización Parcial', `${successMessage} pero la tabla no pudo recargarse.`); }
             } else { await mostrarAlertaExito('Actualizado', successMessage); }
-
             handleCloseEditModal();
+        } catch (err) { console.error(`[handleSubmitEdit] Error for ${editingItemType} ${itemId || 'unknown'}:`, err); const errorMsg = err.response?.data?.message || err.message || `No se pudo actualizar.`; await mostrarAlertaError('Error al Actualizar', errorMsg); }
+        finally { setIsSubmitting(false); }
+    }, [ editingItem, editingItemType, formData, currentSection, handleCloseEditModal, setPage, fetchSolicitudes, setSolicitudes, fetchAreas, setAreas, fetchTiposSolicitudesAdmin, setTiposSolicitudesAdmin, fetchUsuarios, setUsuarios ]);
 
-        } catch (err) {
-            console.error(`[handleSubmitEdit] Error for ${editingItemType} ${itemId || 'unknown'}:`, err);
-            const errorMsg = err.response?.data?.message || err.message || `No se pudo actualizar.`;
-            await mostrarAlertaError('Error al Actualizar', errorMsg);
-        } finally {
-            setIsSubmitting(false);
-        }
-    // MODIFICADO: Añadir setPage a las dependencias si se usa directamente dentro
-    }, [
-        editingItem, editingItemType, formData, currentSection, handleCloseEditModal,
-        fetchSolicitudes, setSolicitudes, fetchAreas, setAreas, fetchTiposSolicitudesAdmin, setTiposSolicitudesAdmin, fetchUsuarios, setUsuarios, setPage // Añadir setPage
-    ]);
-
-    // --- NUEVO: Handlers Modal Agregar ---
-    const handleOpenAddModal = useCallback(() => {
-        if (!currentSection || currentSection === 'solicitudes') return;
-        let initialAddFormData = {};
-        switch (currentSection) {
-            case 'areas': initialAddFormData = { nombre_area: '' }; break;
-            case 'tipos-solicitudes': initialAddFormData = { nombre_tipo: '', descripcion: '', area_id: '' }; break;
-            case 'usuarios': initialAddFormData = { rut: '', nombre: '', apellido: '', correo_electronico: '', password: '', rol: '', area_id: '' }; break;
-            default: return;
-        }
-        setAddFormData(initialAddFormData);
-        setShowAddModalPassword(false);
-        setIsAddModalOpen(true);
-    }, [currentSection]);
-
-    const handleCloseAddModal = useCallback(() => {
-        if (!isAdding) {
-            setIsAddModalOpen(false);
-            setTimeout(() => { setAddFormData({}); setShowAddModalPassword(false); }, 300);
-        }
-    }, [isAdding]);
-
-    const handleAddFormChange = useCallback((event) => {
-        const { name, value } = event.target;
-        setAddFormData(prev => ({ ...prev, [name]: value }));
-    }, []);
-
+    // --- Handlers Modal Agregar ---
+    const handleOpenAddModal = useCallback(() => { if (!currentSection || currentSection === 'solicitudes') return; let initialAddFormData = {}; switch (currentSection) { case 'areas': initialAddFormData = { nombre_area: '' }; break; case 'tipos-solicitudes': initialAddFormData = { nombre_tipo: '', descripcion: '', area_id: '' }; break; case 'usuarios': initialAddFormData = { rut: '', nombre: '', apellido: '', correo_electronico: '', password: '', rol: '', area_id: '' }; break; default: return; } setAddFormData(initialAddFormData); setShowAddModalPassword(false); setIsAddModalOpen(true); }, [currentSection]);
+    const handleCloseAddModal = useCallback(() => { if (!isAdding) { setIsAddModalOpen(false); setTimeout(() => { setAddFormData({}); setShowAddModalPassword(false); }, 300); } }, [isAdding]);
+    const handleAddFormChange = useCallback((event) => { const { name, value } = event.target; setAddFormData(prev => ({ ...prev, [name]: value })); }, []);
     const handleClickShowPasswordAddModal = useCallback(() => { setShowAddModalPassword((show) => !show); }, []);
     const handleMouseDownPasswordAddModal = useCallback((event) => { event.preventDefault(); }, []);
 
     // --- Submit Agregar GENÉRICO ---
-    // MODIFICADO: Resetear página después de agregar
+    // Incluye setPage y todas las funciones fetch/set para consistencia
     const handleSubmitAdd = useCallback(async () => {
-        if (!currentSection || !addFormData) return;
-
-        let isValid = true; let errorMessage = '';
-        if (currentSection === 'areas') {
-            if (!addFormData.nombre_area?.trim()) { isValid = false; errorMessage = 'El nombre del área es obligatorio.'; }
-        } else if (currentSection === 'tipos-solicitudes') {
-            if (!addFormData.nombre_tipo?.trim()) { isValid = false; errorMessage = 'El nombre del tipo es obligatorio.'; }
-            else if (!addFormData.descripcion?.trim()) { isValid = false; errorMessage = 'La descripción es obligatoria.'; }
-            else if (!addFormData.area_id) { isValid = false; errorMessage = 'Debe seleccionar un área asociada.'; }
-        } else if (currentSection === 'usuarios') {
-            if (!addFormData.rut?.trim()) { isValid = false; errorMessage = 'El RUT es obligatorio.'; }
-            else if (!/^[0-9]+-[0-9kK]$/.test(addFormData.rut)) { isValid = false; errorMessage = 'Formato de RUT inválido. Use: 12345678-9';}
-            else if (!addFormData.nombre?.trim()) { isValid = false; errorMessage = 'El Nombre es obligatorio.'; }
-            else if (!addFormData.apellido?.trim()) { isValid = false; errorMessage = 'El Apellido es obligatorio.'; }
-            else if (addFormData.rol && !ROLES_PERMITIDOS.includes(addFormData.rol)) { isValid = false; errorMessage = `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}.`; }
-        }
-
-        if (!isValid) {
-            await (mostrarAlertaAdvertencia || mostrarAlertaError)('Datos incompletos o inválidos', errorMessage);
-            return;
-        }
-
-        setIsAdding(true);
-        let apiUrl = ''; let payload = { ...addFormData };
-        let fetchFnAfterAdd = null; let setDataFnAfterAdd = null;
-        let successMessageSingular = '';
-
+        if (!currentSection || !addFormData) return; let isValid = true; let errorMessage = ''; if (currentSection === 'areas') { if (!addFormData.nombre_area?.trim()) { isValid = false; errorMessage = 'El nombre del área es obligatorio.'; } } else if (currentSection === 'tipos-solicitudes') { if (!addFormData.nombre_tipo?.trim()) { isValid = false; errorMessage = 'El nombre del tipo es obligatorio.'; } else if (!addFormData.descripcion?.trim()) { isValid = false; errorMessage = 'La descripción es obligatoria.'; } else if (!addFormData.area_id) { isValid = false; errorMessage = 'Debe seleccionar un área asociada.'; } } else if (currentSection === 'usuarios') { if (!addFormData.rut?.trim()) { isValid = false; errorMessage = 'El RUT es obligatorio.'; } else if (!/^[0-9]+-[0-9kK]$/.test(addFormData.rut)) { isValid = false; errorMessage = 'Formato de RUT inválido. Use: 12345678-9';} else if (!addFormData.nombre?.trim()) { isValid = false; errorMessage = 'El Nombre es obligatorio.'; } else if (!addFormData.apellido?.trim()) { isValid = false; errorMessage = 'El Apellido es obligatorio.'; } else if (addFormData.rol && !ROLES_PERMITIDOS.includes(addFormData.rol)) { isValid = false; errorMessage = `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}.`; } }
+        if (!isValid) { await (mostrarAlertaAdvertencia || mostrarAlertaError)('Datos incompletos o inválidos', errorMessage); return; }
+        setIsAdding(true); let apiUrl = ''; let payload = { ...addFormData }; let fetchFnAfterAdd = null; let setDataFnAfterAdd = null; let successMessageSingular = '';
         try {
             switch (currentSection) {
-                case 'areas':
-                    apiUrl = '/api/areas'; payload = { nombre_area: payload.nombre_area };
-                    fetchFnAfterAdd = fetchAreas; setDataFnAfterAdd = setAreas; successMessageSingular = 'Área'; break;
-                case 'tipos-solicitudes':
-                    apiUrl = '/api/tipos_solicitudes'; payload = { nombre_tipo: payload.nombre_tipo, descripcion: payload.descripcion, area_id: parseInt(payload.area_id, 10) };
-                    fetchFnAfterAdd = fetchTiposSolicitudesAdmin; setDataFnAfterAdd = setTiposSolicitudesAdmin; successMessageSingular = 'Tipo de solicitud'; break;
-                case 'usuarios':
-                    apiUrl = '/api/usuarios'; payload = { rut: payload.rut, nombre: payload.nombre, apellido: payload.apellido, correo_electronico: payload.correo_electronico || null, rol: payload.rol || 'Vecino', area_id: payload.area_id ? parseInt(payload.area_id, 10) : null, ...(payload.password?.trim() && { password: payload.password }) };
-                    fetchFnAfterAdd = fetchUsuarios; setDataFnAfterAdd = setUsuarios; successMessageSingular = 'Usuario'; break;
+                case 'areas': apiUrl = '/api/areas'; payload = { nombre_area: payload.nombre_area }; fetchFnAfterAdd = fetchAreas; setDataFnAfterAdd = setAreas; successMessageSingular = 'Área'; break;
+                case 'tipos-solicitudes': apiUrl = '/api/tipos_solicitudes'; payload = { nombre_tipo: payload.nombre_tipo, descripcion: payload.descripcion, area_id: parseInt(payload.area_id, 10) }; fetchFnAfterAdd = fetchTiposSolicitudesAdmin; setDataFnAfterAdd = setTiposSolicitudesAdmin; successMessageSingular = 'Tipo de solicitud'; break;
+                case 'usuarios': apiUrl = '/api/usuarios'; payload = { rut: payload.rut, nombre: payload.nombre, apellido: payload.apellido, correo_electronico: payload.correo_electronico || null, rol: payload.rol || 'Vecino', area_id: payload.area_id ? parseInt(payload.area_id, 10) : null, ...(payload.password?.trim() && { password: payload.password }) }; fetchFnAfterAdd = fetchUsuarios; setDataFnAfterAdd = setUsuarios; successMessageSingular = 'Usuario'; break;
                 default: throw new Error(`Tipo desconocido: ${currentSection}`);
             }
-
-            const loggedPayload = currentSection === 'usuarios' ? { ...payload, password: payload.password ? '***' : undefined } : payload;
-            console.log(`[handleSubmitAdd] Sending POST to ${apiUrl} with payload:`, loggedPayload);
-
+            const loggedPayload = currentSection === 'usuarios' ? { ...payload, password: payload.password ? '***' : undefined } : payload; console.log(`[handleSubmitAdd] Sending POST to ${apiUrl} with payload:`, loggedPayload);
             await axios.post(apiUrl, payload);
-
             if (fetchFnAfterAdd && setDataFnAfterAdd) {
                 try {
                     const updatedData = await fetchFnAfterAdd();
-                    if (currentSection === sectionIdentifierFromType(currentSection)) { // Re-check
-                         setDataFnAfterAdd(updatedData);
-                         setPage(0); // NUEVO: Resetear página después de agregar
-                         await mostrarAlertaExito('Creado Exitosamente', `${successMessageSingular} agregado/a. La tabla se ha recargado.`);
-                    } else { await mostrarAlertaExito('Creado Exitosamente', `${successMessageSingular} agregado/a.`); }
-                } catch (refetchErr) {
-                    console.error("[handleSubmitAdd] Error during refetch:", refetchErr);
-                    await mostrarAlertaError('Creación Parcial', `${successMessageSingular} agregado/a, pero la tabla no pudo recargarse.`);
-                }
+                    if (sectionIdentifierFromType(currentSection) === currentSection) { setDataFnAfterAdd(updatedData); setPage(0); await mostrarAlertaExito('Creado Exitosamente', `${successMessageSingular} agregado/a. La tabla se ha recargado.`); }
+                    else { await mostrarAlertaExito('Creado Exitosamente', `${successMessageSingular} agregado/a.`); }
+                } catch (refetchErr) { console.error("[handleSubmitAdd] Error during refetch:", refetchErr); await mostrarAlertaError('Creación Parcial', `${successMessageSingular} agregado/a, pero la tabla no pudo recargarse.`); }
             } else { await mostrarAlertaExito('Creado Exitosamente', `${successMessageSingular} agregado/a.`); }
-
             handleCloseAddModal();
+        } catch (err) { console.error(`[handleSubmitAdd] Error for ${currentSection}:`, err); const errorMsg = err.response?.data?.message || err.message || `No se pudo agregar ${successMessageSingular}.`; await mostrarAlertaError('Error al Agregar', errorMsg); }
+        finally { setIsAdding(false); }
+    }, [currentSection, addFormData, handleCloseAddModal, setPage, fetchAreas, setAreas, fetchTiposSolicitudesAdmin, setTiposSolicitudesAdmin, fetchUsuarios, setUsuarios]); // Dependencias correctas
 
+    // --- Función para ejecutar la petición DELETE ---
+    // Incluye setPage y todas las funciones fetch/set para consistencia
+    const handleDeleteItem = useCallback(async (itemId, itemType) => {
+        if (!itemId || !itemType) return;
+        setIsDeleting(true);
+        let apiUrl = ''; let fetchFnAfterDelete = null; let setDataFnAfterDelete = null; let successMessageSingular = '';
+        try {
+            switch (itemType) {
+                case ENTITY_TYPES.AREA: apiUrl = `/api/areas/${itemId}`; fetchFnAfterDelete = fetchAreas; setDataFnAfterDelete = setAreas; successMessageSingular = 'Área'; break;
+                case ENTITY_TYPES.TIPO_SOLICITUD: apiUrl = `/api/tipos_solicitudes/${itemId}`; fetchFnAfterDelete = fetchTiposSolicitudesAdmin; setDataFnAfterDelete = setTiposSolicitudesAdmin; successMessageSingular = 'Tipo de solicitud'; break;
+                case ENTITY_TYPES.USUARIO: apiUrl = `/api/usuarios/${encodeURIComponent(itemId)}`; fetchFnAfterDelete = fetchUsuarios; setDataFnAfterDelete = setUsuarios; successMessageSingular = 'Usuario'; break;
+                default: throw new Error(`Tipo de entidad desconocido para eliminar: ${itemType}`);
+            }
+            console.log(`[handleDeleteItem] Sending DELETE to ${apiUrl}`);
+            await axios.delete(apiUrl);
+            console.log(`[handleDeleteItem] DELETE successful for ${itemType} ${itemId}`);
+            if (fetchFnAfterDelete && setDataFnAfterDelete) {
+                try {
+                    const updatedData = await fetchFnAfterDelete();
+                    // Re-check section before setting state and resetting page
+                    if (sectionIdentifierFromType(itemType) === currentSection) {
+                        setDataFnAfterDelete(updatedData);
+                        setPage(0); // Reset page after data update
+                        console.log(`[handleDeleteItem] Refetch successful, state updated.`);
+                        await mostrarAlertaExito('Eliminado', `${successMessageSingular} eliminado/a correctamente. La tabla se ha recargado.`);
+                    } else {
+                        await mostrarAlertaExito('Eliminado', `${successMessageSingular} eliminado/a correctamente.`); // Section changed mid-operation
+                    }
+                } catch (refetchErr) { console.error("[handleDeleteItem] Error during refetch:", refetchErr); await mostrarAlertaError('Eliminación Parcial', `${successMessageSingular} eliminado/a, pero la tabla no pudo recargarse automáticamente.`); }
+            } else { await mostrarAlertaExito('Eliminado', `${successMessageSingular} eliminado/a correctamente.`); }
         } catch (err) {
-            console.error(`[handleSubmitAdd] Error for ${currentSection}:`, err);
-            const errorMsg = err.response?.data?.message || err.message || `No se pudo agregar ${successMessageSingular}.`;
-            await mostrarAlertaError('Error al Agregar', errorMsg);
-        } finally {
-            setIsAdding(false);
-        }
-    // MODIFICADO: Añadir setPage a las dependencias
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        currentSection, addFormData, handleCloseAddModal, areas,
-        fetchAreas, setAreas, fetchTiposSolicitudesAdmin, setTiposSolicitudesAdmin, fetchUsuarios, setUsuarios, setPage // Añadir setPage
-    ]);
+            console.error(`[handleDeleteItem] Error during DELETE for ${itemType} ${itemId}:`, err); let errorMsg = `No se pudo eliminar ${successMessageSingular}.`; if (err.response?.status === 409) { errorMsg = err.response.data?.message || `No se puede eliminar ${successMessageSingular} porque tiene elementos asociados.`; } else { errorMsg = err.response?.data?.message || err.message || errorMsg; } await mostrarAlertaError('Error al Eliminar', errorMsg);
+        } finally { setIsDeleting(false); }
+    }, [currentSection, setPage, fetchAreas, setAreas, fetchTiposSolicitudesAdmin, setTiposSolicitudesAdmin, fetchUsuarios, setUsuarios]); // Dependencias correctas
 
-    const sectionIdentifierFromType = (typeOrSection) => {
-        const cleanType = typeOrSection?.replace(/-/g, '_');
-        switch (cleanType) {
-            case ENTITY_TYPES.AREA: case 'areas': return 'areas';
-            case ENTITY_TYPES.TIPO_SOLICITUD: case 'tipos_solicitudes': return 'tipos-solicitudes';
-            case ENTITY_TYPES.USUARIO: case 'usuarios': return 'usuarios';
-            case ENTITY_TYPES.SOLICITUD: case 'solicitudes': return 'solicitudes';
-            default: return null;
+    // --- Handler para confirmar eliminación ---
+    const handleOpenDeleteConfirmation = useCallback((item, type) => {
+        if (!item || !type || type === ENTITY_TYPES.SOLICITUD) return;
+        let itemName = ''; let itemId = '';
+        switch(type) {
+            case ENTITY_TYPES.AREA: itemName = item.nombre_area || `Área ID ${item.id_area}`; itemId = item.id_area; break;
+            case ENTITY_TYPES.TIPO_SOLICITUD: itemName = item.nombre_tipo || `Tipo ID ${item.id_tipo}`; itemId = item.id_tipo; break;
+            case ENTITY_TYPES.USUARIO: itemName = `${item.nombre || ''} ${item.apellido || ''} (RUT: ${item.RUT || 'N/A'})`.trim(); itemId = item.RUT; break;
+            default: itemName = 'este elemento'; itemId = 'desconocido';
         }
-    };
+        Swal.fire({ title: '¿Estás seguro?', text: `Deseas eliminar "${itemName}"? ¡Esta acción no se puede deshacer!`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, ¡eliminar!', cancelButtonText: 'Cancelar' })
+            .then((result) => { if (result.isConfirmed) { handleDeleteItem(itemId, type); } });
+    }, [handleDeleteItem]); // Depende de handleDeleteItem
 
     // --- Contenido Sidebar ---
-    const drawerContent = useMemo(() => (
-        <SidebarAdmin currentSection={currentSection} onSelectSection={handleSelectSection} onCloseDrawer={handleDrawerClose} />
-    ), [currentSection, handleSelectSection, handleDrawerClose]);
+    const drawerContent = useMemo(() => ( <SidebarAdmin currentSection={currentSection} onSelectSection={handleSelectSection} onCloseDrawer={handleDrawerClose} /> ), [currentSection, handleSelectSection, handleDrawerClose]);
 
     // --- Estilos Celdas ---
     const headerCellStyle = useMemo(() => ({ fontWeight: 'bold', bgcolor: 'primary.main', color: 'primary.contrastText', py: { xs: 0.8, sm: 1 }, px: { xs: 1, sm: 1.5 }, whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }), []);
     const bodyCellStyle = useMemo(() => ({ py: { xs: 0.75, sm: 1 }, px: { xs: 1, sm: 1.5 }, fontSize: { xs: '0.75rem', sm: '0.875rem' }, verticalAlign: 'middle' }), []);
 
     // --- Título Dinámico ---
-    const getSectionTitle = useCallback(() => { /* ... sin cambios ... */
-        if (!currentSection) return 'Portal Administración';
-        switch (currentSection) {
-            case 'solicitudes': return 'Gestionar Solicitudes';
-            case 'areas': return 'Gestionar Áreas';
-            case 'tipos-solicitudes': return 'Gestionar Tipos de Solicitud';
-            case 'usuarios': return 'Gestionar Usuarios';
-            default: return 'Administración';
-        }
-    }, [currentSection]);
+    const getSectionTitle = useCallback(() => { if (!currentSection) return 'Portal Administración'; switch (currentSection) { case 'solicitudes': return 'Gestionar Solicitudes'; case 'areas': return 'Gestionar Áreas'; case 'tipos-solicitudes': return 'Gestionar Tipos de Solicitud'; case 'usuarios': return 'Gestionar Usuarios'; default: return 'Administración'; } }, [currentSection]);
 
     // --- ColSpan Dinámico ---
-    const getCurrentColSpan = useCallback(() => { /* ... sin cambios ... */
+    const getCurrentColSpan = useCallback(() => {
         switch (currentSection) {
-            case 'solicitudes': return 6;
+            case 'solicitudes': return 7; // ID, RUT, Tipo, Fecha, Estado, Ruta Carpeta, Acciones
             case 'areas': return 3;
-            case 'tipos-solicitudes': return 4;
+            case 'tipos-solicitudes': return 5; // ID, Nombre, Descripción, Área, Acciones
             case 'usuarios': return 7;
             default: return 1;
         }
     }, [currentSection]);
 
-    // --- NUEVO: Handlers para Paginación ---
-    const handleChangePage = useCallback((event, newPage) => {
-        setPage(newPage);
-    }, []);
-
-    const handleChangeRowsPerPage = useCallback((event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0); // Resetear a la primera página cuando cambian las filas por página
-    }, []);
+    // --- Handlers para Paginación ---
+    const handleChangePage = useCallback((event, newPage) => { setPage(newPage); }, []);
+    const handleChangeRowsPerPage = useCallback((event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); }, []);
 
     // --- Renderizado ---
     return (
@@ -585,14 +429,8 @@ function Administrador() {
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 2, flexShrink: 0 }}>
                                 <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} component="h1" sx={{ fontWeight: "bold", order: 1, mr: 'auto' }}> {getSectionTitle()} </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'nowrap', order: 2, ml: 2 }}>
-                                    {!loading && !error && currentSection && (
-                                        <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '150px', sm: (currentSection !== 'solicitudes' ? 180: 250), md: (currentSection !== 'solicitudes' ? 230: 300) } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" color="action" /></InputAdornment>), sx: { borderRadius: 2 } }} />
-                                    )}
-                                    {!loading && !error && currentSection && currentSection !== 'solicitudes' && (
-                                        <Tooltip title={`Agregar Nuevo/a ${currentSection === 'areas' ? 'Área' : currentSection === 'tipos-solicitudes' ? 'Tipo de Solicitud' : 'Usuario'}`}>
-                                            <span> <Button variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={handleOpenAddModal} disabled={isAdding || isSubmitting} sx={{ whiteSpace: 'nowrap', height: '40px' }} > Agregar </Button> </span>
-                                        </Tooltip>
-                                    )}
+                                    {!loading && !error && currentSection && ( <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '150px', sm: (currentSection !== 'solicitudes' ? 180: 250), md: (currentSection !== 'solicitudes' ? 230: 300) } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" color="action" /></InputAdornment>), sx: { borderRadius: 2 } }} /> )}
+                                    {!loading && !error && currentSection && currentSection !== 'solicitudes' && ( <Tooltip title={`Agregar Nuevo/a ${currentSection === 'areas' ? 'Área' : currentSection === 'tipos-solicitudes' ? 'Tipo de Solicitud' : 'Usuario'}`}> <span> <Button variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={handleOpenAddModal} disabled={isAdding || isSubmitting || isDeleting} sx={{ whiteSpace: 'nowrap', height: '40px' }} > Agregar </Button> </span> </Tooltip> )}
                                 </Box>
                             </Box>
 
@@ -604,71 +442,49 @@ function Administrador() {
                              {/* Contenedor Tabla y Paginación */}
                             {!loading && !error && currentSection && (
                                 <Fade in={true} timeout={300} style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                                    {/* Envolver TableContainer y TablePagination juntos si se desea un borde común */}
                                     <Paper sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: `1px solid ${currentTheme.palette.divider}`, borderRadius: 1.5, width: '100%', bgcolor: 'background.paper' }}>
-                                        <TableContainer sx={{ flexGrow: 1, overflow: 'auto', /* Quitar borde y sombra si Paper los maneja */ boxShadow: 0, border: 0 }}>
+                                        <TableContainer sx={{ flexGrow: 1, overflow: 'auto', boxShadow: 0, border: 0 }}>
                                             <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
                                                 {/* Cabeceras Dinámicas */}
-                                                {currentSection === 'solicitudes' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>ID</TableCell> <TableCell sx={headerCellStyle}>RUT Vecino</TableCell> <TableCell sx={headerCellStyle}>Tipo</TableCell> <TableCell sx={headerCellStyle}>Fecha</TableCell> <TableCell sx={headerCellStyle}>Estado</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
+                                                {currentSection === 'solicitudes' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>ID</TableCell> <TableCell sx={headerCellStyle}>RUT Vecino</TableCell> <TableCell sx={headerCellStyle}>Tipo</TableCell> <TableCell sx={headerCellStyle}>Fecha</TableCell> <TableCell sx={headerCellStyle}>Estado</TableCell> <TableCell sx={headerCellStyle}>Ruta Carpeta</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
                                                 {currentSection === 'areas' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>ID</TableCell> <TableCell sx={headerCellStyle}>Nombre Área</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
-                                                {currentSection === 'tipos-solicitudes' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>ID</TableCell> <TableCell sx={headerCellStyle}>Nombre Tipo</TableCell> <TableCell sx={headerCellStyle}>Área</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
-                                                {currentSection === 'usuarios' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>RUT</TableCell> <TableCell sx={headerCellStyle}>Nombre</TableCell> <TableCell sx={headerCellStyle}>Apellido</TableCell> <TableCell sx={headerCellStyle}>Email</TableCell> <TableCell sx={headerCellStyle}>Rol</TableCell> <TableCell sx={headerCellStyle}>Área</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
+                                                {currentSection === 'tipos-solicitudes' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>ID</TableCell> <TableCell sx={headerCellStyle}>Nombre Tipo</TableCell> <TableCell sx={headerCellStyle}>Descripción</TableCell> <TableCell sx={headerCellStyle}>Área</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
+                                                {currentSection === 'usuarios' && ( <TableHead> <TableRow> <TableCell sx={headerCellStyle}>RUT</TableCell> <TableCell sx={headerCellStyle}>Nombre</TableCell> <TableCell sx={headerCellStyle}>Apellido</TableCell> <TableCell sx={headerCellStyle}>Email</TableCell> <TableCell sx={headerCellStyle}>Rol</TableCell> {/* COLUMNA ROL RESTAURADA */} <TableCell sx={headerCellStyle}>Área</TableCell> <TableCell sx={{ ...headerCellStyle, textAlign: 'right' }}>Acciones</TableCell> </TableRow> </TableHead> )}
 
-                                                {/* Cuerpo de Tabla Dinámico CON PAGINACIÓN */}
+                                                {/* Cuerpo de Tabla Dinámico */}
                                                 <TableBody>
-                                                    {/* // MODIFICADO: Aplicar slice para paginación */}
-                                                    {(rowsPerPage > 0
-                                                        ? filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                                        : filteredData // Si rowsPerPage es -1 (All), no cortar
-                                                    ).map((item) => {
-                                                        // Usar 'item' en lugar de 'sol', 'area', 'tipo', 'user' para generalizar
-                                                        // Renderizar fila según currentSection
+                                                    {(rowsPerPage > 0 ? filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) : filteredData ).map((item) => {
+                                                        const commonProps = { sx: bodyCellStyle };
+                                                        const actionsCellStyle = { ...bodyCellStyle, textAlign: 'right', whiteSpace: 'nowrap' };
+                                                        let entityTypeForActions = null;
+                                                        if (currentSection === 'areas') entityTypeForActions = ENTITY_TYPES.AREA;
+                                                        else if (currentSection === 'tipos-solicitudes') entityTypeForActions = ENTITY_TYPES.TIPO_SOLICITUD;
+                                                        else if (currentSection === 'usuarios') entityTypeForActions = ENTITY_TYPES.USUARIO;
+                                                        else if (currentSection === 'solicitudes') entityTypeForActions = ENTITY_TYPES.SOLICITUD;
+                                                        const editButton = ( <Tooltip title={`Editar ${sectionIdentifierFromType(currentSection)?.slice(0,-1) || 'elemento'}`}> <span> <IconButton size="small" onClick={() => handleOpenEditModal(item, entityTypeForActions)} color="primary" disabled={isSubmitting || isAdding || isDeleting}> <EditIcon fontSize="small"/> </IconButton> </span> </Tooltip> );
+                                                        const deleteButton = currentSection !== 'solicitudes' && entityTypeForActions ? ( <Tooltip title={`Eliminar ${sectionIdentifierFromType(currentSection)?.slice(0,-1) || 'elemento'}`}> <span> <IconButton size="small" onClick={() => handleOpenDeleteConfirmation(item, entityTypeForActions)} color="error" disabled={isSubmitting || isAdding || isDeleting}> <DeleteIcon fontSize="small"/> </IconButton> </span> </Tooltip> ) : null;
+
                                                         if (currentSection === 'solicitudes') {
-                                                            return ( <TableRow hover key={item.id_solicitud} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell sx={bodyCellStyle}>{item.id_formateado}</TableCell> <TableCell sx={bodyCellStyle}>{item.RUT_ciudadano}</TableCell> <TableCell sx={bodyCellStyle}>{item.nombre_tipo}</TableCell> <TableCell sx={bodyCellStyle}>{item.fecha_hora_envio ? new Date(item.fecha_hora_envio).toLocaleString('es-CL') : '-'}</TableCell> <TableCell sx={bodyCellStyle}>{item.estado}</TableCell> <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}> <Tooltip title="Editar Estado Solicitud"> <IconButton size="small" onClick={() => handleOpenEditModal(item, ENTITY_TYPES.SOLICITUD)} color="primary" disabled={isSubmitting || isAdding}> <EditIcon fontSize="small"/> </IconButton> </Tooltip> </TableCell> </TableRow> );
+                                                            return ( <TableRow hover key={item.id_solicitud} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell {...commonProps}>{item.id_formateado}</TableCell> <TableCell {...commonProps}>{item.RUT_ciudadano}</TableCell> <TableCell {...commonProps}>{item.nombre_tipo}</TableCell> <TableCell {...commonProps}>{item.fecha_hora_envio ? new Date(item.fecha_hora_envio).toLocaleString('es-CL') : '-'}</TableCell> <TableCell {...commonProps}>{item.estado}</TableCell> <TableCell {...commonProps}>{item.ruta_carpeta || '-'}</TableCell> <TableCell sx={actionsCellStyle}> {editButton} </TableCell> </TableRow> );
                                                         } else if (currentSection === 'areas') {
-                                                            return ( <TableRow hover key={item.id_area} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell sx={bodyCellStyle}>{item.id_area}</TableCell> <TableCell sx={bodyCellStyle}>{item.nombre_area}</TableCell> <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}> <Tooltip title="Editar Área"> <IconButton size="small" onClick={() => handleOpenEditModal(item, ENTITY_TYPES.AREA)} color="primary" disabled={isSubmitting || isAdding}> <EditIcon fontSize="small"/> </IconButton> </Tooltip> </TableCell> </TableRow> );
+                                                            return ( <TableRow hover key={item.id_area} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell {...commonProps}>{item.id_area}</TableCell> <TableCell {...commonProps}>{item.nombre_area}</TableCell> <TableCell sx={actionsCellStyle}> {editButton} {deleteButton} </TableCell> </TableRow> );
                                                         } else if (currentSection === 'tipos-solicitudes') {
-                                                            return ( <TableRow hover key={item.id_tipo} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell sx={bodyCellStyle}>{item.id_tipo}</TableCell> <TableCell sx={bodyCellStyle}>{item.nombre_tipo}</TableCell> <TableCell sx={bodyCellStyle}>{areaMap.get(item.area_id) || item.area_id || '-'}</TableCell> <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}> <Tooltip title="Editar Tipo de Solicitud"> <IconButton size="small" onClick={() => handleOpenEditModal(item, ENTITY_TYPES.TIPO_SOLICITUD)} color="primary" disabled={isSubmitting || isAdding}> <EditIcon fontSize="small"/> </IconButton> </Tooltip> </TableCell> </TableRow> );
+                                                            return ( <TableRow hover key={item.id_tipo} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell {...commonProps}>{item.id_tipo}</TableCell> <TableCell {...commonProps}>{item.nombre_tipo}</TableCell> <TableCell {...commonProps} sx={{...commonProps.sx, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}><Tooltip title={item.descripcion || ''}><span>{item.descripcion || '-'}</span></Tooltip></TableCell> <TableCell {...commonProps}>{areaMap.get(item.area_id) || item.area_id || '-'}</TableCell> <TableCell sx={actionsCellStyle}> {editButton} {deleteButton} </TableCell> </TableRow> );
                                                         } else if (currentSection === 'usuarios') {
                                                             const userKey = item.RUT || `user-${item.id_usuario}`;
-                                                            return ( <TableRow hover key={userKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell sx={bodyCellStyle}>{item.RUT || '-'}</TableCell> <TableCell sx={bodyCellStyle}>{item.nombre || '-'}</TableCell> <TableCell sx={bodyCellStyle}>{item.apellido || '-'}</TableCell> <TableCell sx={{ ...bodyCellStyle, wordBreak: 'break-all' }}>{item.correo_electronico || '-'}</TableCell> <TableCell sx={bodyCellStyle}>{item.rol || '-'}</TableCell> <TableCell sx={bodyCellStyle}>{areaMap.get(item.area_id) || '-'}</TableCell> <TableCell sx={{ ...bodyCellStyle, textAlign: 'right' }}> <Tooltip title="Editar Usuario"> <IconButton size="small" onClick={() => handleOpenEditModal(item, ENTITY_TYPES.USUARIO)} color="primary" disabled={isSubmitting || isAdding}> <EditIcon fontSize="small"/> </IconButton> </Tooltip> </TableCell> </TableRow> );
+                                                            return ( <TableRow hover key={userKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}> <TableCell {...commonProps}>{item.RUT || '-'}</TableCell> <TableCell {...commonProps}>{item.nombre || '-'}</TableCell> <TableCell {...commonProps}>{item.apellido || '-'}</TableCell> <TableCell sx={{ ...commonProps, wordBreak: 'break-all' }}>{item.correo_electronico || '-'}</TableCell> <TableCell {...commonProps}>{item.rol || '-'}</TableCell> {/* CELDA ROL RESTAURADA */} <TableCell {...commonProps}>{areaMap.get(item.area_id) || '-'}</TableCell> <TableCell sx={actionsCellStyle}> {editButton} {deleteButton} </TableCell> </TableRow> );
                                                         }
-                                                        return null; // Caso improbable
+                                                        return null;
                                                     })}
-                                                    {/* Mostrar mensaje si no hay datos EN LA PÁGINA ACTUAL */}
-                                                    {filteredData.length === 0 && (
-                                                        <TableRow>
-                                                            <TableCell colSpan={getCurrentColSpan()} align="center" sx={{ py: 4, fontStyle: 'italic', color: 'text.secondary' }}>
-                                                                {searchTerm ? 'No se encontraron resultados para su búsqueda.' : 'No hay datos para mostrar en esta sección.'}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                     {/* // NUEVO: Placeholder para filas vacías si la última página no está llena */}
-                                                    {filteredData.length > 0 && rowsPerPage > 0 && (
-                                                        <TableRow style={{ height: (53) * Math.max(0, rowsPerPage - filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).length) }}>
-                                                            <TableCell colSpan={getCurrentColSpan()} />
-                                                        </TableRow>
-                                                    )}
+                                                    {/* Mensaje si no hay datos */}
+                                                    {filteredData.length === 0 && ( <TableRow> <TableCell colSpan={getCurrentColSpan()} align="center" sx={{ py: 4, fontStyle: 'italic', color: 'text.secondary' }}> {searchTerm ? 'No se encontraron resultados.' : 'No hay datos.'} </TableCell> </TableRow> )}
+                                                    {/* Placeholder filas vacías */}
+                                                    {filteredData.length > 0 && rowsPerPage > 0 && ( <TableRow style={{ height: (53) * Math.max(0, rowsPerPage - filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).length) }}> <TableCell colSpan={getCurrentColSpan()} /> </TableRow> )}
                                                 </TableBody>
                                             </Table>
                                         </TableContainer>
-                                        {/* --- NUEVO: Componente de Paginación --- */}
-                                        {/* Renderizar solo si hay datos para paginar */}
-                                        {filteredData.length > 0 && (
-                                            <TablePagination
-                                                rowsPerPageOptions={[5, 10, 25, { label: 'Todo', value: -1 }]} // Opciones de filas por página
-                                                component="div" // Es importante para el layout
-                                                count={filteredData.length} // Total de items FILTRADOS
-                                                rowsPerPage={rowsPerPage}
-                                                page={page} // 0-based
-                                                onPageChange={handleChangePage}
-                                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                                // Traducciones opcionales
-                                                labelRowsPerPage="Filas por página:"
-                                                labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`}
-                                                sx={{ borderTop: `1px solid ${currentTheme.palette.divider}`, flexShrink: 0 }} // Estilo y evitar que se encoja
-                                            />
-                                        )}
+                                        {/* Componente de Paginación */}
+                                        {filteredData.length > 0 && ( <TablePagination rowsPerPageOptions={[5, 10, 25, { label: 'Todo', value: -1 }]} component="div" count={filteredData.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} labelRowsPerPage="Filas por página:" labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`} sx={{ borderTop: `1px solid ${currentTheme.palette.divider}`, flexShrink: 0 }} /> )}
                                     </Paper>
                                 </Fade>
                             )}
@@ -677,12 +493,10 @@ function Administrador() {
                 </Box> {/* Fin Main */}
 
                 {/* --- Modal de Edición GENÉRICO --- */}
-                {/* (Sin cambios dentro del modal de edición) */}
-                {editingItem && ( <Dialog open={isEditModalOpen} onClose={handleCloseEditModal} maxWidth="sm" fullWidth> <DialogTitle> Editar {editingItemType === ENTITY_TYPES.SOLICITUD ? `Solicitud #${editingItem.id_formateado}` : editingItemType === ENTITY_TYPES.AREA ? `Área #${editingItem.id_area}` : editingItemType === ENTITY_TYPES.TIPO_SOLICITUD ? `Tipo Solicitud #${editingItem.id_tipo}` : editingItemType === ENTITY_TYPES.USUARIO ? `Usuario ${editingItem.RUT || editingItem.id_usuario}` : 'Elemento'} {editingItemType === ENTITY_TYPES.USUARIO && (editingItem.nombre || editingItem.apellido) && ` (${editingItem.nombre || ''} ${editingItem.apellido || ''})`.trim()} </DialogTitle> <DialogContent dividers> {/* ... (contenido igual que antes) ... */}{editingItemType === ENTITY_TYPES.SOLICITUD && ( <> <Typography variant="body2" gutterBottom> Vecino: {editingItem.RUT_ciudadano}<br/> Tipo: {editingItem.nombre_tipo} </Typography> <FormControl fullWidth margin="normal" disabled={isSubmitting}> <InputLabel id="estado-select-label">Estado</InputLabel> <Select labelId="estado-select-label" name="estado" value={formData.estado || ''} label="Estado" onChange={handleFormChange}> <MenuItem value="Pendiente">Pendiente</MenuItem><MenuItem value="Aprobada">Aprobada</MenuItem><MenuItem value="Rechazada">Rechazada</MenuItem> </Select> </FormControl> </> )} {editingItemType === ENTITY_TYPES.AREA && ( <TextField autoFocus margin="dense" name="nombre_area" label="Nombre del Área" type="text" fullWidth variant="outlined" value={formData.nombre_area || ''} onChange={handleFormChange} disabled={isSubmitting}/> )} {editingItemType === ENTITY_TYPES.TIPO_SOLICITUD && ( <> <TextField autoFocus margin="dense" name="nombre_tipo" label="Nombre del Tipo" type="text" fullWidth variant="outlined" value={formData.nombre_tipo || ''} onChange={handleFormChange} disabled={isSubmitting} sx={{ mb: 2 }}/> <TextField margin="dense" name="descripcion" label="Descripción" type="text" fullWidth multiline rows={3} variant="outlined" value={formData.descripcion || ''} onChange={handleFormChange} disabled={isSubmitting} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isSubmitting || loading} sx={{ mb: 2 }}> <InputLabel id="area-select-label">Área Asociada</InputLabel> <Select labelId="area-select-label" name="area_id" value={formData.area_id || ''} label="Área Asociada" onChange={handleFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error">Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary">No hay áreas disponibles.</Typography>} </FormControl> </> )} {editingItemType === ENTITY_TYPES.USUARIO && ( <> <TextField autoFocus margin="dense" name="correo_electronico" label="Correo Electrónico" type="email" fullWidth variant="outlined" value={formData.correo_electronico || ''} onChange={handleFormChange} disabled={isSubmitting} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isSubmitting} sx={{ mb: 2 }}> <InputLabel id="rol-select-label">Rol</InputLabel> <Select labelId="rol-select-label" name="rol" value={formData.rol || ''} label="Rol" onChange={handleFormChange}> {ROLES_PERMITIDOS.map(rol => <MenuItem key={rol} value={rol}>{rol}</MenuItem>)} </Select> </FormControl> <FormControl fullWidth margin="normal" disabled={isSubmitting || loading} sx={{ mb: 2 }}> <InputLabel id="user-area-select-label">Área Asignada (Opcional)</InputLabel> <Select labelId="user-area-select-label" name="area_id" value={formData.area_id || ''} label="Área Asignada (Opcional)" onChange={handleFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error">Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary">No hay áreas disponibles.</Typography>} </FormControl> <FormControlLabel control={ <Checkbox checked={formData.deletePassword || false} onChange={handleFormChange} name="deletePassword" disabled={isSubmitting} color="warning" /> } label="Eliminar contraseña existente" sx={{ mt: 1, display: 'block', mb: 1 }} /> <TextField margin="dense" name="password" label="Nueva Contraseña" type={showModalPassword ? 'text' : 'password'} fullWidth variant="outlined" value={formData.password || ''} onChange={handleFormChange} disabled={isSubmitting || formData.deletePassword} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPasswordModal} onMouseDown={handleMouseDownPasswordModal} edge="end" disabled={isSubmitting || formData.deletePassword} > {showModalPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} sx={{ mt: 1 }} helperText={formData.deletePassword ? "La contraseña actual será eliminada." : "Dejar en blanco para no cambiar la contraseña actual."} /> <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}> Las nuevas contraseñas se guardan de forma segura. </Typography> </> )}</DialogContent> <DialogActions sx={{p: '16px 24px'}}> <Button onClick={handleCloseEditModal} disabled={isSubmitting} color="inherit"> Cancelar </Button> <Box sx={{ position: 'relative' }}> <Button onClick={handleSubmitEdit} variant="contained" disabled={isSubmitting}> Guardar Cambios </Button> {isSubmitting && ( <CircularProgress size={24} sx={{ color: 'primary.main', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px' }}/> )} </Box> </DialogActions> </Dialog> )}
+                {editingItem && ( <Dialog open={isEditModalOpen} onClose={handleCloseEditModal} maxWidth="sm" fullWidth> <DialogTitle> Editar {editingItemType === ENTITY_TYPES.SOLICITUD ? `Solicitud #${editingItem.id_formateado}` : editingItemType === ENTITY_TYPES.AREA ? `Área #${editingItem.id_area}` : editingItemType === ENTITY_TYPES.TIPO_SOLICITUD ? `Tipo Solicitud #${editingItem.id_tipo}` : editingItemType === ENTITY_TYPES.USUARIO ? `Usuario ${editingItem.RUT || editingItem.id_usuario}` : 'Elemento'} {editingItemType === ENTITY_TYPES.USUARIO && (editingItem.nombre || editingItem.apellido) && ` (${editingItem.nombre || ''} ${editingItem.apellido || ''})`.trim()} </DialogTitle> <DialogContent dividers> {editingItemType === ENTITY_TYPES.SOLICITUD && ( <> <Typography variant="body2" gutterBottom> Vecino: {editingItem.RUT_ciudadano}<br/> Tipo: {editingItem.nombre_tipo} </Typography> <FormControl fullWidth margin="normal" disabled={isSubmitting || isDeleting}> <InputLabel id="estado-select-label">Estado</InputLabel> <Select labelId="estado-select-label" name="estado" value={formData.estado || ''} label="Estado" onChange={handleFormChange}> <MenuItem value="Pendiente">Pendiente</MenuItem><MenuItem value="Aprobada">Aprobada</MenuItem><MenuItem value="Rechazada">Rechazada</MenuItem> </Select> </FormControl> </> )} {editingItemType === ENTITY_TYPES.AREA && ( <TextField autoFocus margin="dense" name="nombre_area" label="Nombre del Área" type="text" fullWidth variant="outlined" value={formData.nombre_area || ''} onChange={handleFormChange} disabled={isSubmitting || isDeleting}/> )} {editingItemType === ENTITY_TYPES.TIPO_SOLICITUD && ( <> <TextField autoFocus margin="dense" name="nombre_tipo" label="Nombre del Tipo" type="text" fullWidth variant="outlined" value={formData.nombre_tipo || ''} onChange={handleFormChange} disabled={isSubmitting || isDeleting} sx={{ mb: 2 }}/> <TextField margin="dense" name="descripcion" label="Descripción" type="text" fullWidth multiline rows={3} variant="outlined" value={formData.descripcion || ''} onChange={handleFormChange} disabled={isSubmitting || isDeleting} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isSubmitting || loading || isDeleting} sx={{ mb: 2 }}> <InputLabel id="area-select-label">Área Asociada</InputLabel> <Select labelId="area-select-label" name="area_id" value={formData.area_id || ''} label="Área Asociada" onChange={handleFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error">Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary">No hay áreas disponibles.</Typography>} </FormControl> </> )} {editingItemType === ENTITY_TYPES.USUARIO && ( <> <TextField autoFocus margin="dense" name="correo_electronico" label="Correo Electrónico" type="email" fullWidth variant="outlined" value={formData.correo_electronico || ''} onChange={handleFormChange} disabled={isSubmitting || isDeleting} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isSubmitting || isDeleting} sx={{ mb: 2 }}> <InputLabel id="rol-select-label">Rol</InputLabel> <Select labelId="rol-select-label" name="rol" value={formData.rol || ''} label="Rol" onChange={handleFormChange}> {ROLES_PERMITIDOS.map(rol => <MenuItem key={rol} value={rol}>{rol}</MenuItem>)} </Select> </FormControl> <FormControl fullWidth margin="normal" disabled={isSubmitting || loading || isDeleting} sx={{ mb: 2 }}> <InputLabel id="user-area-select-label">Área Asignada (Opcional)</InputLabel> <Select labelId="user-area-select-label" name="area_id" value={formData.area_id || ''} label="Área Asignada (Opcional)" onChange={handleFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error">Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary">No hay áreas disponibles.</Typography>} </FormControl> <FormControlLabel control={ <Checkbox checked={formData.deletePassword || false} onChange={handleFormChange} name="deletePassword" disabled={isSubmitting || isDeleting} color="warning" /> } label="Eliminar contraseña existente" sx={{ mt: 1, display: 'block', mb: 1 }} /> <TextField margin="dense" name="password" label="Nueva Contraseña" type={showModalPassword ? 'text' : 'password'} fullWidth variant="outlined" value={formData.password || ''} onChange={handleFormChange} disabled={isSubmitting || formData.deletePassword || isDeleting} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPasswordModal} onMouseDown={handleMouseDownPasswordModal} edge="end" disabled={isSubmitting || formData.deletePassword || isDeleting} > {showModalPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} sx={{ mt: 1 }} helperText={formData.deletePassword ? "La contraseña actual será eliminada." : "Dejar en blanco para no cambiar la contraseña actual."} /> <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}> Las nuevas contraseñas se guardan de forma segura. </Typography> </> )}</DialogContent> <DialogActions sx={{p: '16px 24px'}}> <Button onClick={handleCloseEditModal} disabled={isSubmitting || isDeleting} color="inherit"> Cancelar </Button> <Box sx={{ position: 'relative' }}> <Button onClick={handleSubmitEdit} variant="contained" disabled={isSubmitting || isDeleting}> Guardar Cambios </Button> {isSubmitting && ( <CircularProgress size={24} sx={{ color: 'primary.main', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px' }}/> )} </Box> </DialogActions> </Dialog> )}
 
                 {/* --- Modal de Agregar GENÉRICO --- */}
-                {/* (Sin cambios dentro del modal de agregar) */}
-                <Dialog open={isAddModalOpen} onClose={handleCloseAddModal} maxWidth="sm" fullWidth> <DialogTitle> Agregar Nuevo/a {currentSection === 'areas' ? 'Área' : currentSection === 'tipos-solicitudes' ? 'Tipo de Solicitud' : currentSection === 'usuarios' ? 'Usuario' : ''} </DialogTitle> <DialogContent dividers> {/* ... (contenido igual que antes) ... */} {currentSection === 'areas' && ( <TextField autoFocus required margin="dense" name="nombre_area" label="Nombre del Área" type="text" fullWidth variant="outlined" value={addFormData.nombre_area || ''} onChange={handleAddFormChange} disabled={isAdding} /> )} {currentSection === 'tipos-solicitudes' && ( <> <TextField autoFocus required margin="dense" name="nombre_tipo" label="Nombre del Tipo" type="text" fullWidth variant="outlined" value={addFormData.nombre_tipo || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }} /> <TextField required margin="dense" name="descripcion" label="Descripción" type="text" fullWidth multiline rows={3} variant="outlined" value={addFormData.descripcion || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }} /> <FormControl fullWidth required margin="normal" disabled={isAdding || loading} sx={{ mb: 2 }}> <InputLabel id="add-area-select-label">Área Asociada</InputLabel> <Select labelId="add-area-select-label" name="area_id" value={addFormData.area_id || ''} label="Área Asociada *" onChange={handleAddFormChange}> <MenuItem value="" disabled><em>Seleccione un área</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error" sx={{mt:1}}>Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary" sx={{mt:1}}>No hay áreas disponibles.</Typography>} </FormControl> </> )} {currentSection === 'usuarios' && ( <> <TextField autoFocus required margin="dense" name="rut" label="RUT (ej: 12345678-9)" type="text" fullWidth variant="outlined" value={addFormData.rut || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }} error={!!addFormData.rut && !/^[0-9]+-[0-9kK]$/.test(addFormData.rut)} helperText={!!addFormData.rut && !/^[0-9]+-[0-9kK]$/.test(addFormData.rut) ? "Formato incorrecto" : ""}/> <TextField required margin="dense" name="nombre" label="Nombre" type="text" fullWidth variant="outlined" value={addFormData.nombre || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }}/> <TextField required margin="dense" name="apellido" label="Apellido" type="text" fullWidth variant="outlined" value={addFormData.apellido || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }}/> <TextField margin="dense" name="correo_electronico" label="Correo Electrónico (Opcional)" type="email" fullWidth variant="outlined" value={addFormData.correo_electronico || ''} onChange={handleAddFormChange} disabled={isAdding} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isAdding} sx={{ mb: 2 }}> <InputLabel id="add-rol-select-label">Rol (Defecto: Vecino)</InputLabel> <Select labelId="add-rol-select-label" name="rol" value={addFormData.rol || ''} label="Rol (Defecto: Vecino)" onChange={handleAddFormChange}> <MenuItem value=""><em>Vecino (Por defecto)</em></MenuItem> {ROLES_PERMITIDOS.map(rol => <MenuItem key={rol} value={rol}>{rol}</MenuItem>)} </Select> </FormControl> <FormControl fullWidth margin="normal" disabled={isAdding || loading} sx={{ mb: 2 }}> <InputLabel id="add-user-area-select-label">Área Asignada (Opcional)</InputLabel> <Select labelId="add-user-area-select-label" name="area_id" value={addFormData.area_id || ''} label="Área Asignada (Opcional)" onChange={handleAddFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error" sx={{mt:1}}>Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary" sx={{mt:1}}>No hay áreas disponibles.</Typography>} </FormControl> <TextField margin="dense" name="password" label="Contraseña (Opcional)" type={showAddModalPassword ? 'text' : 'password'} fullWidth variant="outlined" value={addFormData.password || ''} onChange={handleAddFormChange} disabled={isAdding} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPasswordAddModal} onMouseDown={handleMouseDownPasswordAddModal} edge="end" disabled={isAdding} > {showAddModalPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} sx={{ mt: 1 }} helperText="Dejar en blanco para crear usuario sin contraseña." /> <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}> Las contraseñas se guardan de forma segura (si se proporciona). </Typography> </> )} </DialogContent> <DialogActions sx={{p: '16px 24px'}}> <Button onClick={handleCloseAddModal} disabled={isAdding} color="inherit"> Cancelar </Button> <Box sx={{ position: 'relative' }}> <Button onClick={handleSubmitAdd} variant="contained" disabled={isAdding} color="primary"> Agregar </Button> {isAdding && ( <CircularProgress size={24} sx={{ color: 'primary.main', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px' }} /> )} </Box> </DialogActions> </Dialog>
+                <Dialog open={isAddModalOpen} onClose={handleCloseAddModal} maxWidth="sm" fullWidth> <DialogTitle> Agregar Nuevo/a {currentSection === 'areas' ? 'Área' : currentSection === 'tipos-solicitudes' ? 'Tipo de Solicitud' : currentSection === 'usuarios' ? 'Usuario' : ''} </DialogTitle> <DialogContent dividers> {currentSection === 'areas' && ( <TextField autoFocus required margin="dense" name="nombre_area" label="Nombre del Área" type="text" fullWidth variant="outlined" value={addFormData.nombre_area || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} /> )} {currentSection === 'tipos-solicitudes' && ( <> <TextField autoFocus required margin="dense" name="nombre_tipo" label="Nombre del Tipo" type="text" fullWidth variant="outlined" value={addFormData.nombre_tipo || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }} /> <TextField required margin="dense" name="descripcion" label="Descripción" type="text" fullWidth multiline rows={3} variant="outlined" value={addFormData.descripcion || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }} /> <FormControl fullWidth required margin="normal" disabled={isAdding || loading || isDeleting} sx={{ mb: 2 }}> <InputLabel id="add-area-select-label">Área Asociada</InputLabel> <Select labelId="add-area-select-label" name="area_id" value={addFormData.area_id || ''} label="Área Asociada *" onChange={handleAddFormChange}> <MenuItem value="" disabled><em>Seleccione un área</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error" sx={{mt:1}}>Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary" sx={{mt:1}}>No hay áreas disponibles.</Typography>} </FormControl> </> )} {currentSection === 'usuarios' && ( <> <TextField autoFocus required margin="dense" name="rut" label="RUT (ej: 12345678-9)" type="text" fullWidth variant="outlined" value={addFormData.rut || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }} error={!!addFormData.rut && !/^[0-9]+-[0-9kK]$/.test(addFormData.rut)} helperText={!!addFormData.rut && !/^[0-9]+-[0-9kK]$/.test(addFormData.rut) ? "Formato incorrecto" : ""}/> <TextField required margin="dense" name="nombre" label="Nombre" type="text" fullWidth variant="outlined" value={addFormData.nombre || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }}/> <TextField required margin="dense" name="apellido" label="Apellido" type="text" fullWidth variant="outlined" value={addFormData.apellido || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }}/> <TextField margin="dense" name="correo_electronico" label="Correo Electrónico (Opcional)" type="email" fullWidth variant="outlined" value={addFormData.correo_electronico || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} sx={{ mb: 2 }}/> <FormControl fullWidth margin="normal" disabled={isAdding || isDeleting} sx={{ mb: 2 }}> <InputLabel id="add-rol-select-label">Rol (Defecto: Vecino)</InputLabel> <Select labelId="add-rol-select-label" name="rol" value={addFormData.rol || ''} label="Rol (Defecto: Vecino)" onChange={handleAddFormChange}> <MenuItem value=""><em>Vecino (Por defecto)</em></MenuItem> {ROLES_PERMITIDOS.map(rol => <MenuItem key={rol} value={rol}>{rol}</MenuItem>)} </Select> </FormControl> <FormControl fullWidth margin="normal" disabled={isAdding || loading || isDeleting} sx={{ mb: 2 }}> <InputLabel id="add-user-area-select-label">Área Asignada (Opcional)</InputLabel> <Select labelId="add-user-area-select-label" name="area_id" value={addFormData.area_id || ''} label="Área Asignada (Opcional)" onChange={handleAddFormChange}> <MenuItem value=""><em>Ninguna</em></MenuItem> {Array.isArray(areas) && areas.map((area) => ( <MenuItem key={area.id_area} value={area.id_area}>{area.nombre_area} (ID: {area.id_area})</MenuItem> ))} </Select> {!loading && !Array.isArray(areas) && <Typography variant="caption" color="error" sx={{mt:1}}>Error al cargar áreas.</Typography>} {!loading && Array.isArray(areas) && areas.length === 0 && <Typography variant="caption" color="textSecondary" sx={{mt:1}}>No hay áreas disponibles.</Typography>} </FormControl> <TextField margin="dense" name="password" label="Contraseña (Opcional)" type={showAddModalPassword ? 'text' : 'password'} fullWidth variant="outlined" value={addFormData.password || ''} onChange={handleAddFormChange} disabled={isAdding || isDeleting} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPasswordAddModal} onMouseDown={handleMouseDownPasswordAddModal} edge="end" disabled={isAdding || isDeleting} > {showAddModalPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} sx={{ mt: 1 }} helperText="Dejar en blanco para crear usuario sin contraseña." /> <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}> Las contraseñas se guardan de forma segura (si se proporciona). </Typography> </> )} </DialogContent> <DialogActions sx={{p: '16px 24px'}}> <Button onClick={handleCloseAddModal} disabled={isAdding || isDeleting} color="inherit"> Cancelar </Button> <Box sx={{ position: 'relative' }}> <Button onClick={handleSubmitAdd} variant="contained" disabled={isAdding || isDeleting} color="primary"> Agregar </Button> {isAdding && ( <CircularProgress size={24} sx={{ color: 'primary.main', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px' }} /> )} </Box> </DialogActions> </Dialog>
 
             </Box> {/* Fin Flex Principal */}
         </ThemeProvider>

@@ -358,6 +358,3 @@ router.post('/', upload.array('archivos'), async (req, res) => {
 });
 
 module.exports = router;
-
-
-// Todo funciona
