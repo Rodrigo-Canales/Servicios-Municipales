@@ -356,4 +356,4 @@ router.post('/', upload.array('archivos'), async (req, res) => {
     }
 });
 
-module.exports = router; // Asegurarse que esta línea esté al final
+module.exports = router;

@@ -547,5 +547,4 @@ function Administrador() {
         </ThemeProvider>
     );
 }
-
 export default Administrador;
