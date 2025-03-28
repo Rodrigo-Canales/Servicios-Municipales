@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
-const cors = require('cors'); // Importar cors para manejar CORS
+const cors = require('cors');
 const db = require('./config/db');
 
 // Cargar variables de entorno antes de usarlas
@@ -22,9 +22,9 @@ app.use(cors(corsOptions)); // Usar CORS con las opciones definidas
 app.use(express.json()); // Parsear JSON
 app.use(express.urlencoded({ extended: true })); // Parsear URL-encoded
 
-// Seguridad con Helmet (descomentarlo cuando sea necesario)
+// Seguridad con Helmet 
 const helmet = require('helmet');
-app.use(helmet()); // Usar Helmet para agregar cabeceras de seguridad
+app.use(helmet()); 
 
 // Importar y usar routers
 const usuariosRoutes = require('./api/usuarios');

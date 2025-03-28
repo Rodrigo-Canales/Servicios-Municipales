@@ -31,7 +31,6 @@ const fileFilter = (req, file, cb) => {
         cb(null, true);
     } else {
         console.warn(`Archivo rechazado (tipo no permitido): ${file.originalname}`);
-        // Pasar el error específico a Multer
         cb(new Error('Tipo de archivo no permitido para la solicitud'), false);
     }
 };
@@ -46,12 +45,11 @@ router.get('/vecino/:rut', async (req, res) => {
             return res.status(400).json({ message: 'Falta el parámetro RUT del vecino.' });
         }
 
-        // MODIFICADO: Añadir correo_notificacion
         const query = `
             SELECT
                 s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado,
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
-                s.correo_notificacion -- <<< AÑADIDO
+                s.correo_notificacion
             FROM Solicitudes s
             JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
             WHERE s.RUT_ciudadano = ?
@@ -70,12 +68,11 @@ router.get('/vecino/:rut', async (req, res) => {
 // Obtener todas las solicitudes
 router.get('/', async (req, res) => {
     try {
-        // MODIFICADO: Añadir correo_notificacion
         const [solicitudes] = await db.query(`
             SELECT
                 s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado,
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
-                s.ruta_carpeta, s.correo_notificacion -- <<< AÑADIDO
+                s.ruta_carpeta, s.correo_notificacion
             FROM Solicitudes s
             JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
             ORDER BY s.id_solicitud ASC
@@ -91,12 +88,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        // MODIFICADO: Añadir correo_notificacion
         const [solicitud] = await db.query(`
             SELECT
                 s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado,
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
-                s.ruta_carpeta, s.correo_notificacion -- <<< AÑADIDO
+                s.ruta_carpeta, s.correo_notificacion
             FROM Solicitudes s
             JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
             WHERE s.id_solicitud = ?
@@ -134,10 +130,10 @@ router.put('/estado/:id', async (req, res) => {
     }
 });
 
-// NUEVA RUTA: Actualizar Múltiples Campos de una Solicitud (incluyendo estado y correo)
+//  Actualizar estado y correo de la solicitud
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { estado, correo_notificacion /* , otros_campos... */ } = req.body;
+    const { estado, correo_notificacion } = req.body;
 
     if (!id || isNaN(parseInt(id))) {
         return res.status(400).json({ message: 'ID de solicitud inválido.' });
@@ -158,20 +154,17 @@ router.put('/:id', async (req, res) => {
 
     // Validar y añadir correo_notificacion si se proporciona (permitir null o string vacío para borrarlo)
     if (req.body.hasOwnProperty('correo_notificacion')) { // Verificar si la clave existe, incluso si es null/""
-         if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
-             return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
-         }
+        if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
+            return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
+        }
         fieldsToUpdate.push('correo_notificacion = ?');
         values.push(correo_notificacion || null); // Guardar null si es vacío
     }
-
-    // Añadir otros campos aquí si fuera necesario...
 
     if (fieldsToUpdate.length === 0) {
         return res.status(400).json({ message: 'No se proporcionaron campos válidos para actualizar.' });
     }
 
-    // Construir y ejecutar la consulta
     let query = `UPDATE Solicitudes SET ${fieldsToUpdate.join(', ')} WHERE id_solicitud = ?`;
     values.push(id);
 
@@ -190,7 +183,6 @@ router.put('/:id', async (req, res) => {
 
 // Crear una nueva solicitud
 router.post('/', upload.array('archivos'), async (req, res) => {
-    // MODIFICADO: Extraer correo_notificacion
     const { rut_ciudadano, id_tipo, estado, correo_notificacion, ...otrosDatos } = req.body;
     const fecha = new Date();
 
@@ -198,12 +190,12 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         return res.status(400).json({ message: 'Faltan campos obligatorios: rut_ciudadano, id_tipo' });
     }
     if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
-         return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
+        return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
     }
 
     let connection;
-    let pdfPath = ''; // Para posible limpieza en caso de error
-    let rutaSolicitud = ''; // Para posible limpieza en caso de error
+    let pdfPath = ''; 
+    let rutaSolicitud = ''; 
 
     try {
         connection = await db.getConnection();
@@ -214,7 +206,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         if (tipoResult.length === 0) { await connection.rollback(); return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' }); }
         const nombre_tipo = tipoResult[0].nombre_tipo;
 
-        // Insertar la solicitud en la BD (con correo_notificacion)
+        // Insertar la solicitud en la BD 
         const estado_inicial = estado || 'Pendiente';
         const [result] = await connection.query(
             'INSERT INTO Solicitudes (RUT_ciudadano, id_tipo, fecha_hora_envio, estado, ruta_carpeta, correo_notificacion) VALUES (?, ?, NOW(), ?, ?, ?)',
@@ -223,7 +215,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         const id_solicitud_num = result.insertId;
         const id_solicitud_str = id_solicitud_num.toString().padStart(10, '0');
 
-        // Obtener nombre y apellido del ciudadano (el correo ya no se busca aquí)
+        // Obtener nombre y apellido del ciudadano
         let nombreCompleto = rut_ciudadano;
         const [rowsUsuario] = await connection.query( 'SELECT nombre, apellido FROM usuarios WHERE RUT = ?', [rut_ciudadano] );
         if (rowsUsuario.length > 0) {
@@ -253,11 +245,11 @@ router.post('/', upload.array('archivos'), async (req, res) => {
 
         // Crear el PDF
         const pdfDoc = new PDFDocument({ size: 'LETTER', margins: { top: 50, bottom: 50, left: 72, right: 72 } });
-        pdfPath = path.join(rutaSolicitud, 'solicitud.pdf'); // Asignar a variable externa
+        pdfPath = path.join(rutaSolicitud, 'solicitud.pdf'); 
         const writeStream = fs.createWriteStream(pdfPath);
         pdfDoc.pipe(writeStream);
 
-        // --- Contenido del PDF Solicitud (Restaurado y con correo_notificacion) ---
+        //  Contenido del PDF Solicitud 
         const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png');
         if (fs.existsSync(logoPath)) { pdfDoc.image(logoPath, pdfDoc.page.margins.left, pdfDoc.y, { width: 80 }); pdfDoc.moveDown(0.5); }
         pdfDoc.y = pdfDoc.page.margins.top + (fs.existsSync(logoPath) ? 20 : 0);
@@ -265,7 +257,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
         pdfDoc.font('Helvetica-Bold').fontSize(16).text('COMPROBANTE DE SOLICITUD', { align: 'center' }).moveDown(1.5);
         pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
 
-        // Obtener fecha/hora de envío real desde la BD (ya tenemos id_solicitud_num)
+        // Obtener fecha/hora de envío real desde la BD 
         const [solicitudRow] = await connection.query( 'SELECT fecha_hora_envio FROM Solicitudes WHERE id_solicitud = ?', [id_solicitud_num] );
         const fecha_hora_envio_real = format( new Date(solicitudRow[0].fecha_hora_envio), 'dd/MM/yyyy hh:mm:ss a', { locale: es } );
 
@@ -286,45 +278,45 @@ router.post('/', upload.array('archivos'), async (req, res) => {
 
         pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
 
-        // Sección Datos Adicionales (Restaurada)
+        // Sección Datos Adicionales 
         if (Object.keys(otrosDatos).length > 0) {
             pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Ingresados:', { underline: true }).moveDown(1);
             pdfDoc.font('Helvetica').fontSize(11);
             for (const key in otrosDatos) {
-                 const keyFormateada = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                 pdfDoc.text(`${keyFormateada}: ${otrosDatos[key]}`, { align: 'justify' }).moveDown(0.5);
+                const keyFormateada = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                pdfDoc.text(`${keyFormateada}: ${otrosDatos[key]}`, { align: 'justify' }).moveDown(0.5);
             }
             pdfDoc.moveDown(2);
             pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
         }
 
-        // Sección Archivos Adjuntos (Restaurada)
+        // Sección Archivos Adjuntos
         if (req.files && req.files.length > 0) {
             pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos (Referencia):', { underline: true }).moveDown(1).font('Helvetica').fontSize(10);
             req.files.forEach(file => { pdfDoc.text(`- ${file.originalname}`).moveDown(0.5); });
-            pdfDoc.moveDown(1); // Espacio después de la lista
+            pdfDoc.moveDown(1); 
 
-            // Mostrar imágenes adjuntas en páginas separadas (Restaurado)
+            // Mostrar imágenes adjuntas en páginas separadas
             req.files.forEach(file => {
-                 const fileExtension = path.extname(file.originalname).toLowerCase();
-                 if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
-                     const imagePath = path.join(rutaSolicitud, file.originalname);
-                     try {
-                          pdfDoc.addPage().font('Helvetica-Bold').fontSize(12).text(`Adjunto: ${file.originalname}`, {align: 'center'}).moveDown(1);
-                          const img = pdfDoc.openImage(imagePath);
-                          const pageHeight = pdfDoc.page.height - pdfDoc.page.margins.top - pdfDoc.page.margins.bottom - 50;
-                          const pageWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right;
-                          pdfDoc.image(imagePath, { fit: [pageWidth, pageHeight], align: 'center', valign: 'center' });
-                     } catch (imageError) { console.error(`Error al agregar imagen ${file.originalname} al PDF:`, imageError); }
-                 }
-             });
+                const fileExtension = path.extname(file.originalname).toLowerCase();
+                if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+                    const imagePath = path.join(rutaSolicitud, file.originalname);
+                    try {
+                        pdfDoc.addPage().font('Helvetica-Bold').fontSize(12).text(`Adjunto: ${file.originalname}`, {align: 'center'}).moveDown(1);
+                        const img = pdfDoc.openImage(imagePath);
+                        const pageHeight = pdfDoc.page.height - pdfDoc.page.margins.top - pdfDoc.page.margins.bottom - 50;
+                        const pageWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right;
+                        pdfDoc.image(imagePath, { fit: [pageWidth, pageHeight], align: 'center', valign: 'center' });
+                    } catch (imageError) { console.error(`Error al agregar imagen ${file.originalname} al PDF:`, imageError); }
+                }
+            });
         }
         // --- Fin Contenido PDF ---
 
         pdfDoc.end();
         await new Promise((resolve, reject) => {
-             writeStream.on('finish', resolve);
-             writeStream.on('error', (err) => reject(new Error(`Fallo al escribir PDF de solicitud: ${err.message}`)));
+            writeStream.on('finish', resolve);
+            writeStream.on('error', (err) => reject(new Error(`Fallo al escribir PDF de solicitud: ${err.message}`)));
         });
         console.log(`PDF de solicitud creado: ${pdfPath}`);
 
@@ -344,7 +336,7 @@ router.post('/', upload.array('archivos'), async (req, res) => {
     } catch (error) {
         console.error('Error detallado al crear solicitud:', error);
         if (connection) { try { await connection.rollback(); console.log("Rollback completado (solicitudes)."); } catch (rbError) { console.error("Error durante rollback (solicitudes):", rbError); } }
-        // Limpiar PDF y carpeta si se crearon antes del error (mejor esfuerzo)
+        // Limpiar PDF y carpeta si se crearon antes del error 
         if (pdfPath && fs.existsSync(pdfPath)) { try { fs.unlinkSync(pdfPath); console.log("PDF de solicitud erróneo eliminado."); } catch(e) {console.error("Error al eliminar PDF erróneo:", e)} }
         if (rutaSolicitud && fs.existsSync(rutaSolicitud)) { try { fs.rmdirSync(rutaSolicitud, { recursive: true }); console.log("Carpeta de solicitud errónea eliminada."); } catch(e) {console.error("Error al eliminar carpeta errónea:", e)} } // recursive: true es más seguro si hay archivos dentro
 

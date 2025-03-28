@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Verifica si db está retornando una instancia con promesas
+const db = require('../config/db'); 
 
 // Obtener todas las áreas
 router.get('/', async (req, res) => {
@@ -82,6 +82,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-
-
-// funcionana todas

@@ -1,25 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const db = require('../config/db'); // Asegúrate que la ruta a tu configuración de DB sea correcta
+const db = require('../config/db'); 
 
-// ------------------------------
+
 // Obtener todos los usuarios
-// ------------------------------
 router.get('/', async (req, res) => {
     try {
         // Selecciona todos los campos EXCEPTO hash_password para la lista general
         const [rows] = await db.query('SELECT RUT, nombre, apellido, correo_electronico, rol, area_id FROM Usuarios');
-        res.status(200).json(rows); // Devuelve la lista sin hashes
+        res.status(200).json(rows);
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         res.status(500).json({ message: 'Error interno al obtener usuarios' });
     }
 });
 
-// ------------------------------
+
 // Obtener un usuario por RUT
-// ------------------------------
 router.get('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
@@ -36,18 +34,16 @@ router.get('/:rut', async (req, res) => {
     }
 });
 
-// ------------------------------
+
 // Crear Usuario (Permite usuarios con o sin contraseña)
-// ------------------------------
 router.post('/', async (req, res) => {
-    // Asegúrate de recibir los campos correctos desde el frontend
     const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;
 
     // Validación básica de campos obligatorios
     if (!rut || !nombre || !apellido) {
         return res.status(400).json({ message: 'RUT, Nombre y Apellido son obligatorios.' });
     }
-    // Validar rol (asegurar que sea uno de los permitidos)
+    // Validar rol 
     const rolesPermitidos = ['Vecino', 'Funcionario', 'Administrador'];
     if (rol && !rolesPermitidos.includes(rol)) {
         return res.status(400).json({ message: `Rol inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
@@ -69,18 +65,14 @@ router.post('/', async (req, res) => {
                 rut,
                 nombre,
                 apellido,
-                // Guardar null si el correo es vacío o no proporcionado
                 correo_electronico || null,
                 hashedPassword,
-                // Usar el rol proporcionado o 'Vecino' por defecto (según la tabla)
                 rol || 'Vecino',
-                // Guardar null si area_id es vacío o no proporcionado
                 area_id || null
             ]
         );
 
         console.log(`[POST /api/usuarios] Usuario creado exitosamente con RUT: ${rut}, ID: ${result.insertId}`);
-        // Devolver un mensaje de éxito genérico
         res.status(201).json({ message: 'Usuario creado exitosamente' });
 
     } catch (error) {
@@ -93,15 +85,13 @@ router.post('/', async (req, res) => {
         if (error.code === 'ER_NO_REFERENCED_ROW_2') {
             return res.status(400).json({ message: `El área con ID ${area_id} no existe.` });
         }
-        // Error genérico
         res.status(500).json({ message: 'Error interno al crear usuario' });
     }
 });
 
 
-// ------------------------------
+
 // Actualizar Usuario (Maneja deletePassword y campos individuales)
-// ------------------------------
 router.put('/:rut', async (req, res) => {
     const rut = req.params.rut;
     // Extraer todos los posibles campos del body
@@ -112,30 +102,20 @@ router.put('/:rut', async (req, res) => {
     if (rol && !rolesPermitidos.includes(rol)) {
         return res.status(400).json({ message: `Rol inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
     }
-    // Validación simple: Asegurarse de que no se intente eliminar y establecer contraseña al mismo tiempo
+    // Asegurarse de que no se intente eliminar y establecer contraseña al mismo tiempo
     if (deletePassword === true && password && password.trim() !== '') {
         return res.status(400).json({ message: 'No se puede eliminar y establecer una nueva contraseña al mismo tiempo.' });
     }
-
-
     try {
         let query = 'UPDATE Usuarios SET ';
         const values = [];
         const updates = [];
-
-        // Construir dinámicamente la parte SET de la query
-        // Solo añadir campos al SET si fueron proporcionados en el body
-
-        // Nota: Se usa 'in req.body' para diferenciar entre undefined (no enviado) y null/'' (enviado vacío)
         if ('correo_electronico' in req.body) {
             updates.push('correo_electronico = ?');
             // Permitir establecer correo a NULL si se envía explícitamente null o ''
             values.push(correo_electronico || null);
         }
         if ('rol' in req.body) {
-            // Si rol es null o vacío, podría usarse el DEFAULT de la tabla,
-            // pero es más seguro validar y requerir un rol válido si se quiere cambiar.
-            // Aquí asumimos que si se envía 'rol', debe ser válido.
             if (!rol || !rolesPermitidos.includes(rol)) {
                 return res.status(400).json({ message: `Rol proporcionado inválido.` });
             }
@@ -163,7 +143,6 @@ router.put('/:rut', async (req, res) => {
         // Opción 3: Si deletePassword no es true Y password está vacío/no se envió,
         // NO se añade 'hash_password' a 'updates', por lo que la contraseña actual se mantiene.
 
-
         // Verificar si hay algo para actualizar
         if (updates.length === 0) {
             // No se envió ningún campo válido para actualizar
@@ -185,24 +164,19 @@ router.put('/:rut', async (req, res) => {
             // Si no se afectó ninguna fila, el RUT no existía
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-
-        // Éxito
         res.status(200).json({ message: 'Usuario actualizado exitosamente' });
 
     } catch (error) {
         console.error(`[PUT /api/usuarios/${rut}] Error al actualizar usuario:`, error);
-        // Manejar error de clave foránea (area_id inválido)
         if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_NO_REFERENCED_ROW') {
             return res.status(400).json({ message: `El área proporcionada no existe.` });
         }
-        // Error genérico
         res.status(500).json({ message: 'Error interno al actualizar usuario' });
     }
 });
 
-// ------------------------------
+
 // Eliminar Usuario
-// ------------------------------
 router.delete('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
@@ -222,16 +196,12 @@ router.delete('/:rut', async (req, res) => {
 
     } catch (error) {
         console.error(`[DELETE /api/usuarios/${rut}] Error al eliminar usuario:`, error);
-        // Manejar error si el usuario tiene dependencias (ej: solicitudes, respuestas)
-        // MySQL puede lanzar ER_ROW_IS_REFERENCED_2
         if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
             console.log(`[DELETE /api/usuarios/${rut}] Cannot delete user due to foreign key constraints.`);
             return res.status(409).json({ message: 'No se puede eliminar el usuario porque tiene solicitudes o respuestas asociadas.' });
         }
-        // Error genérico
         res.status(500).json({ message: 'Error interno al eliminar usuario' });
     }
 });
 
-// Exportar el router
 module.exports = router;

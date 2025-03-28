@@ -12,7 +12,6 @@ console.log('Variables de entorno:', {
     database: process.env.DB_NAME,
 });
 
-// Usar valores por defecto en caso de que las variables no se hayan cargado correctamente
 const connection = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',

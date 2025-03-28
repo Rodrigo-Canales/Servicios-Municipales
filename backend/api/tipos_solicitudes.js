@@ -109,6 +109,3 @@ router.get('/area/:areaId', async (req, res) => {
 
 
 module.exports = router;
-
-
-//todas funcionan

@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Asegúrate que la ruta a tu config de DB sea correcta
+const db = require('../config/db');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const multer = require('multer');
 const path = require('path');
 const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
-const nodemailer = require('nodemailer'); // Importar nodemailer
-require('dotenv').config(); // Cargar variables de entorno
+const nodemailer = require('nodemailer'); 
+require('dotenv').config(); // Carga variables de entorno
 
 // --- Configuración del Transporter de Nodemailer ---
 const transporter = nodemailer.createTransport({
@@ -19,7 +19,6 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    // tls: { rejectUnauthorized: false } // Descomentar si es necesario
 });
 
 transporter.verify(function(error, success) {
@@ -27,7 +26,7 @@ transporter.verify(function(error, success) {
     else { console.log("✅ Servidor de correo listo para enviar mensajes."); }
 });
 
-// --- Funciones Auxiliares ---
+// Funciones Auxiliares
 function crearCarpetaSiNoExiste(ruta) {
     if (!fs.existsSync(ruta)) {
         try { fs.mkdirSync(ruta, { recursive: true }); console.log(`Carpeta creada: ${ruta}`); }
@@ -46,11 +45,9 @@ const uploadRespuesta = multer({ storage: storageRespuesta, fileFilter: fileFilt
 
 // --- Rutas CRUD para Respuestas ---
 
-/**
- * @route   POST /api/respuestas
- * @desc    Crear una nueva respuesta, PDF, guardar adjuntos y enviar notificación por correo.
- * @access  Private
- */
+
+// Crear una nueva respuesta, PDF, guardar adjuntos y enviar notificación por correo.
+
 router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) => {
     const { id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud } = req.body;
     const estadosValidos = ['Aprobada', 'Rechazada'];
@@ -66,7 +63,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. Obtener datos de solicitud y ciudadano (incluyendo correo_notificacion)
+        //  Obtener datos de solicitud y ciudadano (incluyendo correo_notificacion)
         const [solicitudes] = await connection.query(
             `SELECT s.id_solicitud, s.ruta_carpeta, s.fecha_hora_envio, s.RUT_ciudadano, s.correo_notificacion, t.nombre_tipo, u_ciud.nombre AS nombre_ciudadano, u_ciud.apellido AS apellido_ciudadano FROM Solicitudes s JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo JOIN Usuarios u_ciud ON s.RUT_ciudadano = u_ciud.RUT WHERE s.id_solicitud = ?`, [id_solicitud] );
         if (solicitudes.length === 0) { await connection.rollback(); return res.status(404).json({ message: 'Solicitud no encontrada' }); }
@@ -77,24 +74,24 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         if (!rutaCarpetaSolicitud || !fs.existsSync(rutaCarpetaSolicitud)) { await connection.rollback(); console.error(`Ruta carpeta solicitud ${id_solicitud} inválida: ${rutaCarpetaSolicitud}`); return res.status(500).json({ message: 'Error: No se encontró la carpeta de la solicitud original.' }); }
         if (!correoDestino) { console.warn(`Solicitud ${id_solicitud} no tiene correo de notificación especificado. No se enviará email.`); }
 
-        // 2. Verificar trabajador
+        //  Verificar trabajador
         const [trabajadores] = await connection.query( 'SELECT nombre, apellido FROM Usuarios WHERE RUT = ? AND rol IN (?, ?)', [RUT_trabajador, 'Funcionario', 'Administrador'] );
         if (trabajadores.length === 0) { await connection.rollback(); return res.status(404).json({ message: 'Trabajador no encontrado o sin permisos para responder' }); }
         const trabajador = trabajadores[0];
         const nombreCompletoTrabajador = `${trabajador.nombre} ${trabajador.apellido}`;
         const nombreCompletoCiudadano = `${solicitud.nombre_ciudadano} ${solicitud.apellido_ciudadano}`;
 
-        // 3. Insertar respuesta en BD
+        //  Insertar respuesta en BD
         const fechaRespuesta = new Date();
         const [resultInsert] = await connection.query( 'INSERT INTO Respuestas (id_solicitud, RUT_trabajador, fecha_hora_respuesta) VALUES (?, ?, ?)', [id_solicitud, RUT_trabajador, fechaRespuesta] );
         const id_respuesta = resultInsert.insertId;
         const id_respuesta_formateado = id_respuesta.toString().padStart(10, '0');
 
-        // 4. Crear subcarpeta "Respuesta"
+        //  Crear subcarpeta "Respuesta"
         rutaCarpetaRespuesta = path.join(rutaCarpetaSolicitud, 'Respuesta');
         crearCarpetaSiNoExiste(rutaCarpetaRespuesta);
 
-        // 5. Guardar adjuntos de respuesta y preparar para correo
+        //  Guardar adjuntos de respuesta y preparar para correo
         const nombresArchivosAdjuntos = [];
         const attachmentObjects = [];
         if (req.files && req.files.length > 0) {
@@ -106,7 +103,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
             });
         }
 
-        // 6. Crear PDF de respuesta - LÓGICA COMPLETA RESTAURADA
+        //  Crear PDF de respuesta - LÓGICA COMPLETA RESTAURADA
         const pdfDoc = new PDFDocument({ size: 'LETTER', margins: { top: 50, bottom: 50, left: 72, right: 72 } });
         pdfPath = path.join(rutaCarpetaRespuesta, 'respuesta.pdf');
         const writeStream = fs.createWriteStream(pdfPath);
@@ -119,7 +116,6 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
             pdfDoc.moveDown(0.5); // Espacio después del logo
         } else {
             console.warn("Logo no encontrado en", logoPath);
-            // Si no hay logo, asegurar que el título no empiece demasiado arriba
              pdfDoc.y = pdfDoc.page.margins.top; // Empezar desde el margen superior
         }
          // Ajustar Y si se añadió logo para que el título quede bien
@@ -141,10 +137,10 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.font('Helvetica-Bold').text('Referente a Solicitud:'); // Título para sección
         pdfDoc.font('Helvetica').fontSize(11);
         pdfDoc.text(`ID Solicitud: ${solicitud.id_solicitud.toString().padStart(10, '0')}`);
-        pdfDoc.text(`Tipo Solicitud: ${solicitud.nombre_tipo}`);
+        pdfDoc.text(`Tipo de Solicitud: ${solicitud.nombre_tipo}`);
         pdfDoc.text(`Fecha Solicitud: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
         pdfDoc.text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${solicitud.RUT_ciudadano})`);
-        pdfDoc.text(`Correo Notificación: ${correoDestino || 'No proporcionado'}`).moveDown(1.5); // Mostrar correo destino
+        pdfDoc.text(`Correo de Notificación: ${correoDestino || 'No proporcionado'}`).moveDown(1.5); // Mostrar correo destino
 
         // Línea separadora
         pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
@@ -165,22 +161,22 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
 
         // Esperar a que el stream de escritura finalice
         await new Promise((resolve, reject) => {
-             writeStream.on('finish', resolve);
-             writeStream.on('error', (err) => { console.error("Error al escribir el PDF:", err); reject(new Error(`Fallo al escribir el PDF: ${err.message}`)); });
+            writeStream.on('finish', resolve);
+            writeStream.on('error', (err) => { console.error("Error al escribir el PDF:", err); reject(new Error(`Fallo al escribir el PDF: ${err.message}`)); });
         });
         console.log(`PDF de respuesta creado: ${pdfPath}`);
 
 
-        // 7. Actualizar estado de solicitud original
+        //  Actualizar estado de solicitud original
         const [updateResult] = await connection.query( 'UPDATE Solicitudes SET estado = ? WHERE id_solicitud = ?', [estado_solicitud, id_solicitud] );
         if (updateResult.affectedRows > 0) console.log(`Estado de solicitud ${id_solicitud} actualizado a ${estado_solicitud}.`);
         else console.warn(`No se pudo actualizar el estado de la solicitud ${id_solicitud} a '${estado_solicitud}'`);
 
-        // 8. Confirmar transacción ANTES de enviar correo
+        //  Confirmar transacción ANTES de enviar correo
         await connection.commit();
         console.log(`Transacción completada para respuesta ${id_respuesta}`);
 
-        // 9. --- ENVÍO DE CORREO REAL ---
+        //  --- ENVÍO DE CORREO REAL ---
         if (correoDestino) {
             console.log(`Intentando enviar notificación a ${correoDestino}...`);
             try {
@@ -195,10 +191,10 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
                 };
                 let info = await transporter.sendMail(mailOptions);
                 console.log(`Notificación enviada exitosamente a ${correoDestino}. Message ID: ${info.messageId}`);
-                 res.status(201).json({ message: 'Respuesta creada, solicitud actualizada y notificación enviada exitosamente.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
+                res.status(201).json({ message: 'Respuesta creada, solicitud actualizada y notificación enviada exitosamente.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
             } catch (mailError) {
                 console.error(`Error al enviar correo de notificación a ${correoDestino}:`, mailError);
-                 res.status(201).json({ message: 'Respuesta creada y solicitud actualizada, pero falló el envío de la notificación por correo.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta, error_correo: mailError.message });
+                res.status(201).json({ message: 'Respuesta creada y solicitud actualizada, pero falló el envío de la notificación por correo.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta, error_correo: mailError.message });
             }
         } else {
             res.status(201).json({ message: 'Respuesta creada y solicitud actualizada exitosamente (Sin correo de notificación especificado).', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
@@ -219,7 +215,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
 });
 
 
-// --- Rutas GET (sin cambios) ---
+//Obtener todas las respuestas
 router.get('/', async (req, res) => {
     try {
         const query = ` SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador, ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador, s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado, ts.nombre_tipo AS nombre_tipo_solicitud, s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano, s.ruta_carpeta AS ruta_carpeta_solicitud FROM Respuestas r JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo ORDER BY r.fecha_hora_respuesta DESC `;
@@ -227,6 +223,9 @@ router.get('/', async (req, res) => {
         res.status(200).json({ respuestas });
     } catch (error) { console.error('Error al obtener todas las respuestas:', error); res.status(500).json({ message: 'Error interno al obtener respuestas' }); }
 });
+
+
+//Obtener una respuesta por id
 router.get('/:id', async (req, res) => {
     const { id } = req.params; if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) { return res.status(400).json({ message: 'ID de respuesta inválido.' }); }
     try {
@@ -236,6 +235,9 @@ router.get('/:id', async (req, res) => {
         res.status(200).json({ respuesta: respuesta[0] });
     } catch (error) { console.error(`Error al obtener la respuesta ${id}:`, error); res.status(500).json({ message: 'Error interno al obtener la respuesta' }); }
 });
+
+
+// Obtener todas las respuestas de un ciudadano
 router.get('/solicitudes/pendientes', async (req, res) => {
     try {
         const query = ` SELECT s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado, s.RUT_ciudadano, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano, ts.nombre_tipo, s.fecha_hora_envio, s.estado, s.ruta_carpeta, s.correo_notificacion FROM Solicitudes s JOIN Usuarios u ON s.RUT_ciudadano = u.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE s.estado = 'Pendiente' ORDER BY s.fecha_hora_envio ASC `;
@@ -244,4 +246,4 @@ router.get('/solicitudes/pendientes', async (req, res) => {
     } catch (error) { console.error('Error al obtener solicitudes pendientes:', error); res.status(500).json({ message: 'Error interno al obtener solicitudes pendientes' }); }
 });
 
-module.exports = router; // Línea final
+module.exports = router; 
