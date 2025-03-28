@@ -23,8 +23,8 @@ const transporter = nodemailer.createTransport({
 });
 
 transporter.verify(function(error, success) {
-  if (error) { console.error("Error al conectar con el servicio de correo:", error); }
-  else { console.log("✅ Servidor de correo listo para enviar mensajes."); }
+    if (error) { console.error("Error al conectar con el servicio de correo:", error); }
+    else { console.log("✅ Servidor de correo listo para enviar mensajes."); }
 });
 
 // --- Funciones Auxiliares ---
@@ -68,7 +68,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
 
         // 1. Obtener datos de solicitud y ciudadano (incluyendo correo_notificacion)
         const [solicitudes] = await connection.query(
-           `SELECT s.id_solicitud, s.ruta_carpeta, s.fecha_hora_envio, s.RUT_ciudadano, s.correo_notificacion, t.nombre_tipo, u_ciud.nombre AS nombre_ciudadano, u_ciud.apellido AS apellido_ciudadano FROM Solicitudes s JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo JOIN Usuarios u_ciud ON s.RUT_ciudadano = u_ciud.RUT WHERE s.id_solicitud = ?`, [id_solicitud] );
+            `SELECT s.id_solicitud, s.ruta_carpeta, s.fecha_hora_envio, s.RUT_ciudadano, s.correo_notificacion, t.nombre_tipo, u_ciud.nombre AS nombre_ciudadano, u_ciud.apellido AS apellido_ciudadano FROM Solicitudes s JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo JOIN Usuarios u_ciud ON s.RUT_ciudadano = u_ciud.RUT WHERE s.id_solicitud = ?`, [id_solicitud] );
         if (solicitudes.length === 0) { await connection.rollback(); return res.status(404).json({ message: 'Solicitud no encontrada' }); }
         const solicitud = solicitudes[0];
         const rutaCarpetaSolicitud = solicitud.ruta_carpeta;

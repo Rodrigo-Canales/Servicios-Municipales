@@ -134,6 +134,59 @@ router.put('/estado/:id', async (req, res) => {
     }
 });
 
+// NUEVA RUTA: Actualizar Múltiples Campos de una Solicitud (incluyendo estado y correo)
+router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { estado, correo_notificacion /* , otros_campos... */ } = req.body;
+
+    if (!id || isNaN(parseInt(id))) {
+        return res.status(400).json({ message: 'ID de solicitud inválido.' });
+    }
+
+    const fieldsToUpdate = [];
+    const values = [];
+
+    // Validar y añadir estado si se proporciona
+    if (estado) {
+        const estadosValidos = ['Pendiente', 'Aprobada', 'Rechazada'];
+        if (!estadosValidos.includes(estado)) {
+            return res.status(400).json({ message: `Estado no válido. Debe ser uno de: ${estadosValidos.join(', ')}` });
+        }
+        fieldsToUpdate.push('estado = ?');
+        values.push(estado);
+    }
+
+    // Validar y añadir correo_notificacion si se proporciona (permitir null o string vacío para borrarlo)
+    if (req.body.hasOwnProperty('correo_notificacion')) { // Verificar si la clave existe, incluso si es null/""
+         if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
+             return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
+         }
+        fieldsToUpdate.push('correo_notificacion = ?');
+        values.push(correo_notificacion || null); // Guardar null si es vacío
+    }
+
+    // Añadir otros campos aquí si fuera necesario...
+
+    if (fieldsToUpdate.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron campos válidos para actualizar.' });
+    }
+
+    // Construir y ejecutar la consulta
+    let query = `UPDATE Solicitudes SET ${fieldsToUpdate.join(', ')} WHERE id_solicitud = ?`;
+    values.push(id);
+
+    try {
+        const [result] = await db.query(query, values);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Solicitud no encontrada para actualizar.' });
+        }
+        res.status(200).json({ message: 'Solicitud actualizada correctamente' });
+    } catch (error) {
+        console.error(`Error al actualizar la solicitud ${id}:`, error);
+        res.status(500).json({ message: 'Error interno del servidor al actualizar la solicitud' });
+    }
+});
+
 
 // Crear una nueva solicitud
 router.post('/', upload.array('archivos'), async (req, res) => {
