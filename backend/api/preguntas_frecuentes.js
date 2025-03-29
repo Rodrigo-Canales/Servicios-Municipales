@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // Obtener todas las preguntas frecuentes
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
     try {
         const query = `
             SELECT
@@ -26,7 +27,7 @@ router.get('/', async (req, res) => {
 
 //Obtener una pregunta frecuente por su ID
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
     const { id } = req.params;
     if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) {
         return res.status(400).json({ message: 'ID de pregunta inválido.' });
@@ -57,7 +58,7 @@ router.get('/:id', async (req, res) => {
 
 // Obtener todas las preguntas frecuentes para un tipo de solicitud específico
 
-router.get('/tipo/:id_tipo', async (req, res) => {
+router.get('/tipo/:id_tipo', protect, async (req, res) => {
     const { id_tipo } = req.params;
     if (!id_tipo || isNaN(parseInt(id_tipo)) || parseInt(id_tipo) <= 0) {
         return res.status(400).json({ message: 'ID de tipo de solicitud inválido.' });
@@ -92,7 +93,7 @@ router.get('/tipo/:id_tipo', async (req, res) => {
 
 // Crear una nueva pregunta frecuente
 
-router.post('/', async (req, res) => {
+router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     const { pregunta, respuesta, id_tipo } = req.body;
     // Validaciones
     if (!pregunta || !respuesta || !id_tipo) {
@@ -129,7 +130,7 @@ router.post('/', async (req, res) => {
 
 // Actualizar una pregunta frecuente existente
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const { id } = req.params;
     const { pregunta, respuesta, id_tipo } = req.body;
     // Validar ID 
@@ -204,7 +205,7 @@ router.put('/:id', async (req, res) => {
 
 // Eliminar una pregunta frecuente
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const { id } = req.params;
     if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) {
         return res.status(400).json({ message: 'ID de pregunta inválido.' });

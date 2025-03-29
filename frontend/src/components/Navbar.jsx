@@ -1,11 +1,13 @@
-import React from "react";
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // *** 1. Importar useNavigate ***
 import {
     AppBar, Toolbar, Typography, Box, IconButton, Tooltip, alpha
 } from "@mui/material";
 import { Menu as MenuIcon, Logout as LogoutIcon } from "@mui/icons-material";
 // Asumiendo que ThemeToggle está en la misma carpeta o en Common
 import ThemeToggle from "./ThemeToggle"; // Ajusta si ThemeToggle está en otra parte
+// *** 2. Importar useAuth ***
+import { useAuth } from '../contexts/useAuth.jsx'; // O .js si así se llama el archivo
 
 // --- Props ---
 // toggleTheme: Función para cambiar el tema (light/dark)
@@ -15,19 +17,25 @@ import ThemeToggle from "./ThemeToggle"; // Ajusta si ThemeToggle está en otra 
 
 const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink = "/" }) => {
 
-    // Placeholder para logout
+    // *** 3. Obtener logout y user (opcionalmente) del contexto ***
+    const { logout, user } = useAuth(); // Obtenemos la función logout
+    // *** 4. Obtener la función navigate ***
+    const navigate = useNavigate();
+
+    // Función para manejar el cierre de sesión
     const handleLogout = () => {
-        console.log("Cerrar Sesión clickeado (sin funcionalidad)");
-        // Aquí iría la lógica real (llamar a contexto, limpiar token, redirigir)
+        console.log("Cerrando sesión...");
+        logout(); // Llama a la función del contexto para limpiar estado y localStorage
+        navigate('/login'); // Redirige al usuario a la página de login
     };
 
     return (
         <AppBar
             position="fixed"
-            elevation={1} // Sombra estándar del tema
+            elevation={1}
             sx={{
-                zIndex: (theme) => theme.zIndex.drawer + 1, // Por encima del drawer
-                bgcolor: 'primary.main', // Color primario del tema
+                zIndex: (theme) => theme.zIndex.drawer + 1,
+                bgcolor: 'primary.main',
                 transition: (theme) => theme.transitions.create(['background-color'], {
                     duration: theme.transitions.duration.short,
                 }),
@@ -35,7 +43,6 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
         >
             <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: { xs: 56, sm: 64 } }}>
                 {/* Botón Menú Móvil (Hamburguesa) */}
-                {/* Solo se muestra si toggleSidebar es una función válida */}
                 {typeof toggleSidebar === 'function' && (
                     <IconButton
                         color="inherit"
@@ -43,7 +50,7 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                         edge="start"
                         onClick={toggleSidebar}
                         sx={{
-                            display: { md: 'none' }, // Oculto en escritorio
+                            display: { md: 'none' },
                             mr: { xs: 1, sm: 1.5 },
                             cursor: 'pointer',
                             padding: '8px',
@@ -55,7 +62,7 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                 )}
 
                 {/* Logo con Enlace Dinámico */}
-                <Link to={logoLink} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: { md: 2 } }}> {/* Añadido margen en escritorio */}
+                <Link to={logoLink} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: { md: 2 } }}>
                     <Box component="img" src="/LOGO PITRUFQUEN.png" alt="Logo Municipalidad"
                         sx={{
                             width: { xs: 38, sm: 45 }, height: { xs: 38, sm: 45 }, display: 'block', cursor: 'pointer',
@@ -68,34 +75,35 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                 <Typography variant="h6" component="div"
                     sx={{
                         flexGrow: 1, fontWeight: "bold", color: 'primary.contrastText',
-                        fontSize: { xs: "1rem", sm: "1.1rem", md: "1.2rem" }, // Ajustado tamaño
+                        fontSize: { xs: "1rem", sm: "1.1rem", md: "1.2rem" },
                         textAlign: { xs: 'center', md: 'left' },
-                        // Quita margen izquierdo si el botón hamburguesa no está (escritorio)
                         ml: { xs: 1, md: typeof toggleSidebar === 'function' ? 0 : 2 },
                         userSelect: 'none',
-                        whiteSpace: 'nowrap', // Evitar que el título se parta
-                        overflow: 'hidden',   // Ocultar si es muy largo
-                        textOverflow: 'ellipsis' // Puntos suspensivos si es muy largo
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
                     }}>
                     {title}
                 </Typography>
 
                 {/* Controles a la Derecha */}
-                <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}> {/* Margen izquierdo para separar del título */}
+                <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
                     {/* Mostrar ThemeToggle si la función existe */}
                     {typeof toggleTheme === 'function' && <ThemeToggle toggleTheme={toggleTheme} />}
 
-                    {/* Botón Logout */}
-                    <Tooltip title="Cerrar Sesión">
-                        <IconButton color="inherit" aria-label="cerrar sesión" onClick={handleLogout}
-                            sx={{
-                                ml: 1, cursor: 'pointer', padding: '8px',
-                                transition: (theme) => theme.transitions.create(['background-color', 'transform'], { duration: theme.transitions.duration.short }),
-                                '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.1), transform: 'scale(1.1)' }
-                            }}>
-                            <LogoutIcon />
-                        </IconButton>
-                    </Tooltip>
+                    {/* Botón Logout - Solo se muestra si hay un usuario logueado */}
+                    {user && ( // Verifica si hay un usuario en el contexto
+                        <Tooltip title="Cerrar Sesión">
+                            <IconButton color="inherit" aria-label="cerrar sesión" onClick={handleLogout}
+                                sx={{
+                                    ml: 1, cursor: 'pointer', padding: '8px',
+                                    transition: (theme) => theme.transitions.create(['background-color', 'transform'], { duration: theme.transitions.duration.short }),
+                                    '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.1), transform: 'scale(1.1)' }
+                                }}>
+                                <LogoutIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </Box>
             </Toolbar>
         </AppBar>

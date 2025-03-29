@@ -7,6 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // Función para crear carpetas si no existen
 function crearCarpeta(ruta) {
@@ -38,7 +39,7 @@ const upload = multer({ storage, fileFilter });
 
 
 // Obtener las solicitudes de un usuario en específico
-router.get('/vecino/:rut', async (req, res) => {
+router.get('/vecino/:rut', protect, async (req, res) => {
     try {
         const { rut } = req.params;
         if (!rut) {
@@ -66,7 +67,7 @@ router.get('/vecino/:rut', async (req, res) => {
 });
 
 // Obtener todas las solicitudes
-router.get('/', async (req, res) => {
+router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const [solicitudes] = await db.query(`
             SELECT
@@ -85,7 +86,7 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener una solicitud por su ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', protect, restrictTo('Administrador, Funcionario'), async (req, res) => {
     try {
         const id = req.params.id;
         const [solicitud] = await db.query(`
@@ -108,7 +109,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Actualizar ESTADO de una solicitud
-router.put('/estado/:id', async (req, res) => {
+router.put('/estado/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const { id } = req.params;
         const { estado } = req.body;
@@ -131,7 +132,7 @@ router.put('/estado/:id', async (req, res) => {
 });
 
 //  Actualizar estado y correo de la solicitud
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const { id } = req.params;
     const { estado, correo_notificacion } = req.body;
 
@@ -182,7 +183,7 @@ router.put('/:id', async (req, res) => {
 
 
 // Crear una nueva solicitud
-router.post('/', upload.array('archivos'), async (req, res) => {
+router.post('/', protect, upload.array('archivos'), async (req, res) => {
     const { rut_ciudadano, id_tipo, estado, correo_notificacion, ...otrosDatos } = req.body;
     const fecha = new Date();
 

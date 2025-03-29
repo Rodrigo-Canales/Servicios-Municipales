@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // Obtener todos los tipos de solicitudes con el nombre del área
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT t.*, a.nombre_area 
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener un tipo de solicitud por ID con el nombre del área
-router.get('/:id', async (req, res) => {
+router.get('/:id', protect, async (req, res) => {
     const id = req.params.id;
     try {
         const [rows] = await db.query(
@@ -39,7 +40,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear un nuevo tipo de solicitud
-router.post('/', async (req, res) => {
+router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     const { nombre_tipo, descripcion, area_id } = req.body;
     try {
         const [result] = await db.query(
@@ -54,7 +55,7 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un tipo de solicitud existente
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const id = req.params.id;
     const { nombre_tipo, descripcion, area_id } = req.body;
     try {
@@ -73,7 +74,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Eliminar un tipo de solicitud existente
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const id = req.params.id;
     try {
         const [result] = await db.query(
@@ -91,7 +92,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Obtener tipos de solicitudes por área
-router.get('/area/:areaId', async (req, res) => {
+router.get('/area/:areaId', protect, async (req, res) => {
     const areaId = req.params.areaId;
     try {
         const [rows] = await db.query(`

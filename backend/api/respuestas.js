@@ -9,6 +9,7 @@ const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const nodemailer = require('nodemailer'); 
 require('dotenv').config(); // Carga variables de entorno
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // --- Configuración del Transporter de Nodemailer ---
 const transporter = nodemailer.createTransport({
@@ -48,7 +49,7 @@ const uploadRespuesta = multer({ storage: storageRespuesta, fileFilter: fileFilt
 
 // Crear una nueva respuesta, PDF, guardar adjuntos y enviar notificación por correo.
 
-router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) => {
+router.post('/', protect, restrictTo('Funcionario'), uploadRespuesta.array('archivosRespuesta'), async (req, res) => {
     const { id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud } = req.body;
     const estadosValidos = ['Aprobada', 'Rechazada'];
 
@@ -216,7 +217,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
 
 
 //Obtener todas las respuestas
-router.get('/', async (req, res) => {
+router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const query = ` SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador, ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador, s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado, ts.nombre_tipo AS nombre_tipo_solicitud, s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano, s.ruta_carpeta AS ruta_carpeta_solicitud FROM Respuestas r JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo ORDER BY r.fecha_hora_respuesta DESC `;
         const [respuestas] = await db.query(query);
@@ -226,7 +227,7 @@ router.get('/', async (req, res) => {
 
 
 //Obtener una respuesta por id
-router.get('/:id', async (req, res) => {
+router.get('/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     const { id } = req.params; if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) { return res.status(400).json({ message: 'ID de respuesta inválido.' }); }
     try {
         const query = ` SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador, ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador, s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado, ts.nombre_tipo AS nombre_tipo_solicitud, s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano, s.ruta_carpeta AS ruta_carpeta_solicitud FROM Respuestas r JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE r.id_respuesta = ? `;
@@ -238,7 +239,7 @@ router.get('/:id', async (req, res) => {
 
 
 // Obtener todas las respuestas de un ciudadano
-router.get('/solicitudes/pendientes', async (req, res) => {
+router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const query = ` SELECT s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado, s.RUT_ciudadano, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano, ts.nombre_tipo, s.fecha_hora_envio, s.estado, s.ruta_carpeta, s.correo_notificacion FROM Solicitudes s JOIN Usuarios u ON s.RUT_ciudadano = u.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE s.estado = 'Pendiente' ORDER BY s.fecha_hora_envio ASC `;
         const [solicitudesPendientes] = await db.query(query);

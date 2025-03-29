@@ -1,13 +1,20 @@
+// backend/routes/usuarios.js
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const db = require('../config/db'); 
+const db = require('../config/db');
+// *** 1. Importar los middlewares de autenticación y autorización ***
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
+// *** 2. Aplicar Middlewares a TODAS las rutas de este archivo ***
+router.use(protect);             // Requiere token válido para todas las rutas de abajo
+router.use(restrictTo('Administrador')); // Requiere rol 'Administrador' para todas las rutas de abajo
 
-// Obtener todos los usuarios
+// --- Rutas Protegidas y Restringidas a Administradores ---
+
+// Obtener todos los usuarios (Mantenido como estaba)
 router.get('/', async (req, res) => {
     try {
-        // Selecciona todos los campos EXCEPTO hash_password para la lista general
         const [rows] = await db.query('SELECT RUT, nombre, apellido, correo_electronico, rol, area_id FROM Usuarios');
         res.status(200).json(rows);
     } catch (error) {
@@ -16,17 +23,14 @@ router.get('/', async (req, res) => {
     }
 });
 
-
-// Obtener un usuario por RUT
+// Obtener un usuario por RUT (Mantenido como estaba)
 router.get('/:rut', async (req, res) => {
     const rut = req.params.rut;
     try {
-        // Selecciona todos los campos EXCEPTO hash_password
         const [rows] = await db.query('SELECT RUT, nombre, apellido, correo_electronico, rol, area_id FROM Usuarios WHERE RUT = ?', [rut]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        // No es necesario borrar hash_password porque no se seleccionó
         res.status(200).json(rows[0]);
     } catch (error) {
         console.error('Error al obtener usuario por RUT:', error);
@@ -34,16 +38,16 @@ router.get('/:rut', async (req, res) => {
     }
 });
 
-
-// Crear Usuario (Permite usuarios con o sin contraseña)
+// Crear Usuario (Restaurada lógica original completa)
 router.post('/', async (req, res) => {
+    // El middleware ya verificó rol Admin
     const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;
 
     // Validación básica de campos obligatorios
     if (!rut || !nombre || !apellido) {
         return res.status(400).json({ message: 'RUT, Nombre y Apellido son obligatorios.' });
     }
-    // Validar rol 
+    // Validar rol
     const rolesPermitidos = ['Vecino', 'Funcionario', 'Administrador'];
     if (rol && !rolesPermitidos.includes(rol)) {
         return res.status(400).json({ message: `Rol inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
@@ -51,11 +55,13 @@ router.post('/', async (req, res) => {
 
     try {
         let hashedPassword = null;
-        // Hashear contraseña solo si se proporciona una
+        // Hashear contraseña solo si se proporciona una no vacía
         if (password && password.trim() !== '') {
-            const salt = await bcrypt.genSalt(10); // Usar salt para mayor seguridad
+            const salt = await bcrypt.genSalt(10);
             hashedPassword = await bcrypt.hash(password, salt);
-            console.log(`[POST /api/usuarios] Hashing password for RUT: ${rut}`);
+            console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Hashing password for new user RUT: ${rut}`);
+        } else {
+             console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Creating user RUT: ${rut} without password.`);
         }
 
         // Insertar en la base de datos
@@ -65,23 +71,21 @@ router.post('/', async (req, res) => {
                 rut,
                 nombre,
                 apellido,
-                correo_electronico || null,
-                hashedPassword,
-                rol || 'Vecino',
-                area_id || null
+                correo_electronico || null, // Permite correo nulo
+                hashedPassword,             // Será NULL si no se proporcionó contraseña
+                rol || 'Vecino',            // Rol por defecto 'Vecino' si no se especifica
+                area_id || null             // Permite area_id nulo
             ]
         );
 
-        console.log(`[POST /api/usuarios] Usuario creado exitosamente con RUT: ${rut}, ID: ${result.insertId}`);
+        console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Usuario creado exitosamente con RUT: ${rut}, ID: ${result.insertId}`);
         res.status(201).json({ message: 'Usuario creado exitosamente' });
 
     } catch (error) {
-        console.error('[POST /api/usuarios] Error al crear usuario:', error);
-        // Manejar error de duplicado de RUT
+        console.error(`[POST /api/usuarios] (Admin: ${req.user.rut}) Error al crear usuario:`, error);
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ message: `El RUT ${rut} ya está registrado.` });
         }
-        // Manejar error de clave foránea (area_id inválido)
         if (error.code === 'ER_NO_REFERENCED_ROW_2') {
             return res.status(400).json({ message: `El área con ID ${area_id} no existe.` });
         }
@@ -89,12 +93,10 @@ router.post('/', async (req, res) => {
     }
 });
 
-
-
-// Actualizar Usuario (Maneja deletePassword y campos individuales)
+// Actualizar Usuario (Restaurada lógica original completa)
 router.put('/:rut', async (req, res) => {
+    // El middleware ya verificó rol Admin
     const rut = req.params.rut;
-    // Extraer todos los posibles campos del body
     const { correo_electronico, password, rol, area_id, deletePassword } = req.body;
 
     // Validación de Rol si se proporciona
@@ -102,72 +104,64 @@ router.put('/:rut', async (req, res) => {
     if (rol && !rolesPermitidos.includes(rol)) {
         return res.status(400).json({ message: `Rol inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
     }
-    // Asegurarse de que no se intente eliminar y establecer contraseña al mismo tiempo
+    // Validación de conflicto contraseña
     if (deletePassword === true && password && password.trim() !== '') {
         return res.status(400).json({ message: 'No se puede eliminar y establecer una nueva contraseña al mismo tiempo.' });
     }
+
     try {
+        // Construcción dinámica de la query (como en tu original)
         let query = 'UPDATE Usuarios SET ';
         const values = [];
         const updates = [];
+
+        // Añadir campos a actualizar si están presentes en el body
         if ('correo_electronico' in req.body) {
             updates.push('correo_electronico = ?');
-            // Permitir establecer correo a NULL si se envía explícitamente null o ''
-            values.push(correo_electronico || null);
+            values.push(correo_electronico || null); // Permite NULL
         }
         if ('rol' in req.body) {
-            if (!rol || !rolesPermitidos.includes(rol)) {
-                return res.status(400).json({ message: `Rol proporcionado inválido.` });
-            }
+            // La validación del rol ya se hizo arriba
             updates.push('rol = ?');
             values.push(rol);
         }
         if ('area_id' in req.body) {
-            // Permitir establecer area_id a NULL si se envía null o ''
             updates.push('area_id = ?');
-            values.push(area_id || null);
+            values.push(area_id || null); // Permite NULL
         }
 
-        // Lógica de Contraseña (basada en deletePassword y password)
+        // Lógica de Contraseña (como en tu original)
         if (deletePassword === true) {
-            // Opción 1: Eliminar contraseña (establecer a NULL)
             updates.push('hash_password = NULL');
-            console.log(`[PUT /api/usuarios/${rut}] Setting password to NULL.`);
+            console.log(`[PUT /api/usuarios/${rut}] (Admin: ${req.user.rut}) Setting password to NULL.`);
         } else if (password && password.trim() !== '') {
-            // Opción 2: Establecer NUEVA contraseña (hashearla)
-            const hashedPassword = await bcrypt.hash(password, 10); // Costo 10 es un buen balance
+            const hashedPassword = await bcrypt.hash(password, 10);
             updates.push('hash_password = ?');
             values.push(hashedPassword);
-            console.log(`[PUT /api/usuarios/${rut}] Setting new password hash.`);
+            console.log(`[PUT /api/usuarios/${rut}] (Admin: ${req.user.rut}) Setting new password hash.`);
         }
-        // Opción 3: Si deletePassword no es true Y password está vacío/no se envió,
-        // NO se añade 'hash_password' a 'updates', por lo que la contraseña actual se mantiene.
+        // Si no se cumple ninguna condición de contraseña, no se añade a 'updates'
 
         // Verificar si hay algo para actualizar
         if (updates.length === 0) {
-            // No se envió ningún campo válido para actualizar
             return res.status(400).json({ message: 'No se proporcionaron campos válidos para actualizar.' });
         }
 
         // Construir y Ejecutar la Query Final
-        query += updates.join(', '); // Unir las partes del SET: 'campo1 = ?, campo2 = ?'
-        query += ' WHERE RUT = ?'; // Añadir la condición WHERE
-        values.push(rut); // Añadir el RUT al final del array de valores
+        query += updates.join(', ');
+        query += ' WHERE RUT = ?';
+        values.push(rut);
 
-        console.log(`[PUT /api/usuarios/${rut}] Executing query: ${query}`);
-        // console.log(`[PUT /api/usuarios/${rut}] With values:`, values); // Cuidado al loguear hashes
-
+        console.log(`[PUT /api/usuarios/${rut}] (Admin: ${req.user.rut}) Executing query: ${query}`);
         const [result] = await db.query(query, values);
 
-        // Verificar si alguna fila fue afectada
         if (result.affectedRows === 0) {
-            // Si no se afectó ninguna fila, el RUT no existía
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
         res.status(200).json({ message: 'Usuario actualizado exitosamente' });
 
     } catch (error) {
-        console.error(`[PUT /api/usuarios/${rut}] Error al actualizar usuario:`, error);
+        console.error(`[PUT /api/usuarios/${rut}] (Admin: ${req.user.rut}) Error al actualizar usuario:`, error);
         if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_NO_REFERENCED_ROW') {
             return res.status(400).json({ message: `El área proporcionada no existe.` });
         }
@@ -175,29 +169,26 @@ router.put('/:rut', async (req, res) => {
     }
 });
 
-
-// Eliminar Usuario
+// Eliminar Usuario (Mantenido como estaba)
 router.delete('/:rut', async (req, res) => {
+    // El middleware ya verificó rol Admin
     const rut = req.params.rut;
     try {
-        console.log(`[DELETE /api/usuarios/${rut}] Attempting to delete user.`);
-        // Ejecutar la consulta DELETE
+        console.log(`[DELETE /api/usuarios/${rut}] (Admin: ${req.user.rut}) Attempting to delete user.`);
         const [result] = await db.query('DELETE FROM Usuarios WHERE RUT = ?', [rut]);
 
-        // Verificar si se eliminó alguna fila
         if (result.affectedRows === 0) {
-            console.log(`[DELETE /api/usuarios/${rut}] User not found.`);
+            console.log(`[DELETE /api/usuarios/${rut}] (Admin: ${req.user.rut}) User not found.`);
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        console.log(`[DELETE /api/usuarios/${rut}] User deleted successfully.`);
-        // Éxito
+        console.log(`[DELETE /api/usuarios/${rut}] (Admin: ${req.user.rut}) User deleted successfully.`);
         res.status(200).json({ message: 'Usuario eliminado exitosamente' });
 
     } catch (error) {
-        console.error(`[DELETE /api/usuarios/${rut}] Error al eliminar usuario:`, error);
+        console.error(`[DELETE /api/usuarios/${rut}] (Admin: ${req.user.rut}) Error al eliminar usuario:`, error);
         if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
-            console.log(`[DELETE /api/usuarios/${rut}] Cannot delete user due to foreign key constraints.`);
+            console.log(`[DELETE /api/usuarios/${rut}] (Admin: ${req.user.rut}) Cannot delete user due to foreign key constraints.`);
             return res.status(409).json({ message: 'No se puede eliminar el usuario porque tiene solicitudes o respuestas asociadas.' });
         }
         res.status(500).json({ message: 'Error interno al eliminar usuario' });
