@@ -370,13 +370,12 @@ function Administrador({ toggleTheme }) {
     // --- Cerrar drawer en pantalla grande ---
     useEffect(() => { if (isLargeScreen) setMobileOpen(false); }, [isLargeScreen]);
 
-    // --- Filtrado ---
+      
+// --- Filtrado ---
     const filteredData = useMemo(() => {
-        // REMOVED THIS LINE: const dataState = currentSectionKey ? sectionConfig[currentSectionKey]?.stateData : null; // Access via stable config
-
-         let dataToFilter = [];
-         // Directly use the state variable corresponding to the current section
-         switch(currentSectionKey) {
+        let dataToFilter = [];
+        // Directly use the state variable corresponding to the current section
+        switch (currentSectionKey) {
             case 'solicitudes': dataToFilter = solicitudes; break;
             case 'areas': dataToFilter = areas; break;
             case 'tipos-solicitudes': dataToFilter = tiposSolicitudesAdmin; break;
@@ -384,32 +383,63 @@ function Administrador({ toggleTheme }) {
             case 'respuestas': dataToFilter = respuestas; break;
             case 'preguntas-frecuentes': dataToFilter = preguntasFrecuentes; break;
             default: dataToFilter = [];
-         }
-
-        // The rest of the filtering logic remains the same...
-        if (!currentConfig || !dataToFilter) return [];
-        if (!Array.isArray(dataToFilter)) {
-             console.warn(`Data for section ${currentSectionKey} is not an array:`, dataToFilter); // Added warning
-             return [];
         }
 
-        const lowerSearchTerm = searchTerm.toLowerCase().trim();
-        if (!lowerSearchTerm) return dataToFilter;
+        if (!currentConfig || !dataToFilter) return [];
+        if (!Array.isArray(dataToFilter)) {
+            console.warn(`Data for section ${currentSectionKey} is not an array:`, dataToFilter);
+            return [];
+        }
 
-        return dataToFilter.filter(item =>
-            currentConfig.columns.some(col => {
-                 let value = '';
-                 if (col.render) {
-                    const rendered = col.render(item, contextForRender);
-                    if (typeof rendered === 'string' || typeof rendered === 'number') value = String(rendered);
-                    else if (React.isValidElement(rendered) && rendered.props.children) value = React.Children.toArray(rendered.props.children).join('');
-                    else value = String(item[col.id] ?? '');
-                 } else { value = String(item[col.id] ?? ''); }
-                 return value.toLowerCase().includes(lowerSearchTerm);
-            })
-        );
-    // Keep dependencies including the actual data states
-    }, [currentSectionKey, currentConfig, searchTerm, solicitudes, areas, tiposSolicitudesAdmin, usuarios, respuestas, preguntasFrecuentes, contextForRender]);
+        // --- Filtering Logic ---
+        const lowerSearchTerm = searchTerm.toLowerCase().trim();
+        let results = dataToFilter; // Start with the full data for the section
+
+        if (lowerSearchTerm) {
+            results = dataToFilter.filter(item =>
+                currentConfig.columns.some(col => {
+                    let value = '';
+                    if (col.render) {
+                        const rendered = col.render(item, contextForRender);
+                        if (typeof rendered === 'string' || typeof rendered === 'number') value = String(rendered);
+                        else if (React.isValidElement(rendered) && rendered.props.children) value = React.Children.toArray(rendered.props.children).join('');
+                        else value = String(item[col.id] ?? '');
+                    } else { value = String(item[col.id] ?? ''); }
+                    return value.toLowerCase().includes(lowerSearchTerm);
+                })
+            );
+        }
+
+        // --- Sorting Logic (Added Here) ---
+        const idKey = currentConfig.idKey; // Get the ID key for the current section
+        if (idKey && results.length > 0) {
+            // Create a mutable copy before sorting
+            results = [...results].sort((a, b) => {
+                const aValue = a[idKey];
+                const bValue = b[idKey];
+
+                // Handle potential null/undefined values (treat nulls as smaller)
+                if (aValue == null && bValue == null) return 0;
+                if (aValue == null) return -1; // a is smaller
+                if (bValue == null) return 1;  // b is smaller
+
+                // Try numeric comparison first (handles numbers and numeric strings)
+                const numericA = Number(aValue);
+                const numericB = Number(bValue);
+
+                if (!isNaN(numericA) && !isNaN(numericB)) {
+                    return numericA - numericB; // Ascending numeric sort
+                }
+
+                // Fallback to locale-aware string comparison for non-numeric IDs (like RUT)
+                return String(aValue).localeCompare(String(bValue));
+            });
+        }
+
+        return results; // Return the filtered and sorted data
+
+    }, [currentSectionKey, currentConfig, searchTerm, solicitudes, areas, tiposSolicitudesAdmin, usuarios, respuestas, preguntasFrecuentes, contextForRender]); // Keep dependencies
+
     
     // --- Handlers Modales (Combinados Add/Edit) ---
     const handleOpenModal = useCallback((mode, item = null) => {
