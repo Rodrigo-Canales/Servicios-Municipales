@@ -40,6 +40,7 @@ router.get('/:rut', async (req, res) => {
 
 // Crear Usuario (Restaurada lógica original completa)
 router.post('/', async (req, res) => {
+    console.log('>>> BACKEND RECIBIÓ req.body:', req.body);
     // El middleware ya verificó rol Admin
     const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;
 

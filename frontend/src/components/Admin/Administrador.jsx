@@ -217,7 +217,7 @@ function Administrador({ toggleTheme }) {
                 { id: 'area_id', label: 'Área', render: (item, context) => context.areaMap.get(item.area_id) || '-' },
             ],
             formFields: [
-                { name: 'RUT', label: 'RUT (sin puntos, con guión)', type: 'text', required: true, disabledOnEdit: true, autoFocus: true, addOnly: true },
+                { name: 'rut', label: 'RUT (sin puntos, con guión)', type: 'text', required: true, disabledOnEdit: true, autoFocus: true, addOnly: true },
                 { name: 'nombre', label: 'Nombre', type: 'text', required: true, disabledOnEdit: true, addOnly: true },
                 { name: 'apellido', label: 'Apellido', type: 'text', required: true, disabledOnEdit: true, addOnly: true },
                 { name: 'correo_electronico', label: 'Correo Electrónico', type: 'email', required: false },
@@ -525,7 +525,7 @@ function Administrador({ toggleTheme }) {
         if (!currentConfig || !modalMode || (modalMode === 'edit' && !editingItem)) return;
 
         setIsSubmitting(true);
-        const { apiPath, idKey, formFields, title, entityType } = currentConfig;
+        const { apiPath, idKey, formFields, title } = currentConfig;
         const itemId = modalMode === 'edit' ? editingItem?.[idKey] : null;
         const httpMethod = modalMode === 'add' ? 'post' : 'put';
         const apiUrl = modalMode === 'add' ? apiPath : `${apiPath}/${encodeURIComponent(itemId)}`;
@@ -550,12 +550,6 @@ function Administrador({ toggleTheme }) {
                      else payload[field.name] = value;
                  }
              });
-
-              if (modalMode === 'add' && entityType === ENTITY_TYPES.USUARIO) {
-                  if (!payload.RUT || !payload.nombre || !payload.apellido) {
-                      throw new Error("RUT, Nombre y Apellido son obligatorios para crear un usuario.");
-                  }
-              }
 
             if (modalMode === 'edit') {
                  let hasChanged = false;

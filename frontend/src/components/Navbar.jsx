@@ -93,7 +93,7 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                 </Stack>
 
                  {/* Spacer Box - Pushes Right Side Content */}
-                 <Box sx={{ flexGrow: 1 }} />
+                <Box sx={{ flexGrow: 1 }} />
 
 
                 {/* Right Side: Controls */}
@@ -104,13 +104,13 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                     {/* User Info & Logout */}
                     {user && (
                         <Stack direction="row" spacing={1} alignItems="center" >
-                             <Tooltip title={userFullName}>
+                            <Tooltip title={userFullName}>
                                 <Avatar sx={{
-                                     width: {xs: 30, sm: 34 }, height: {xs: 30, sm: 34 },
-                                     fontSize: {xs: '0.8rem', sm: '0.875rem'},
-                                     bgcolor: 'secondary.main', color: 'secondary.contrastText',
-                                     cursor: 'default'
-                                     }}>
+                                    width: {xs: 30, sm: 34 }, height: {xs: 30, sm: 34 },
+                                    fontSize: {xs: '0.8rem', sm: '0.875rem'},
+                                    bgcolor: 'secondary.main', color: 'secondary.contrastText',
+                                    cursor: 'default'
+                                    }}>
                                     {userInitials}
                                 </Avatar>
                             </Tooltip>
