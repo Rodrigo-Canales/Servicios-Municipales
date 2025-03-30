@@ -1,41 +1,42 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+// frontend/src/components/Vecinos/SidebarVecino.jsx
+import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
-    List, ListItemButton, ListItemIcon, ListItemText, Collapse, Box, Typography,
-    CircularProgress, useTheme, styled // Asegúrate que styled esté aquí
+    List, ListItemButton, ListItemIcon, ListItemText, Collapse, Box,
+    Typography, useTheme, styled // Asegúrate que styled esté importado
 } from "@mui/material";
 import {
-    ExpandLess, ExpandMore,
-    // Iconos actualizados para Sidebar Vecino
-    ListAlt as HeaderIcon,         // Icono para la cabecera "ÁREAS" (alternativa)
-    FolderOpen as AreaIcon         // Icono para cada ítem de Área (alternativa)
+    ExpandLess, ExpandMore, // Para el collapse principal
+    Business as AreasIcon, // Icono para header y sub-items de área
+    ListAlt as MisSolicitudesIcon,
+    HelpOutline as ConsultasIcon,
+    QuestionAnswer as FaqIcon,
+    // No se necesita TipoSolicitudIcon aquí
 } from "@mui/icons-material";
 
-// --- Función Helper para Opacidad (COPIADA EXACTAMENTE de SidebarAdmin) ---
+// --- Función Helper para Opacidad (Idéntica a SidebarAdmin) ---
 function alphaHelper(color, opacity) {
     if (!color || typeof color !== 'string') return 'rgba(0,0,0,0)';
-    const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-    if (rgbMatch) { return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, ${opacity})`; }
+    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+    if (match) { return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${opacity})`; }
     const hexMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
     if (hexMatch) { const r = parseInt(hexMatch[1], 16); const g = parseInt(hexMatch[2], 16); const b = parseInt(hexMatch[3], 16); return `rgba(${r}, ${g}, ${b}, ${opacity})`; }
     const hexAlphaMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-     if (hexAlphaMatch) { const r = parseInt(hexAlphaMatch[1], 16); const g = parseInt(hexAlphaMatch[2], 16); const b = parseInt(hexAlphaMatch[3], 16); return `rgba(${r}, ${g}, ${b}, ${opacity})`; }
-    console.warn("alphaHelper function received unexpected color format:", color);
-    return 'rgba(0,0,0,0)';
+    if (hexAlphaMatch) { const r = parseInt(hexAlphaMatch[1], 16); const g = parseInt(hexAlphaMatch[2], 16); const b = parseInt(hexAlphaMatch[3], 16); return `rgba(${r}, ${g}, ${b}, ${opacity})`; }
+    // console.warn("alphaHelper function received unexpected color format:", color); // Opcional
+    return color; // Devolver color original si no se reconoce formato
 }
 
-// --- Componente Estilizado para Sub-Items (COPIADO EXACTAMENTE de SidebarAdmin) ---
-// Se usa el mismo componente para mantener el estilo idéntico.
-const AdminSubItemButton = styled(ListItemButton)(({ theme, selected }) => ({
-    paddingLeft: theme.spacing(4), // Indentación
+// --- Componente Estilizado para Sub-Items (Áreas dentro del Collapse) ---
+// Renombrado y mantenido idéntico a AdminSubItemButton
+const StyledSubItemButton = styled(ListItemButton)(({ theme, selected }) => ({
+    paddingLeft: theme.spacing(4), // Indentación de sub-item
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
     marginBottom: theme.spacing(0.5),
     borderRadius: theme.shape.borderRadius,
     marginInline: theme.spacing(1.5),
-    transition: theme.transitions.create(['background-color', 'color', 'transform'], {
-        duration: theme.transitions.duration.short,
-    }),
+    transition: theme.transitions.create(['background-color', 'color', 'transform'], { duration: theme.transitions.duration.short }),
     color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
     backgroundColor: selected ? alphaHelper(theme.palette.primary.main, 0.12) : 'transparent',
     '& .MuiListItemText-primary': {
@@ -44,10 +45,11 @@ const AdminSubItemButton = styled(ListItemButton)(({ theme, selected }) => ({
     },
     '& .MuiListItemIcon-root': {
         color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
-        minWidth: '38px', // Espacio antes del texto
+        minWidth: '38px', // Alineación ícono sub-item
         transition: theme.transitions.create(['color'], { duration: theme.transitions.duration.short }),
     },
     '&:hover': {
+        // Usar theme.palette.action.hover como en AdminSubItemButton
         backgroundColor: selected ? alphaHelper(theme.palette.primary.main, 0.16) : theme.palette.action.hover,
         color: theme.palette.text.primary,
         '& .MuiListItemIcon-root': {
@@ -58,147 +60,185 @@ const AdminSubItemButton = styled(ListItemButton)(({ theme, selected }) => ({
 // --- Fin Componente Estilizado ---
 
 
-// --- Componente SidebarVecino MODIFICADO ---
-const SidebarVecino = ({ onSelectArea, onCloseDrawer, headerTitle = "ÁREAS" }) => {
+// --- Componente SidebarVecino ---
+const SidebarVecino = ({
+    currentSection,
+    onSelectSection,
+    onCloseDrawer,
+    areas = [],
+}) => {
     const theme = useTheme();
-    const [areas, setAreas] = useState([]);
-    const [openAreas, setOpenAreas] = useState(true);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedAreaId, setSelectedAreaId] = useState(null);
+    const [openAreasHeader, setOpenAreasHeader] = useState(true); // Estado para el Collapse principal
 
-    // --- Fetch de Datos (Sin cambios) ---
-    useEffect(() => {
-        const fetchAreasData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await axios.get("/api/areas"); // Ajusta endpoint si es necesario
-                // Validar que la respuesta contenga un array
-                if (response?.data && Array.isArray(response.data)) {
-                   setAreas(response.data);
-                } else if (response?.data?.areas && Array.isArray(response.data.areas)) { // Otra posible estructura API
-                   setAreas(response.data.areas);
-                } else {
-                   console.warn("Respuesta API inesperada para áreas:", response.data);
-                   setError("Formato de datos de áreas incorrecto.");
-                   setAreas([]);
-                }
-            } catch (err) {
-                 console.error("Error fetching areas:", err);
-                setError(err.response?.data?.message || err.message || "Error al cargar áreas.");
-                setAreas([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAreasData();
-    }, []);
+    // Click handler para el header "ÁREAS"
+    const handleAreasHeaderClick = () => { setOpenAreasHeader(!openAreasHeader); };
 
-    // --- Handlers (Sin cambios) ---
-    const handleAreaClick = (areaId, areaName) => {
-        setSelectedAreaId(areaId);
-        if (typeof onSelectArea === 'function') { onSelectArea(areaId, areaName); }
-        if (typeof onCloseDrawer === 'function') { onCloseDrawer(); }
+    // Helper para verificar si una sección (área o top-level) está activa
+    const isActive = (sectionName) => currentSection === sectionName;
+    const isAreaActive = (areaId) => currentSection === `area-${areaId}`;
+
+    // Click handler unificado para todos los items seleccionables
+    const handleItemClick = (sectionName) => {
+        if (typeof onSelectSection === 'function') {
+            onSelectSection(sectionName);
+        }
+        if (typeof onCloseDrawer === 'function') {
+            onCloseDrawer();
+        }
     };
 
-    // --- Renderizado Condicional (Sin cambios) ---
-    if (!theme) return <Box sx={{ p: 2 }}>Cargando...</Box>; // Fallback tema
-    if (loading) return <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}><CircularProgress size={30} /></Box>; // Indicador carga
-    if (error) return ( // Mensaje error estilizado
-        <Box sx={{ p: 1.5, mx: 1.5, mt: 2, borderRadius: 1, border: 1, borderColor: 'error.light', bgcolor: alphaHelper(theme.palette.error.main, 0.1) }}>
-            <Typography color="error.dark" variant="body2" sx={{ fontSize: '0.85rem' }}>Error al cargar áreas: {error}</Typography>
-        </Box>
-    );
+    // Fallback si el tema no está listo
+    if (!theme) return <Box sx={{ p: 2 }}>Cargando...</Box>;
 
-    // --- Renderizado Principal (CON ESTILOS DE SidebarAdmin) ---
+    // Función para generar los estilos SX de los items de Nivel Superior
+    // Replicando el estilo visual de StyledSubItemButton pero sin indentación
+    const getTopLevelItemSx = (selected) => ({
+        paddingLeft: theme.spacing(1.5), // Sin indentación extra
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
+        marginBottom: theme.spacing(0.5),
+        borderRadius: theme.shape.borderRadius,
+        marginInline: theme.spacing(1.5),
+        transition: theme.transitions.create(['background-color', 'color', 'transform'], { duration: theme.transitions.duration.short }),
+        // Colores basados en selección (replicando StyledSubItemButton)
+        // *Usar text.primary para no seleccionados como en Admin* <- CORRECCIÓN: Admin usa text.secondary, mantenemos eso.
+        color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
+        backgroundColor: selected ? alphaHelper(theme.palette.primary.main, 0.12) : 'transparent',
+        '& .MuiListItemText-primary': {
+            fontWeight: selected ? 600 : 500,
+            fontSize: '0.92rem',
+        },
+        '& .MuiListItemIcon-root': {
+            // Ícono con color secundario si no está seleccionado
+            color: selected ? theme.palette.primary.main : theme.palette.text.secondary,
+            minWidth: '40px', // Alinear con ícono del header
+            transition: theme.transitions.create(['color'], { duration: theme.transitions.duration.short }),
+        },
+        '&:hover': {
+             // Replicar hover de StyledSubItemButton
+            backgroundColor: selected ? alphaHelper(theme.palette.primary.main, 0.16) : theme.palette.action.hover,
+            color: theme.palette.text.primary,
+            '& .MuiListItemIcon-root': {
+                color: theme.palette.text.primary,
+            },
+        },
+    });
+
+
     return (
         <Box sx={{ width: '100%', height: '100%', overflowY: 'auto', overflowX: 'hidden', bgcolor: 'background.paper' }}>
+            {/* Lista principal */}
             <List sx={{ pt: 2, pb: 2, px: 0 }}>
 
-                {/* === Cabecera Desplegable (ESTILO IDÉNTICO a SidebarAdmin) === */}
+                {/* === Cabecera "ÁREAS" Desplegable (Estilo idéntico a Admin "Gestionar") === */}
                 <ListItemButton
-                    onClick={() => setOpenAreas(!openAreas)}
+                    onClick={handleAreasHeaderClick}
                     sx={{
-                        mx: 1.5, // Margen horizontal
-                        mb: 1.5, // Margen inferior
-                        py: 0.5, // Padding vertical reducido
-                        borderRadius: 1, // Bordes redondeados
-                        color: 'text.primary', // Color texto por defecto
-                        '&:hover': { bgcolor: 'action.hover' }, // Efecto hover
+                        mx: 1.5,
+                        mb: 1.5, // Igual que en Admin
+                        py: 0.5,
+                        borderRadius: 1,
+                        color: 'text.primary', // Igual que en Admin
+                        '&:hover': { bgcolor: 'action.hover' }, // Igual que en Admin
                     }}
                 >
-                    {/* Icono de la Cabecera */}
                     <ListItemIcon sx={{ minWidth: '40px', color: 'inherit' }}>
-                        <HeaderIcon fontSize="small"/> {/* Icono Actualizado */}
+                        <AreasIcon fontSize="small"/> {/* Icono de Área */}
                     </ListItemIcon>
-                    {/* Texto de la Cabecera */}
                     <ListItemText
-                        primary={headerTitle.toUpperCase()} // Texto en mayúsculas
+                        primary="ÁREAS" // Texto cambiado
                         primaryTypographyProps={{
-                            fontWeight: 700, // Negrita
-                            variant: 'overline', // Estilo overline
-                            letterSpacing: '0.5px', // Espaciado letras
-                            fontSize: '0.8rem' // Tamaño fuente
+                            fontWeight: 700,
+                            variant: 'overline',
+                            letterSpacing: '0.5px',
+                            fontSize: '0.8rem' // Igual que en Admin
                         }}
                     />
-                    {/* Icono de Flecha Animado (IDÉNTICO a SidebarAdmin) */}
+                    {/* Icono de despliegue (igual que en Admin) */}
                     <Box sx={{
-                        ml: 'auto', display: 'flex', alignItems: 'center',
+                        ml: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
                         transition: theme.transitions.create('transform', { duration: theme.transitions.duration.short }),
-                        transform: openAreas ? 'rotate(0deg)' : 'rotate(-90deg)' // Rotación
+                        transform: openAreasHeader ? 'rotate(0deg)' : 'rotate(-90deg)'
                     }}>
-                        {openAreas ? <ExpandLess /> : <ExpandMore />}
+                        {openAreasHeader ? <ExpandLess /> : <ExpandMore />}
                     </Box>
                 </ListItemButton>
 
-                {/* === Contenedor Colapsable con los Ítems de Área === */}
-                <Collapse in={openAreas} timeout={300} unmountOnExit>
+                {/* === Contenedor Colapsable con los Sub-items de Área === */}
+                <Collapse in={openAreasHeader} timeout={300} unmountOnExit>
                     {/* Lista interna SIN padding adicional */}
                     <List component="div" disablePadding>
                         {areas.length > 0 ? (
                             areas.map((area) => {
-                                // Validación simple por si algún área viene mal de la API
-                                if (!area?.id_area || !area?.nombre_area) return null;
-                                const isSelected = area.id_area === selectedAreaId;
+                                const areaSectionId = `area-${area.id_area}`;
                                 return (
-                                    // *** Usar el MISMO componente estilizado AdminSubItemButton ***
-                                    <AdminSubItemButton
+                                     // Usar el StyledSubItemButton (ex-AdminSubItemButton)
+                                    <StyledSubItemButton
                                         key={area.id_area}
-                                        selected={isSelected}
-                                        onClick={() => handleAreaClick(area.id_area, area.nombre_area)}
+                                        selected={isAreaActive(area.id_area)}
+                                        onClick={() => handleItemClick(areaSectionId)}
                                     >
-                                        {/* Icono del Ítem de Área */}
                                         <ListItemIcon>
-                                            <AreaIcon fontSize="small" /> {/* Icono Actualizado */}
+                                            {/* Icono de Área para los sub-items */}
+                                            <AreasIcon fontSize="small" />
                                         </ListItemIcon>
-                                        {/* Texto del Ítem de Área */}
                                         <ListItemText primary={area.nombre_area} />
-                                    </AdminSubItemButton>
+                                    </StyledSubItemButton>
                                 );
                             })
                         ) : (
-                            // Mensaje si no hay áreas (estilo simple pero visible)
-                             <Typography sx={{ pl: 4, py:1, color: 'text.disabled', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                                No hay áreas disponibles.
+                             <Typography variant="caption" sx={{ pl: 4, color: 'text.secondary', fontStyle: 'italic' }}>
+                                Cargando áreas...
                              </Typography>
                         )}
                     </List>
                 </Collapse>
-                 {/* Puedes añadir otras cabeceras/secciones aquí si es necesario */}
+
+                {/* === Ítems de Nivel Superior (Fuera del Collapse) === */}
+
+                <ListItemButton
+                    selected={isActive('mis-solicitudes')}
+                    onClick={() => handleItemClick('mis-solicitudes')}
+                    sx={getTopLevelItemSx(isActive('mis-solicitudes'))} // Aplicar estilo calculado
+                >
+                    <ListItemIcon><MisSolicitudesIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText primary="Mis Solicitudes" />
+                </ListItemButton>
+
+                <ListItemButton
+                    selected={isActive('consultas')}
+                    onClick={() => handleItemClick('consultas')}
+                    sx={getTopLevelItemSx(isActive('consultas'))} // Aplicar estilo calculado
+                >
+                    <ListItemIcon><ConsultasIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText primary="Consultas" />
+                </ListItemButton>
+
+                <ListItemButton
+                    selected={isActive('preguntas-frecuentes')}
+                    onClick={() => handleItemClick('preguntas-frecuentes')}
+                    sx={getTopLevelItemSx(isActive('preguntas-frecuentes'))} // Aplicar estilo calculado
+                >
+                    <ListItemIcon><FaqIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText primary="Preguntas Frecuentes" />
+                </ListItemButton>
+
             </List>
         </Box>
     );
 };
 
-// No necesitas defaultProps si siempre pasas las props requeridas desde el componente padre.
-// Si quieres asegurarte, puedes mantenerlas:
-/*
-SidebarVecino.defaultProps = {
-    onSelectArea: () => {},
-    onCloseDrawer: () => {},
-    headerTitle: "ÁREAS",
+SidebarVecino.propTypes = {
+    currentSection: PropTypes.string,
+    onSelectSection: PropTypes.func.isRequired,
+    onCloseDrawer: PropTypes.func,
+    areas: PropTypes.arrayOf(PropTypes.shape({
+        id_area: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        nombre_area: PropTypes.string.isRequired,
+    })).isRequired,
+    // tiposSolicitudes prop ya no es necesaria aquí
 };
-*/
 
 export default SidebarVecino;

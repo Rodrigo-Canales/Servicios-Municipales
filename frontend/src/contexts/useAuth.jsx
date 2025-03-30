@@ -1,4 +1,4 @@
-// frontend/src/contexts/useAuth.jsx // O .js, asegúrate que coincida con el nombre real
+// frontend/src/contexts/useAuth.jsx 
 import { useContext } from 'react';
 // Importa el CONTEXTO desde el archivo donde se creó (AuthContextValue)
 import { AuthContext } from './AuthContextValue.jsx'; // Asegúrate que la extensión coincida
@@ -21,4 +21,3 @@ export const useAuth = () => {
     return context;
 };
 
-// --- ELIMINAR CUALQUIER CÓDIGO DUPLICADO DEBAJO DE ESTA LÍNEA ---
