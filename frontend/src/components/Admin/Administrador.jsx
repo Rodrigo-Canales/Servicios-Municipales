@@ -112,33 +112,33 @@ function Administrador({ toggleTheme }) {
 
             // Handle potential wrapping object & specific keys (Logic unchanged)
             if (data && typeof data === 'object' && !Array.isArray(data) && data[dataKey]) {
-                 data = data[dataKey];
+                data = data[dataKey];
             } else if (endpoint === '/preguntas_frecuentes' && data && Array.isArray(data.preguntas_frecuentes)) {
-                 data = data.preguntas_frecuentes;
+                data = data.preguntas_frecuentes;
             } else if (endpoint === '/tipos_solicitudes' && data && Array.isArray(data.tipos_solicitudes)) {
-                 data = data.tipos_solicitudes;
+                data = data.tipos_solicitudes;
             } else if (endpoint === '/areas' && data && Array.isArray(data.areas)) {
                 data = data.areas;
             } else if (endpoint === '/usuarios' && data && Array.isArray(data.usuarios)) {
                 data = data.usuarios;
             } else if (endpoint === '/solicitudes' && data && Array.isArray(data.solicitudes)) {
-                 data = data.solicitudes;
+                data = data.solicitudes;
             } else if (endpoint === '/respuestas' && data && Array.isArray(data.respuestas)) {
-                 data = data.respuestas;
+                data = data.respuestas;
             }
             // Final check if data is now an array (Logic unchanged)
             if (!Array.isArray(data)) {
-                 console.warn(`[fetchGenericData] Unexpected final data format for ${dataKey}. Expected array, got:`, data);
-                 if (Array.isArray(response.data)) {
-                     data = response.data;
-                 } else {
+                console.warn(`[fetchGenericData] Unexpected final data format for ${dataKey}. Expected array, got:`, data);
+                if (Array.isArray(response.data)) {
+                    data = response.data;
+                } else {
                     throw new Error(`Respuesta inesperada del servidor para ${dataKey}.`);
-                 }
+                }
             }
 
             console.log(`[fetchGenericData] Success: ${data.length} for ${dataKey}`);
             if (dataKey === 'usuarios') {
-                 return data.map(u => { const { hash_password: _, ...rest } = u; return rest; });
+                return data.map(u => { const { hash_password: _, ...rest } = u; return rest; });
             }
             return data;
         } catch (err) {
@@ -149,7 +149,7 @@ function Administrador({ toggleTheme }) {
 
     // --- Configuración Centralizada de Secciones ---
     // (Funcionalidad sin cambios, solo ajustes de estilo en render si es necesario)
-     const sectionConfig = useMemo(() => ({
+    const sectionConfig = useMemo(() => ({
         // --- Solicitudes Config ---
         'solicitudes': {
             title: 'Solicitudes',
@@ -356,7 +356,7 @@ function Administrador({ toggleTheme }) {
                     setError(err.message || `Error al cargar ${config.title}.`);
                     config.setDataFn([]);
                     (config.relatedDataKeys || []).forEach(key => {
-                         sectionConfig[key]?.setDataFn?.([]);
+                        sectionConfig[key]?.setDataFn?.([]);
                     });
                 }
             } finally {
@@ -407,21 +407,21 @@ function Administrador({ toggleTheme }) {
                     if (col.render) {
                         try {
                             const rendered = col.render(item, contextForRender);
-                             if (typeof rendered === 'string' || typeof rendered === 'number') value = String(rendered);
-                             else if (React.isValidElement(rendered) && (rendered.type === Tooltip || rendered.type === Box) && rendered.props.children) {
-                                 const children = React.Children.toArray(rendered.props.children);
-                                 const innerChild = children[0];
-                                 if (React.isValidElement(innerChild) && innerChild.props.children) {
-                                     value = React.Children.toArray(innerChild.props.children).join('');
-                                 } else if (typeof innerChild === 'string' || typeof innerChild === 'number') {
-                                     value = String(innerChild);
-                                 } else { value = String(item[col.id] ?? ''); }
-                             }
-                             else if (React.isValidElement(rendered) && rendered.props.children) value = React.Children.toArray(rendered.props.children).join('');
-                             else value = String(item[col.id] ?? '');
+                            if (typeof rendered === 'string' || typeof rendered === 'number') value = String(rendered);
+                            else if (React.isValidElement(rendered) && (rendered.type === Tooltip || rendered.type === Box) && rendered.props.children) {
+                                const children = React.Children.toArray(rendered.props.children);
+                                const innerChild = children[0];
+                                if (React.isValidElement(innerChild) && innerChild.props.children) {
+                                    value = React.Children.toArray(innerChild.props.children).join('');
+                                } else if (typeof innerChild === 'string' || typeof innerChild === 'number') {
+                                    value = String(innerChild);
+                                } else { value = String(item[col.id] ?? ''); }
+                            }
+                            else if (React.isValidElement(rendered) && rendered.props.children) value = React.Children.toArray(rendered.props.children).join('');
+                            else value = String(item[col.id] ?? '');
                         } catch (e) {
-                             console.warn("Error processing rendered value for search:", e);
-                             value = String(item[col.id] ?? '');
+                            console.warn("Error processing rendered value for search:", e);
+                            value = String(item[col.id] ?? '');
                         }
                     } else { value = String(item[col.id] ?? ''); }
                     return value.toLowerCase().includes(lowerSearchTerm);
@@ -450,8 +450,8 @@ function Administrador({ toggleTheme }) {
     const handleOpenModal = useCallback((mode, item = null) => {
         // Verifica si hay una configuración válida antes de continuar
         if (!currentConfig || !currentConfig.formFields) {
-             console.error("Intentando abrir modal sin configuración válida.");
-             return; // No hacer nada si no hay config
+            console.error("Intentando abrir modal sin configuración válida.");
+            return; // No hacer nada si no hay config
         }
 
         setModalMode(mode); // Establece el modo ('add' o 'edit')
@@ -472,12 +472,12 @@ function Administrador({ toggleTheme }) {
             setEditingItem(null); // No hay item en edición
             currentConfig.formFields.forEach(field => {
                  // Solo establecer valor por defecto si el campo NO es solo para editar
-                 if (!field.editOnly) {
+                if (!field.editOnly) {
                     // Usar valor por defecto definido en config, o ''
                     initialFormData[field.name] = field.defaultValue ?? '';
-                 }
+                }
                  // Asegurar que deletePassword no esté presente en modo 'add'
-                 if (field.name === 'deletePassword') delete initialFormData[field.name];
+                if (field.name === 'deletePassword') delete initialFormData[field.name];
             });
         }
 
@@ -501,14 +501,14 @@ function Administrador({ toggleTheme }) {
     const handleFormChange = useCallback((event) => {
         const { name, value, type, checked } = event.target;
         setFormData(prev => {
-             const newState = { ...prev, [name]: type === 'checkbox' ? checked : value };
-              if (currentSectionKey === 'usuarios' && name === 'deletePassword' && checked) {
-                 newState.password = ''; setShowPassword(false);
-             }
-              if (currentSectionKey === 'usuarios' && name === 'password' && value.trim() !== '') {
-                 newState.deletePassword = false;
-             }
-             return newState;
+            const newState = { ...prev, [name]: type === 'checkbox' ? checked : value };
+            if (currentSectionKey === 'usuarios' && name === 'deletePassword' && checked) {
+                newState.password = ''; setShowPassword(false);
+            }
+            if (currentSectionKey === 'usuarios' && name === 'password' && value.trim() !== '') {
+                newState.deletePassword = false;
+            }
+            return newState;
         });
     }, [currentSectionKey]);
 
@@ -527,16 +527,16 @@ function Administrador({ toggleTheme }) {
                 setPage(0); // Reset pagination
             }
              // Siempre refresca datos relacionados que podrían usarse en dropdowns
-             if (config.entityType === ENTITY_TYPES.AREA && sectionConfig['areas']) {
-                 sectionConfig['areas'].fetchFn()
+            if (config.entityType === ENTITY_TYPES.AREA && sectionConfig['areas']) {
+                sectionConfig['areas'].fetchFn()
                     .then(data => sectionConfig['areas'].setDataFn(data || []))
                     .catch(e => console.error("Error refetching areas", e));
-             }
-             if (config.entityType === ENTITY_TYPES.TIPO_SOLICITUD && sectionConfig['tipos-solicitudes']) {
-                 sectionConfig['tipos-solicitudes'].fetchFn()
-                     .then(data => sectionConfig['tipos-solicitudes'].setDataFn(data || []))
-                     .catch(e => console.error("Error refetching tipos", e));
-             }
+            }
+            if (config.entityType === ENTITY_TYPES.TIPO_SOLICITUD && sectionConfig['tipos-solicitudes']) {
+                sectionConfig['tipos-solicitudes'].fetchFn()
+                    .then(data => sectionConfig['tipos-solicitudes'].setDataFn(data || []))
+                    .catch(e => console.error("Error refetching tipos", e));
+            }
         } catch (refreshErr) {
             console.error(`Error refreshing ${config.title}:`, refreshErr);
             mostrarAlertaError('Error al Recargar', `No se pudo actualizar la tabla de ${config.title}.`);
@@ -559,44 +559,44 @@ function Administrador({ toggleTheme }) {
             let payload = {};
             formFields.forEach(field => {
                 if ((modalMode === 'edit' && field.addOnly) || (modalMode === 'add' && field.editOnly)) return;
-                 if (Object.prototype.hasOwnProperty.call(formData, field.name)) {
+                if (Object.prototype.hasOwnProperty.call(formData, field.name)) {
                     let value = formData[field.name];
-                     if (value === '' && (field.type === 'select' || ['area_id', 'id_tipo', 'correo_electronico'].includes(field.name))) payload[field.name] = null;
-                     else if (field.type === 'password') {
-                         if (field.name === 'password' && typeof value === 'string' && value.trim()) payload.password = value.trim();
-                         else if (field.name === 'deletePassword' && value === true) {
-                             payload.deletePassword = true;
-                             delete payload.password;
-                         }
-                     } else if (field.type === 'checkbox' && field.name !== 'deletePassword') payload[field.name] = !!value;
-                     else if (typeof value === 'string') payload[field.name] = value.trim();
-                     else payload[field.name] = value;
-                 }
-             });
+                    if (value === '' && (field.type === 'select' || ['area_id', 'id_tipo', 'correo_electronico'].includes(field.name))) payload[field.name] = null;
+                    else if (field.type === 'password') {
+                        if (field.name === 'password' && typeof value === 'string' && value.trim()) payload.password = value.trim();
+                        else if (field.name === 'deletePassword' && value === true) {
+                            payload.deletePassword = true;
+                            delete payload.password;
+                        }
+                    } else if (field.type === 'checkbox' && field.name !== 'deletePassword') payload[field.name] = !!value;
+                    else if (typeof value === 'string') payload[field.name] = value.trim();
+                    else payload[field.name] = value;
+                }
+            });
 
             if (modalMode === 'edit') {
-                 let hasChanged = false;
-                 for (const key in payload) {
-                      if (key === 'password' && payload.password) { hasChanged = true; break; }
-                      if (key === 'deletePassword' && payload.deletePassword === true) { hasChanged = true; break; }
-                      const originalValue = editingItem[key] ?? '';
-                      const newValue = payload[key] ?? '';
+                let hasChanged = false;
+                for (const key in payload) {
+                    if (key === 'password' && payload.password) { hasChanged = true; break; }
+                    if (key === 'deletePassword' && payload.deletePassword === true) { hasChanged = true; break; }
+                    const originalValue = editingItem[key] ?? '';
+                    const newValue = payload[key] ?? '';
                       // Comparación más robusta para null/undefined vs string vacío
-                      if (String(originalValue ?? '') !== String(newValue ?? '')) {
+                    if (String(originalValue ?? '') !== String(newValue ?? '')) {
                         hasChanged = true;
                         break;
-                      }
-                 }
-                 if (!hasChanged) {
+                    }
+                }
+                if (!hasChanged) {
                     mostrarAlertaExito("Sin cambios", "No se detectaron cambios.");
                     handleCloseModal(); // Cierra el modal
                     //setIsSubmitting(false); // Se hace en el finally
                     return;
-                 }
+                }
             }
 
-             const logPayload = { ...payload };
-             if (logPayload.password) logPayload.password = '***';
+            const logPayload = { ...payload };
+            if (logPayload.password) logPayload.password = '***';
             console.log(`[handleSubmit] ${httpMethod.toUpperCase()} ${apiUrl} Payload:`, logPayload);
 
             await api[httpMethod](apiUrl, payload);
@@ -731,14 +731,14 @@ function Administrador({ toggleTheme }) {
                 {/* Sidebar */}
                 <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
                      {/* Mobile Drawer */}
-                     <Drawer
-                         variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }}
-                         sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${currentTheme.palette.divider}`, transition: currentTheme.transitions.create('transform', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
-                     > {drawerContent} </Drawer>
+                    <Drawer
+                        variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }}
+                        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${currentTheme.palette.divider}`, transition: currentTheme.transitions.create('transform', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
+                    > {drawerContent} </Drawer>
                      {/* Desktop Drawer */}
-                     <Drawer
-                         variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${currentTheme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: currentTheme.transitions.create('width', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
-                     > {drawerContent} </Drawer>
+                    <Drawer
+                        variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${currentTheme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: currentTheme.transitions.create('width', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
+                    > {drawerContent} </Drawer>
                 </Box>
 
                 {/* Contenido Principal */}
@@ -792,18 +792,18 @@ function Administrador({ toggleTheme }) {
                                         <TableContainer sx={{ flexGrow: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: '8px', height: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: currentTheme.palette.mode === 'dark' ? currentTheme.palette.grey[700] : currentTheme.palette.grey[400], borderRadius: '4px' } }}>
                                             <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
                                                 <TableHead>
-                                                     <TableRow>
+                                                    <TableRow>
                                                         {currentConfig.columns.map(col => ( <TableCell key={col.id} sx={{ ...headerCellStyle, ...(col.headerStyle || {}), textAlign: col.id === 'actions' ? 'right' : 'left' }}> {col.label} </TableCell> ))}
-                                                         {(currentConfig.canEdit || currentConfig.canDelete) && ( <TableCell sx={{ ...headerCellStyle, textAlign: 'right', width: '110px' }}> Acciones </TableCell> )}
-                                                     </TableRow>
-                                                 </TableHead>
+                                                        {(currentConfig.canEdit || currentConfig.canDelete) && ( <TableCell sx={{ ...headerCellStyle, textAlign: 'right', width: '110px' }}> Acciones </TableCell> )}
+                                                    </TableRow>
+                                                </TableHead>
                                                 <TableBody>
-                                                     {paginatedData.map((item, index) => {
-                                                         const rowKey = `${currentSectionKey}-${item[currentConfig.idKey] || index}`;
-                                                         const actionsCellStyle = { ...bodyCellStyle, padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
-                                                         const canEditItem = currentConfig.canEdit;
-                                                         const canDeleteItem = currentConfig.canDelete;
-                                                         return (
+                                                    {paginatedData.map((item, index) => {
+                                                        const rowKey = `${currentSectionKey}-${item[currentConfig.idKey] || index}`;
+                                                        const actionsCellStyle = { ...bodyCellStyle, padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
+                                                        const canEditItem = currentConfig.canEdit;
+                                                        const canDeleteItem = currentConfig.canDelete;
+                                                        return (
                                                             <TableRow hover key={rowKey} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: currentTheme.palette.action.hover }, transition: currentTheme.transitions.create('background-color', { duration: currentTheme.transitions.duration.shortest }), animation: `${fadeInUp} 0.3s ease-out forwards`, animationDelay: `${index * 0.03}s`, opacity: 0 }}>
                                                                 {currentConfig.columns.map(col => ( <TableCell key={`${rowKey}-${col.id}`} sx={{...bodyCellStyle, ...(col.cellStyle || {})}}> {col.render ? col.render(item, contextForRender) : (item[col.id] ?? '-')} </TableCell> ))}
                                                                 {(canEditItem || canDeleteItem) && (
@@ -813,8 +813,8 @@ function Administrador({ toggleTheme }) {
                                                                     </TableCell>
                                                                 )}
                                                             </TableRow>
-                                                         );
-                                                     })}
+                                                        );
+                                                    })}
                                                     {!loading && filteredData.length === 0 && ( <TableRow> <TableCell colSpan={getCurrentColSpan} align="center" sx={{ py: 5, fontStyle: 'italic', color: 'text.disabled', borderBottom: 'none' }}> {searchTerm ? 'No se encontraron resultados que coincidan con la búsqueda.' : `No hay ${currentConfig.title.toLowerCase()} para mostrar.`} </TableCell> </TableRow> )}
                                                     {!loading && paginatedData.length > 0 && rowsPerPage > 0 && ( (() => { const emptyRows = rowsPerPage - paginatedData.length; return emptyRows > 0 ? ( <TableRow style={{ height: 49 * emptyRows }}><TableCell colSpan={getCurrentColSpan} style={{ padding: 0, borderBottom: 'none' }} /></TableRow> ) : null; })() )}
                                                 </TableBody>
@@ -890,10 +890,10 @@ function Administrador({ toggleTheme }) {
                             </DialogContent>
                         )}
                         <DialogActions sx={{ p: '16px 24px', borderTop: `1px solid ${currentTheme.palette.divider}`, bgcolor: currentTheme.palette.background.default }}>
-                             <Button onClick={handleCloseModal} color="secondary" disabled={isSubmitting} sx={{ transition: currentTheme.transitions.create(['background-color', 'transform']), '&:hover': { transform: 'scale(1.02)', bgcolor: 'action.hover' } }}> Cancelar </Button>
-                             <Button onClick={handleSubmit} variant="contained" color="primary" disabled={isSubmitting} sx={{ minWidth: 120, transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow']), '&:hover': { transform: 'translateY(-1px)', boxShadow: currentTheme.shadows[3], backgroundColor: currentTheme.palette.primary.dark } }}>
+                            <Button onClick={handleCloseModal} color="secondary" disabled={isSubmitting} sx={{ transition: currentTheme.transitions.create(['background-color', 'transform']), '&:hover': { transform: 'scale(1.02)', bgcolor: 'action.hover' } }}> Cancelar </Button>
+                            <Button onClick={handleSubmit} variant="contained" color="primary" disabled={isSubmitting} sx={{ minWidth: 120, transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow']), '&:hover': { transform: 'translateY(-1px)', boxShadow: currentTheme.shadows[3], backgroundColor: currentTheme.palette.primary.dark } }}>
                                 {isSubmitting ? <CircularProgress size={24} color="inherit" /> : (modalMode === 'add' ? 'Agregar' : 'Guardar Cambios')}
-                             </Button>
+                            </Button>
                         </DialogActions>
                     </Dialog>
                 )}

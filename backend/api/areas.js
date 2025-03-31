@@ -5,9 +5,6 @@ const db = require('../config/db');
 // *** 1. Importar los middlewares de autenticación y autorización ***
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
-// --- Rutas GET (Obtener información) ---
-// Estas rutas requieren que el usuario esté autenticado (cualquier rol válido: Vecino, Funcionario, Administrador)
-// Se aplica 'protect' individualmente a cada una.
 
 // Obtener todas las áreas
 router.get('/', protect, async (req, res) => {
@@ -40,10 +37,6 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// --- Rutas POST, PUT, DELETE (Modificar datos) ---
-// Estas rutas requieren autenticación Y que el rol sea 'Administrador'.
-// Se aplica 'protect' y luego 'restrictTo('Administrador')' a cada una.
-
 // Crear una nueva área
 router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     // Middlewares 'protect' y 'restrictTo' ya verificaron token y rol Admin
@@ -63,7 +56,7 @@ router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
         console.error(`[POST /api/areas] (Admin: ${req.user.rut}) Error al crear área:`, error);
         // Manejar posible error de nombre duplicado si tienes un índice UNIQUE
         if (error.code === 'ER_DUP_ENTRY') {
-             return res.status(409).json({ message: `El área '${nombre_area}' ya existe.` });
+            return res.status(409).json({ message: `El área '${nombre_area}' ya existe.` });
         }
         res.status(500).json({ message: 'Error al crear área' });
     }
@@ -90,8 +83,8 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
         res.status(200).json({ message: 'Área actualizada exitosamente' });
     } catch (error) {
         console.error(`[PUT /api/areas/${id}] (Admin: ${req.user.rut}) Error al actualizar área:`, error);
-         if (error.code === 'ER_DUP_ENTRY') {
-             return res.status(409).json({ message: `El nombre de área '${nombre_area}' ya está en uso.` });
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: `El nombre de área '${nombre_area}' ya está en uso.` });
         }
         res.status(500).json({ message: 'Error al actualizar área' });
     }

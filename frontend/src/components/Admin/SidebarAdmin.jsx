@@ -9,9 +9,8 @@ import {
     Business as AreasIcon,
     Category as TiposIcon,
     Description as SolicitudesIcon,
-    QuestionAnswer as FaqIcon, // NUEVO: Icono para Preguntas Frecuentes
-    RateReview as RespuestasIcon // NUEVO: Icono para Respuestas (o puedes usar ForumIcon)
-    // import ForumIcon from '@mui/icons-material/Forum'; // Alternativa para Respuestas
+    QuestionAnswer as FaqIcon,
+    RateReview as RespuestasIcon 
 } from "@mui/icons-material";
 
 // --- Función Helper para Opacidad (Restaurada) ---

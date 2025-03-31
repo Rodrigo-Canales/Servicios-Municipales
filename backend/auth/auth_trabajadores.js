@@ -1,17 +1,12 @@
 // backend/routes/auth_trabajadores.js
 const express = require('express');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); // *** 1. Importar jsonwebtoken ***
-const db = require('../config/db'); // Asegúrate que la ruta a tu config de BD sea correcta
-require('dotenv').config({ path: '../.env' }); // *** 2. Cargar variables de entorno (ajusta la ruta a tu .env si es necesario) ***
+const jwt = require('jsonwebtoken'); 
+const db = require('../config/db'); 
+require('dotenv').config({ path: '../.env' }); 
 
 const router = express.Router();
 
-/**
- * @route POST /api/auth/trabajadores/login
- * @desc Autentica a un usuario con rol 'Funcionario' o 'Administrador' y devuelve un JWT.
- * @access Public
- */
 router.post('/login', async (req, res) => {
     // Extraer credenciales (sin cambios)
     const { correo_electronico, password } = req.body;

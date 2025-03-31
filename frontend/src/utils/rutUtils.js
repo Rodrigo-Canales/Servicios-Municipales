@@ -76,7 +76,7 @@ const calculateVerifierDigit = (rutBody) => {
    * @returns {boolean} True if the RUT is valid, false otherwise.
    */
   export const validateRut = (rut) => {
-     if (!rut) {
+      if (!rut) {
       return false;
     }
   

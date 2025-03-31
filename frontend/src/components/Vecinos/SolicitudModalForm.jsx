@@ -61,7 +61,7 @@ const SolicitudModalForm = ({
                             loadedTitle = defaultModule.title || "Nueva Solicitud General";
                             console.log("[Modal] Loaded default form definition.");
                         } else {
-                             throw new Error('Default definition file "default.js" is invalid.');
+                            throw new Error('Default definition file "default.js" is invalid.');
                         }
                     } catch (defaultError) {
                         console.error(`[Modal] Failed to load default form definition. Error: ${defaultError.message}`);
@@ -108,26 +108,26 @@ const SolicitudModalForm = ({
                 [name]: files[0] // Guardar el objeto File
             }));
              // Actualizar formData con el nombre del archivo (opcional, para visualización)
-             setFormData(prevData => ({
+            setFormData(prevData => ({
                 ...prevData,
                 [name]: files[0].name
-             }));
+            }));
         } else {
             // Limpiar si se quita el archivo
-             setFileInputs(prevFiles => {
-                 const updatedFiles = { ...prevFiles };
-                 delete updatedFiles[name];
-                 return updatedFiles;
-             });
-             setFormData(prevData => ({
+            setFileInputs(prevFiles => {
+                const updatedFiles = { ...prevFiles };
+                delete updatedFiles[name];
+                return updatedFiles;
+            });
+            setFormData(prevData => ({
                 ...prevData,
                 [name]: '' // Limpiar el nombre en formData
-             }));
+            }));
         }
          // Permitir reseleccionar el mismo archivo
-         if (event.target) {
-             event.target.value = null;
-         }
+        if (event.target) {
+            event.target.value = null;
+        }
     }, []);
 
     // --- Manejador de Envío ---
@@ -138,9 +138,9 @@ const SolicitudModalForm = ({
             // Añadir datos del formulario
             for (const key in formData) {
                 // Solo añadir si no es un campo de archivo gestionado por fileInputs
-                 if (!(key in fileInputs)) {
-                      submissionData.append(key, formData[key]);
-                 }
+                if (!(key in fileInputs)) {
+                    submissionData.append(key, formData[key]);
+                }
             }
              // Añadir archivos reales
             for (const key in fileInputs) {
@@ -178,7 +178,7 @@ const SolicitudModalForm = ({
         switch (field.type) {
             case 'textarea':
                 return (
-                     <TextField
+                    <TextField
                         {...commonProps}
                         multiline
                         rows={field.rows || 3}
@@ -208,7 +208,7 @@ const SolicitudModalForm = ({
                 );
             case 'checkbox':
                 return (
-                     <FormControlLabel
+                    <FormControlLabel
                         control={
                             <Checkbox
                                 key={field.name} // key en el control interno
@@ -228,9 +228,9 @@ const SolicitudModalForm = ({
                  // Necesita su propio handler (handleFileChange)
                 return (
                     <FormControl fullWidth margin="dense" required={field.required}>
-                         <Typography variant="body2" display="block" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                        <Typography variant="body2" display="block" sx={{ mb: 0.5, color: 'text.secondary' }}>
                             {field.label}{field.required ? ' *' : ''}
-                         </Typography>
+                        </Typography>
                         <Input
                             key={field.name}
                             name={field.name}
@@ -244,19 +244,19 @@ const SolicitudModalForm = ({
                                 borderRadius: theme.shape.borderRadius,
                                 p: 1,
                                 '&::before, &::after': { display: 'none' },
-                             }}
+                            }}
                         />
                          {/* Mostrar nombre del archivo seleccionado */}
-                         {fileInputs[field.name] && (
+                        {fileInputs[field.name] && (
                             <Typography variant="caption" sx={{ mt: 0.5, fontStyle: 'italic', color: 'text.secondary' }}>
                                 Archivo: {fileInputs[field.name].name}
                             </Typography>
-                         )}
+                        )}
                     </FormControl>
                 );
 
-             case 'number':
-                 return <TextField {...commonProps} type="number" />;
+            case 'number':
+                return <TextField {...commonProps} type="number" />;
 
             case 'text':
             default:

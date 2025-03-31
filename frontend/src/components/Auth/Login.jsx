@@ -95,8 +95,8 @@ const Login = ({ toggleTheme }) => {
             // --- ÉXITO ---
             // *** PASO 8.1 (Revisión): Verificar user Y token en la respuesta ***
             if (!data.user || !data.token || !data.user.rol /* || otras validaciones */) {
-                 console.error("Respuesta exitosa pero faltan datos o token:", data);
-                 throw new Error("Respuesta inesperada del servidor tras login.");
+                console.error("Respuesta exitosa pero faltan datos o token:", data);
+                throw new Error("Respuesta inesperada del servidor tras login.");
             }
 
             // Determinar mensaje y destino (sin cambios)

@@ -102,8 +102,8 @@ export const AuthProvider = ({ children }) => {
     // *** PASO 7.3: Modificar login para aceptar y guardar el token ***
     const login = (userData, receivedToken) => {
         if (!userData || typeof userData !== 'object' || !userData.rut || !receivedToken) {
-             console.error("[AuthContext] Intento de login con datos o token inválidos:", {userData, receivedToken});
-             return;
+            console.error("[AuthContext] Intento de login con datos o token inválidos:", {userData, receivedToken});
+            return;
         }
         console.log("[AuthContext] Iniciando sesión y guardando datos y token:", {userData, token: receivedToken});
         setUser(userData);

@@ -37,8 +37,8 @@ const DEFAULT_SECTION = null;
 
 // --- Animations (Solo una vez) ---
 const fadeInUp = keyframes`
-  from { opacity: 0; transform: translate3d(0, 20px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+    from { opacity: 0; transform: translate3d(0, 20px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
 `;
 
 // --- Component (Solo una definición) ---
@@ -93,22 +93,22 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
             // mostrarAlertaError('Error de Envío', message);
             setError(prev => ({...prev, form: message}));
         } finally {
-             setLoading(prev => ({ ...prev, form: false }));
+            setLoading(prev => ({ ...prev, form: false }));
         }
     }, []); // Dependencias si refrescas
 
     // --- Data Fetching (Sin Cambios) ---
     const fetchContent = useCallback(async (sectionId, currentAreas) => {
-         if (!sectionId) { setTiposSolicitudesForTable([]); setFaqs([]); setSelectedAreaInfo({ id: null, nombre: null }); setError(prev => ({ ...prev, content: null })); setLoading(prev => ({ ...prev, content: false })); return; }
-         setLoading(prev => ({ ...prev, content: true })); setError(prev => ({ ...prev, content: null })); setTiposSolicitudesForTable([]); setFaqs([]); setSelectedAreaInfo({ id: null, nombre: null });
-         try {
-             let areaIdForTitle = null; let areaNombreForTitle = null;
-             if (sectionId.startsWith(SECTIONS.AREA_PREFIX)) { const areaId = sectionId.substring(SECTIONS.AREA_PREFIX.length); const response = await api.get(`/tipos_solicitudes/area/${areaId}`); const data = response.data ?? []; if (!Array.isArray(data)) throw new Error("Formato de respuesta inesperado (Tipos)."); setTiposSolicitudesForTable(data); const selectedArea = currentAreas.find(a => a.id_area.toString() === areaId.toString()); areaIdForTitle = areaId; areaNombreForTitle = selectedArea?.nombre_area || 'Desconocida'; }
-             else if (sectionId === SECTIONS.PREGUNTAS_FRECUENTES) { const response = await api.get('/preguntas_frecuentes'); const data = response.data?.preguntas_frecuentes ?? []; if (!Array.isArray(data)) throw new Error("Formato de respuesta inesperado (FAQs)."); setFaqs(data); setFaqFilterTipoId(''); }
-             else if (sectionId === SECTIONS.MIS_SOLICITUDES) { throw new Error("Inicia sesión para ver tus solicitudes."); }
-             setSelectedAreaInfo({ id: areaIdForTitle, nombre: areaNombreForTitle });
-         } catch (err) { let message = err.message || "Error al cargar contenido."; if (err.response?.data?.message) message = err.response.data.message; if (message !== "Inicia sesión para ver tus solicitudes." && err.response?.status !== 401) { console.error(`Error fetching content for ${sectionId}:`, err); } setError(prev => ({ ...prev, content: message })); }
-         finally { setTimeout(() => setLoading(prev => ({ ...prev, content: false })), 200); }
+        if (!sectionId) { setTiposSolicitudesForTable([]); setFaqs([]); setSelectedAreaInfo({ id: null, nombre: null }); setError(prev => ({ ...prev, content: null })); setLoading(prev => ({ ...prev, content: false })); return; }
+        setLoading(prev => ({ ...prev, content: true })); setError(prev => ({ ...prev, content: null })); setTiposSolicitudesForTable([]); setFaqs([]); setSelectedAreaInfo({ id: null, nombre: null });
+        try {
+            let areaIdForTitle = null; let areaNombreForTitle = null;
+            if (sectionId.startsWith(SECTIONS.AREA_PREFIX)) { const areaId = sectionId.substring(SECTIONS.AREA_PREFIX.length); const response = await api.get(`/tipos_solicitudes/area/${areaId}`); const data = response.data ?? []; if (!Array.isArray(data)) throw new Error("Formato de respuesta inesperado (Tipos)."); setTiposSolicitudesForTable(data); const selectedArea = currentAreas.find(a => a.id_area.toString() === areaId.toString()); areaIdForTitle = areaId; areaNombreForTitle = selectedArea?.nombre_area || 'Desconocida'; }
+            else if (sectionId === SECTIONS.PREGUNTAS_FRECUENTES) { const response = await api.get('/preguntas_frecuentes'); const data = response.data?.preguntas_frecuentes ?? []; if (!Array.isArray(data)) throw new Error("Formato de respuesta inesperado (FAQs)."); setFaqs(data); setFaqFilterTipoId(''); }
+            else if (sectionId === SECTIONS.MIS_SOLICITUDES) { throw new Error("Inicia sesión para ver tus solicitudes."); }
+            setSelectedAreaInfo({ id: areaIdForTitle, nombre: areaNombreForTitle });
+        } catch (err) { let message = err.message || "Error al cargar contenido."; if (err.response?.data?.message) message = err.response.data.message; if (message !== "Inicia sesión para ver tus solicitudes." && err.response?.status !== 401) { console.error(`Error fetching content for ${sectionId}:`, err); } setError(prev => ({ ...prev, content: message })); }
+        finally { setTimeout(() => setLoading(prev => ({ ...prev, content: false })), 200); }
     }, []);
     const fetchBaseData = useCallback(async () => {
         setLoading({ initial: true, content: false }); setError({ initial: null, content: null });
@@ -247,24 +247,24 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
 
                     {/* --- PREGUNTAS FRECUENTES --- */}
                     {currentSection === SECTIONS.PREGUNTAS_FRECUENTES && (
-                         <Box sx={{ width: '100%', animation: `${fadeInUp} 0.5s ease-out forwards`, opacity: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ width: '100%', animation: `${fadeInUp} 0.5s ease-out forwards`, opacity: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                             {/* Filtro Dropdown */}
                             {faqs.length > 0 && (
-                                 <Fade in={true} timeout={400}>
-                                     <FormControl size="small" sx={{ minWidth: 250, alignSelf: 'flex-start', mb: 2 }}>
-                                         <InputLabel id="faq-filter-label" sx={{ color: 'text.secondary' }}>Filtrar por Tipo</InputLabel>
-                                         <Select
-                                             labelId="faq-filter-label" id="faq-filter-select" value={faqFilterTipoId} label="Filtrar por Tipo" onChange={handleFaqFilterChange}
-                                             sx={{ borderRadius: 1.5, '.MuiOutlinedInput-notchedOutline': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main } }}
-                                             MenuProps={{ PaperProps: { sx: { bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.shadows[3], } } }} >
-                                             <MenuItem value=""><em>Todos los Tipos</em></MenuItem>
-                                             {Array.from(new Set(faqs.map(f => f.id_tipo))).map(tipoId => {
-                                                  const tipoInfo = tiposSolicitudesAll.find(t => t.id_tipo === tipoId);
-                                                  return tipoInfo ? ( <MenuItem key={tipoId} value={tipoId} sx={{ '&.Mui-selected': { backgroundColor: alpha(theme.palette.primary.main, 0.12), color: theme.palette.primary.main, fontWeight: 500, '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.18), }, }, '&:not(.Mui-selected):hover': { backgroundColor: theme.palette.action.hover, }, transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.shortest }), }}>{tipoInfo.nombre_tipo}</MenuItem> ) : null; })}
-                                         </Select>
-                                     </FormControl>
-                                 </Fade>
-                             )}
+                                <Fade in={true} timeout={400}>
+                                    <FormControl size="small" sx={{ minWidth: 250, alignSelf: 'flex-start', mb: 2 }}>
+                                        <InputLabel id="faq-filter-label" sx={{ color: 'text.secondary' }}>Filtrar por Tipo</InputLabel>
+                                        <Select
+                                            labelId="faq-filter-label" id="faq-filter-select" value={faqFilterTipoId} label="Filtrar por Tipo" onChange={handleFaqFilterChange}
+                                            sx={{ borderRadius: 1.5, '.MuiOutlinedInput-notchedOutline': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main } }}
+                                            MenuProps={{ PaperProps: { sx: { bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.shadows[3], } } }} >
+                                            <MenuItem value=""><em>Todos los Tipos</em></MenuItem>
+                                            {Array.from(new Set(faqs.map(f => f.id_tipo))).map(tipoId => {
+                                                const tipoInfo = tiposSolicitudesAll.find(t => t.id_tipo === tipoId);
+                                                return tipoInfo ? ( <MenuItem key={tipoId} value={tipoId} sx={{ '&.Mui-selected': { backgroundColor: alpha(theme.palette.primary.main, 0.12), color: theme.palette.primary.main, fontWeight: 500, '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.18), }, }, '&:not(.Mui-selected):hover': { backgroundColor: theme.palette.action.hover, }, transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.shortest }), }}>{tipoInfo.nombre_tipo}</MenuItem> ) : null; })}
+                                        </Select>
+                                    </FormControl>
+                                </Fade>
+                            )}
                             {/* Contenedor Scrollable para Acordeones */}
                             <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
                                 {filteredFaqs.length > 0 ? (
@@ -286,27 +286,27 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                             </AccordionDetails>
                                         </Accordion>
                                     ))
-                                 ) : (
+                                ) : (
                                     // Mensaje si no hay FAQs (después de filtrar o inicialmente si no hay)
                                     <Typography sx={{ textAlign: 'center', py: 5, fontStyle: 'italic', color: 'text.disabled' }}>
                                         {searchTerm || faqFilterTipoId ? "No se encontraron preguntas frecuentes con los filtros aplicados." : "No hay preguntas frecuentes disponibles."}
                                     </Typography>
-                                 )}
+                                )}
                             </Box>
                         </Box>
                     )}
 
                      {/* --- Fallback --- */}
                      {/* Este bloque solo se renderiza si currentSection NO es ninguna de las anteriores */}
-                     { currentSection !== SECTIONS.CONSULTAS &&
-                       !currentSection?.startsWith(SECTIONS.AREA_PREFIX) &&
-                       currentSection !== SECTIONS.PREGUNTAS_FRECUENTES &&
-                       currentSection !== SECTIONS.MIS_SOLICITUDES && ( // Excluir MIS_SOLICITUDES ya que se maneja por error
-                           <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary', mt: 4 }}>
-                               <Typography>Contenido no disponible para esta sección.</Typography>
-                           </Box>
-                       )
-                     }
+                    { currentSection !== SECTIONS.CONSULTAS &&
+                        !currentSection?.startsWith(SECTIONS.AREA_PREFIX) &&
+                        currentSection !== SECTIONS.PREGUNTAS_FRECUENTES &&
+                        currentSection !== SECTIONS.MIS_SOLICITUDES && ( // Excluir MIS_SOLICITUDES ya que se maneja por error
+                            <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+                                <Typography>Contenido no disponible para esta sección.</Typography>
+                            </Box>
+                        )
+                    }
 
                 </Box>
             </Fade>
@@ -337,10 +337,10 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                         </Fade>
                                     )}
                                 </Box>
-                             </Box>
+                            </Box>
                              {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
-                             {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
-                             {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
+                            {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
+                            {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
                             {/* Área Principal Scrollable */}
                             <Box sx={{ flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400], borderRadius: '4px' }, pr: 0.5 }}>
                                 {/* Solo renderizar contenido si la carga inicial terminó sin errores */}

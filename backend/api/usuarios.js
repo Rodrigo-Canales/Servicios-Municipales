@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
             hashedPassword = await bcrypt.hash(password, salt);
             console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Hashing password for new user RUT: ${rut}`);
         } else {
-             console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Creating user RUT: ${rut} without password.`);
+            console.log(`[POST /api/usuarios] (Admin: ${req.user.rut}) Creating user RUT: ${rut} without password.`);
         }
 
         // Insertar en la base de datos

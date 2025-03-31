@@ -189,9 +189,9 @@ const SidebarVecino = ({
                                 );
                             })
                         ) : (
-                             <Typography variant="caption" sx={{ pl: 4, color: 'text.secondary', fontStyle: 'italic' }}>
+                            <Typography variant="caption" sx={{ pl: 4, color: 'text.secondary', fontStyle: 'italic' }}>
                                 Cargando áreas...
-                             </Typography>
+                            </Typography>
                         )}
                     </List>
                 </Collapse>
