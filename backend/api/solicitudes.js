@@ -9,7 +9,7 @@ const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
-// Función para crear carpetas si no existen
+// Función para crear carpetas si no existen (Sin Cambios)
 function crearCarpeta(ruta) {
     if (!fs.existsSync(ruta)) {
         try {
@@ -23,7 +23,7 @@ function crearCarpeta(ruta) {
     }
 }
 
-// Configuración de Multer
+// Configuración de Multer (Sin Cambios)
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pptx', '.docx', '.pdf'];
@@ -38,7 +38,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 
-// Obtener las solicitudes de un usuario en específico
+// Obtener las solicitudes de un usuario en específico (Sin Cambios)
 router.get('/vecino/:rut', protect, async (req, res) => {
     try {
         const { rut } = req.params;
@@ -66,7 +66,7 @@ router.get('/vecino/:rut', protect, async (req, res) => {
     }
 });
 
-// Obtener todas las solicitudes
+// Obtener todas las solicitudes (Sin Cambios)
 router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const [solicitudes] = await db.query(`
@@ -85,7 +85,7 @@ router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req,
     }
 });
 
-// Obtener una solicitud por su ID
+// Obtener una solicitud por su ID (Sin Cambios)
 router.get('/:id', protect, restrictTo('Administrador, Funcionario'), async (req, res) => {
     try {
         const id = req.params.id;
@@ -108,7 +108,7 @@ router.get('/:id', protect, restrictTo('Administrador, Funcionario'), async (req
     }
 });
 
-// Actualizar ESTADO de una solicitud
+// Actualizar ESTADO de una solicitud (Sin Cambios)
 router.put('/estado/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -131,7 +131,7 @@ router.put('/estado/:id', protect, restrictTo('Administrador', 'Funcionario'), a
     }
 });
 
-//  Actualizar estado y correo de la solicitud
+//  Actualizar estado y correo de la solicitud (Sin Cambios)
 router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const { id } = req.params;
     const { estado, correo_notificacion } = req.body;
@@ -182,48 +182,82 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
 });
 
 
-// Crear una nueva solicitud
-router.post('/', protect, upload.array('archivos'), async (req, res) => {
-    const { rut_ciudadano, id_tipo, estado, correo_notificacion, ...otrosDatos } = req.body;
+// --- Crear una nueva solicitud (CON LAS MODIFICACIONES PUNTUALES) ---
+// *** CAMBIO 1: Usar upload.any() en lugar de upload.array('archivos') ***
+router.post('/', protect, upload.any(), async (req, res) => {
+    // Mantener la desestructuración para los campos opcionales y otrosDatos
+    const { estado, correo_notificacion, ...otrosDatos } = req.body;
     const fecha = new Date();
+    console.log('--- Inicia Validación POST /solicitudes ---');
+    console.log('Valor de req.body.rut_ciudadano:', req.body.rut_ciudadano);
+    console.log('Tipo de req.body.rut_ciudadano:', typeof req.body.rut_ciudadano);
+    console.log('Valor de req.body.id_tipo:', req.body.id_tipo);
+    console.log('Tipo de req.body.id_tipo:', typeof req.body.id_tipo);
+    console.log('Contenido completo de req.body:', JSON.stringify(req.body, null, 2));
 
-    if (!rut_ciudadano || !id_tipo) {
+    // *** CAMBIO 2: Validar rut_ciudadano y id_tipo directamente desde req.body ***
+    if (!req.body.rut_ciudadano || !req.body.id_tipo) {
+        console.error('Error de Validación Backend: Falta rut_ciudadano o id_tipo en req.body', req.body); // Log para depurar
         return res.status(400).json({ message: 'Faltan campos obligatorios: rut_ciudadano, id_tipo' });
     }
+    console.log('--- Validación superada ---'); // Log si pasa
+    // Validación de correo (se mantiene igual)
     if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
         return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
     }
 
     let connection;
-    let pdfPath = ''; 
-    let rutaSolicitud = ''; 
+    let pdfPath = '';
+    let rutaSolicitud = '';
 
     try {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // Obtener el nombre del tipo de solicitud
-        const [tipoResult] = await connection.query( 'SELECT nombre_tipo FROM tipos_solicitudes WHERE id_tipo = ?', [id_tipo] );
-        if (tipoResult.length === 0) { await connection.rollback(); return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' }); }
+        // *** CAMBIO 2 (Continuación): Usar req.body.id_tipo en la consulta ***
+        const [tipoResult] = await connection.query(
+            'SELECT nombre_tipo FROM tipos_solicitudes WHERE id_tipo = ?',
+            [req.body.id_tipo] // Acceso directo
+        );
+        if (tipoResult.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' });
+        }
         const nombre_tipo = tipoResult[0].nombre_tipo;
 
-        // Insertar la solicitud en la BD 
-        const estado_inicial = estado || 'Pendiente';
+        // Insertar la solicitud en la BD
+        const estado_inicial = estado || 'Pendiente'; // OK usar variable desestructurada
+        const correo_para_insert = correo_notificacion || null; // OK usar variable desestructurada
+
+        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano y req.body.id_tipo en INSERT ***
         const [result] = await connection.query(
             'INSERT INTO Solicitudes (RUT_ciudadano, id_tipo, fecha_hora_envio, estado, ruta_carpeta, correo_notificacion) VALUES (?, ?, NOW(), ?, ?, ?)',
-            [rut_ciudadano, id_tipo, estado_inicial, '', correo_notificacion || null] // ruta_carpeta se actualiza después
+            [
+                req.body.rut_ciudadano, // Acceso directo
+                req.body.id_tipo,       // Acceso directo
+                estado_inicial,
+                '', // ruta_carpeta se actualiza después
+                correo_para_insert
+            ]
         );
         const id_solicitud_num = result.insertId;
         const id_solicitud_str = id_solicitud_num.toString().padStart(10, '0');
 
         // Obtener nombre y apellido del ciudadano
-        let nombreCompleto = rut_ciudadano;
-        const [rowsUsuario] = await connection.query( 'SELECT nombre, apellido FROM usuarios WHERE RUT = ?', [rut_ciudadano] );
+        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano ***
+        let nombreCompleto = req.body.rut_ciudadano; // Fallback inicial
+        const [rowsUsuario] = await connection.query(
+            'SELECT nombre, apellido FROM usuarios WHERE RUT = ?',
+            [req.body.rut_ciudadano] // Acceso directo
+        );
         if (rowsUsuario.length > 0) {
             nombreCompleto = `${rowsUsuario[0].nombre.trim()} ${rowsUsuario[0].apellido.trim()}`;
-        } else { console.warn(`No se encontró el usuario con RUT ${rut_ciudadano} para obtener datos completos.`); }
+        } else {
+             // Usar req.body.rut_ciudadano en el log
+            console.warn(`No se encontró el usuario con RUT ${req.body.rut_ciudadano} para obtener datos completos.`);
+        }
 
-        // Crear estructura de carpetas
+        // --- Crear estructura de carpetas (Sin Cambios) ---
         const anio = fecha.getFullYear();
         let mes = format(fecha, 'MMMM', { locale: es });
         mes = mes.charAt(0).toUpperCase() + mes.slice(1);
@@ -232,10 +266,10 @@ router.post('/', protect, upload.array('archivos'), async (req, res) => {
         crearCarpeta(rutaAnio);
         crearCarpeta(rutaMes);
         const fechaDiaMesAnio = format(fecha, 'dd-MM-yyyy', { locale: es });
-        rutaSolicitud = `${rutaMes}/${nombre_tipo} - ${nombreCompleto}, ${fechaDiaMesAnio}, ${id_solicitud_str}`; // Asignar a variable externa
+        rutaSolicitud = `${rutaMes}/${nombre_tipo} - ${nombreCompleto}, ${fechaDiaMesAnio}, ${id_solicitud_str}`;
         crearCarpeta(rutaSolicitud);
 
-        // Guardar archivos adjuntos
+        // --- Guardar archivos adjuntos (Sin Cambios) ---
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 const filePath = path.join(rutaSolicitud, file.originalname);
@@ -244,13 +278,12 @@ router.post('/', protect, upload.array('archivos'), async (req, res) => {
             });
         }
 
-        // Crear el PDF
+        // --- Crear el PDF (Sin Cambios, excepto uso de req.body.rut_ciudadano) ---
         const pdfDoc = new PDFDocument({ size: 'LETTER', margins: { top: 50, bottom: 50, left: 72, right: 72 } });
-        pdfPath = path.join(rutaSolicitud, 'solicitud.pdf'); 
+        pdfPath = path.join(rutaSolicitud, 'solicitud.pdf');
         const writeStream = fs.createWriteStream(pdfPath);
         pdfDoc.pipe(writeStream);
 
-        //  Contenido del PDF Solicitud 
         const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png');
         if (fs.existsSync(logoPath)) { pdfDoc.image(logoPath, pdfDoc.page.margins.left, pdfDoc.y, { width: 80 }); pdfDoc.moveDown(0.5); }
         pdfDoc.y = pdfDoc.page.margins.top + (fs.existsSync(logoPath) ? 20 : 0);
@@ -258,95 +291,67 @@ router.post('/', protect, upload.array('archivos'), async (req, res) => {
         pdfDoc.font('Helvetica-Bold').fontSize(16).text('COMPROBANTE DE SOLICITUD', { align: 'center' }).moveDown(1.5);
         pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
 
-        // Obtener fecha/hora de envío real desde la BD 
         const [solicitudRow] = await connection.query( 'SELECT fecha_hora_envio FROM Solicitudes WHERE id_solicitud = ?', [id_solicitud_num] );
         const fecha_hora_envio_real = format( new Date(solicitudRow[0].fecha_hora_envio), 'dd/MM/yyyy hh:mm:ss a', { locale: es } );
 
-        // Sección Datos Generales
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos de la Solicitud:').moveDown(0.5);
         pdfDoc.font('Helvetica').fontSize(11);
         pdfDoc.text(`ID Solicitud: ${id_solicitud_str}`);
         pdfDoc.text(`Tipo Solicitud: ${nombre_tipo}`);
         pdfDoc.text(`Fecha y Hora de Envío: ${fecha_hora_envio_real}`).moveDown(1);
 
-        // Sección Datos del Solicitante
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos del Solicitante:').moveDown(0.5);
         pdfDoc.font('Helvetica').fontSize(11);
-        pdfDoc.text(`RUT: ${rut_ciudadano}`);
+        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano en PDF ***
+        pdfDoc.text(`RUT: ${req.body.rut_ciudadano}`); // Acceso directo
         pdfDoc.text(`Nombre: ${nombreCompleto}`);
-        // Mostrar solo correo_notificacion
-        pdfDoc.text(`Correo Notificación: ${correo_notificacion || 'No especificado'}`).moveDown(2);
+        pdfDoc.text(`Correo Notificación: ${correo_notificacion || 'No especificado'}`).moveDown(2); // OK usar variable
 
         pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
 
-        // Sección Datos Adicionales 
         if (Object.keys(otrosDatos).length > 0) {
             pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Ingresados:', { underline: true }).moveDown(1);
             pdfDoc.font('Helvetica').fontSize(11);
-            for (const key in otrosDatos) {
-                const keyFormateada = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                pdfDoc.text(`${keyFormateada}: ${otrosDatos[key]}`, { align: 'justify' }).moveDown(0.5);
-            }
+            for (const key in otrosDatos) { const keyFormateada = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); pdfDoc.text(`${keyFormateada}: ${otrosDatos[key]}`, { align: 'justify' }).moveDown(0.5); }
             pdfDoc.moveDown(2);
             pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
         }
 
-        // Sección Archivos Adjuntos
         if (req.files && req.files.length > 0) {
             pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos (Referencia):', { underline: true }).moveDown(1).font('Helvetica').fontSize(10);
             req.files.forEach(file => { pdfDoc.text(`- ${file.originalname}`).moveDown(0.5); });
-            pdfDoc.moveDown(1); 
-
-            // Mostrar imágenes adjuntas en páginas separadas
-            req.files.forEach(file => {
-                const fileExtension = path.extname(file.originalname).toLowerCase();
-                if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
-                    const imagePath = path.join(rutaSolicitud, file.originalname);
-                    try {
-                        pdfDoc.addPage().font('Helvetica-Bold').fontSize(12).text(`Adjunto: ${file.originalname}`, {align: 'center'}).moveDown(1);
-                        const img = pdfDoc.openImage(imagePath);
-                        const pageHeight = pdfDoc.page.height - pdfDoc.page.margins.top - pdfDoc.page.margins.bottom - 50;
-                        const pageWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right;
-                        pdfDoc.image(imagePath, { fit: [pageWidth, pageHeight], align: 'center', valign: 'center' });
-                    } catch (imageError) { console.error(`Error al agregar imagen ${file.originalname} al PDF:`, imageError); }
-                }
-            });
+            pdfDoc.moveDown(1);
+            req.files.forEach(file => { const fileExtension = path.extname(file.originalname).toLowerCase(); if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) { const imagePath = path.join(rutaSolicitud, file.originalname); try { pdfDoc.addPage().font('Helvetica-Bold').fontSize(12).text(`Adjunto: ${file.originalname}`, {align: 'center'}).moveDown(1); const img = pdfDoc.openImage(imagePath); const pageHeight = pdfDoc.page.height - pdfDoc.page.margins.top - pdfDoc.page.margins.bottom - 50; const pageWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right; pdfDoc.image(imagePath, { fit: [pageWidth, pageHeight], align: 'center', valign: 'center' }); } catch (imageError) { console.error(`Error al agregar imagen ${file.originalname} al PDF:`, imageError); } } });
         }
         // --- Fin Contenido PDF ---
 
         pdfDoc.end();
-        await new Promise((resolve, reject) => {
-            writeStream.on('finish', resolve);
-            writeStream.on('error', (err) => reject(new Error(`Fallo al escribir PDF de solicitud: ${err.message}`)));
-        });
+        await new Promise((resolve, reject) => { writeStream.on('finish', resolve); writeStream.on('error', (err) => reject(new Error(`Fallo al escribir PDF de solicitud: ${err.message}`))); });
         console.log(`PDF de solicitud creado: ${pdfPath}`);
 
-        // Actualizar la ruta_carpeta en la BD (después de crear carpeta y PDF)
+        // --- Actualizar ruta_carpeta (Sin Cambios) ---
         await connection.query( 'UPDATE Solicitudes SET ruta_carpeta = ? WHERE id_solicitud = ?', [rutaSolicitud, id_solicitud_num] );
         console.log(`Ruta carpeta actualizada para solicitud ${id_solicitud_num}`);
 
-        // Confirmar transacción
+        // --- Commit (Sin Cambios) ---
         await connection.commit();
         console.log(`Transacción completada para solicitud ${id_solicitud_num}`);
 
-        res.status(201).json({
-            message: 'Solicitud creada exitosamente',
-            id: id_solicitud_str, // Devolver el ID formateado
-            ruta: rutaSolicitud
-        });
-    } catch (error) {
+        // --- Respuesta Exitosa (Sin Cambios) ---
+        res.status(201).json({ message: 'Solicitud creada exitosamente', id: id_solicitud_str, ruta: rutaSolicitud });
+
+    } catch (error) { // --- Manejo de Errores (Sin Cambios) ---
         console.error('Error detallado al crear solicitud:', error);
         if (connection) { try { await connection.rollback(); console.log("Rollback completado (solicitudes)."); } catch (rbError) { console.error("Error durante rollback (solicitudes):", rbError); } }
-        // Limpiar PDF y carpeta si se crearon antes del error 
         if (pdfPath && fs.existsSync(pdfPath)) { try { fs.unlinkSync(pdfPath); console.log("PDF de solicitud erróneo eliminado."); } catch(e) {console.error("Error al eliminar PDF erróneo:", e)} }
-        if (rutaSolicitud && fs.existsSync(rutaSolicitud)) { try { fs.rmdirSync(rutaSolicitud, { recursive: true }); console.log("Carpeta de solicitud errónea eliminada."); } catch(e) {console.error("Error al eliminar carpeta errónea:", e)} } // recursive: true es más seguro si hay archivos dentro
+        if (rutaSolicitud && fs.existsSync(rutaSolicitud)) { try { fs.rmdirSync(rutaSolicitud, { recursive: true }); console.log("Carpeta de solicitud errónea eliminada."); } catch(e) {console.error("Error al eliminar carpeta errónea:", e)} }
 
         if (error.message === 'Tipo de archivo no permitido para la solicitud') { return res.status(400).json({ message: error.message }); }
         if (error.message.startsWith('Error al guardar adjunto') || error.message.startsWith('Fallo al escribir PDF') || error.message.startsWith('No se pudo crear')) { return res.status(500).json({ message: `Error interno del servidor: ${error.message}` }); }
         res.status(500).json({ message: 'Error interno del servidor al crear la solicitud' });
-    } finally {
+    } finally { // --- Liberar Conexión (Sin Cambios) ---
         if (connection) { connection.release(); console.log("Conexión liberada (solicitudes)."); }
     }
 });
 
-module.exports = router;
+module.exports = router; // Solo un exportf
