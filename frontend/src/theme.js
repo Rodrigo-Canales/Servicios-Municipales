@@ -30,7 +30,7 @@ export const lightTheme = createTheme({
         },
         error: { main: 'rgb(220, 53, 69)' },
         warning: { main: 'rgb(255, 193, 7)' },
-        info: { main: 'rgb(13, 202, 240)' },
+        info: { main: 'rgb(13, 51, 240)' },
         success: { main: 'rgb(25, 135, 84)' }
     },
 });
@@ -44,7 +44,7 @@ export const darkTheme = createTheme({
             contrastText: 'rgb(255, 255, 255)' 
         },
         secondary: {
-            main: 'rgb(229, 115, 115)',
+            main: 'rgb(226, 76, 76)',
             contrastText: 'rgb(0, 0, 0)' 
         },
         background: {
@@ -63,9 +63,9 @@ export const darkTheme = createTheme({
             disabled: 'rgba(255, 255, 255, 0.3)',
             disabledBackground: 'rgba(255, 255, 255, 0.12)',
         },
-        error: { main: 'rgb(244, 67, 54)' },
+        error: { main: 'rgb(185, 55, 46)' },
         warning: { main: 'rgb(255, 167, 38)' },
-        info: { main: 'rgb(41, 182, 246)' },
-        success: { main: 'rgb(102, 187, 106)' }
+        info: { main: 'rgb(104, 207, 255)' },
+        success: { main: 'rgb(33, 147, 38)' }
     },
 });

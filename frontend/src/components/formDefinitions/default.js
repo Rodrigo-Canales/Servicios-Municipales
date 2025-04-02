@@ -1,73 +1,170 @@
-// frontend/src/components/formDefinitions/solicitudDePatente.js
+// frontend/src/components/formDefinitions/default.js
 
-export const title = "Solicitud por defecto";
+// Título que aparecerá en el modal
+export const title = "Formulario General (Ejemplo Completo)";
 
+// Array de definiciones de campos con propiedad 'step' añadida
 export const fields = [
-    // --- Datos del Negocio ---
+    // --- PASO 1: Información Básica y Referencias ---
     {
-        name: 'correo_notificacion', // USA EL MISMO NOMBRE QUE ESPERA EL BACKEND
-        label: 'Correo para Notificación de Respuesta',
-        type: 'email',
-        required: false, // Es opcional en el backend
-        gridProps: { xs: 12 }
+        name: 'nombreCompleto',
+        label: 'Nombre Completo',
+        type: 'text',
+        required: true,
+        placeholder: 'Ingrese su nombre y apellidos',
+        gridProps: { xs: 12, sm: 6 },
+        step: 1 // <--- Añadido
     },
     {
-        name: 'direccionComercial', // Coincide con la key en otrosDatos
-        label: 'Dirección Comercial donde operará',
+        name: 'correoElectronico',
+        label: 'Correo Electrónico',
+        type: 'email',
+        required: true,
+        placeholder: 'usuario@ejemplo.com',
+        helperText: 'Usaremos este correo para contactarte.',
+        gridProps: { xs: 12, sm: 6 },
+        step: 1 // <--- Añadido
+    },
+    {
+        name: 'descargaFormularioBase',
+        label: 'Formulario Base (Referencia)',
+        type: 'download-link',
+        href: '/JuzgadoDePoliciaLocal/Causas DESCARGOS con notificación electrónica PMG.pdf', // Asegúrate que esta ruta sea accesible
+        linkText: 'Descargar Formulario PDF',
+        helperText: 'Descarga este formulario si necesitas completarlo offline.',
+        gridProps: { xs: 12 },
+        step: 1 // <--- Añadido (Ejemplo: Puesto en el primer paso)
+    },
+
+    // --- PASO 2: Detalles de la Solicitud/Incidente ---
+    {
+        name: 'descripcionSolicitud',
+        label: 'Descripción Detallada',
         type: 'textarea',
         required: true,
-        rows: 3,
-        gridProps: { xs: 12 } // Ocupa ancho completo
+        rows: 4,
+        placeholder: 'Describe aquí el motivo de tu solicitud...',
+        gridProps: { xs: 12 },
+        step: 2 // <--- Añadido
     },
     {
-        name: 'rolPropiedad', // Coincide con la key en otrosDatos
-        label: 'Rol de la Propiedad (SII)',
-        type: 'text',
-        required: false, // Puede ser opcional inicialmente
-        placeholder: 'Ej: 1234-56',
-        gridProps: { xs: 12, sm: 6 }
-    },
-    {
-        name: 'numeroLocal', // Coincide con la key en otrosDatos
-        label: 'Nº Local u Oficina (si aplica)',
-        type: 'text',
-        required: false,
-        gridProps: { xs: 12, sm: 6 }
-    },
-    {
-        name: 'actividadPrincipal', // Coincide con la key en otrosDatos
-        label: 'Actividad o Rubro Principal a desarrollar',
-        type: 'text',
+        name: 'fechaIncidente',
+        label: 'Fecha del Incidente',
+        type: 'date',
         required: true,
-        gridProps: { xs: 12, md: 8 } // Ocupa más ancho
+        helperText: 'Selecciona la fecha en que ocurrió.',
+        defaultValue: new Date().toISOString().split('T')[0],
+        gridProps: { xs: 12, sm: 4 }, // Ajustado grid para mejor layout en este paso
+        step: 2 // <--- Añadido
     },
     {
-        name: 'capitalInicial', // Coincide con la key en otrosDatos
-        label: 'Capital Inicial Declarado ($)',
-        type: 'number', // Input numérico
-        required: true, // Usualmente requerido para patentes
-        gridProps: { xs: 12, md: 4 }
+        name: 'cantidadEstimada',
+        label: 'Cantidad Estimada',
+        type: 'number',
+        required: false,
+        placeholder: 'Ej: 5',
+        gridProps: { xs: 12, sm: 4 }, // Ajustado grid
+        step: 2 // <--- Añadido
     },
     {
-        name: 'adjuntoIniciacionActividades', // Nombre específico para este archivo
-        label: 'Adjuntar Copia de Iniciación de Actividades (SII)',
-        type: 'file',
-        required: true, // Suele ser requerido
-        // accept: ".pdf,.jpg,.jpeg,.png", // Limitar tipos de archivo si es necesario
-        gridProps: { xs: 12 }
+        name: 'sitioWebReferencia',
+        label: 'Sitio Web de Referencia',
+        type: 'url',
+        required: false,
+        placeholder: 'https://www.ejemplo.com',
+        gridProps: { xs: 12, sm: 4 }, // Ajustado grid
+        step: 2 // <--- Añadido
     },
+    // Considera si este campo 'claveTemporal' realmente es necesario o dónde encaja mejor
     {
-        name: 'adjuntoContratoArriendo', // Nombre específico
-        label: 'Adjuntar Contrato de Arriendo o Título de Dominio',
-        type: 'file',
+        name: 'claveTemporal',
+        label: 'Contraseña Temporal (Ejemplo)',
+        type: 'password',
+        required: false,
+        helperText: 'No guardes información sensible real aquí.',
+        gridProps: { xs: 12, sm: 6 }, // Ajustado grid
+        step: 2 // <--- Añadido (Ejemplo: Puesto en paso 2)
+    },
+
+
+    // --- PASO 3: Clasificación y Opciones ---
+    {
+        name: 'prioridadSolicitud',
+        label: 'Prioridad',
+        type: 'radio-group',
         required: true,
-        // accept: ".pdf",
-        gridProps: { xs: 12 }
+        row: true,
+        options: [
+            { value: 'baja', label: 'Baja' },
+            { value: 'media', label: 'Media' },
+            { value: 'alta', label: 'Alta' }
+        ],
+        defaultValue: 'media',
+        gridProps: { xs: 12 },
+        step: 3 // <--- Añadido
     },
     {
-        name: 'adjuntoAdicional', // Nombre específico
-        label: 'Adjuntar Otro Documento Relevante (Opcional)',
+        name: 'categoria',
+        label: 'Categoría de la Solicitud',
+        type: 'select',
+        required: true,
+        options: [
+            { value: 'alumbrado', label: 'Alumbrado Público' },
+            { value: 'aseo', label: 'Aseo y Ornato' },
+            { value: 'transito', label: 'Tránsito' },
+            { value: 'otro', label: 'Otro (especificar)' }
+        ],
+        placeholder: 'Seleccione una categoría...',
+        defaultValue: '',
+        gridProps: { xs: 12, sm: 6 },
+        step: 3 // <--- Añadido
+    },
+    {
+        name: 'areasInteres',
+        label: 'Áreas de Interés (Selección Múltiple)',
+        type: 'multiselect',
+        required: false,
+        options: [
+            { value: 'deportes', label: 'Deportes' },
+            { value: 'cultura', label: 'Cultura' },
+            { value: 'medioambiente', label: 'Medio Ambiente' },
+            { value: 'social', label: 'Social' }
+        ],
+        defaultValue: [],
+        helperText: 'Puedes seleccionar varias opciones.',
+        gridProps: { xs: 12, sm: 6 },
+        step: 3 // <--- Añadido
+    },
+
+    // --- PASO 4: Adjuntos y Confirmación Final ---
+    {
+        name: 'documentoAdjunto',
+        label: 'Adjuntar Documento (PDF o Imagen)',
         type: 'file',
         required: false,
-        gridProps: { xs: 12 }
-    }];
+        accept: ".pdf,.jpg,.jpeg,.png",
+        maxSizeMB: 10, // Asegúrate que la lógica de validación en el modal use esto
+        helperText: 'Tamaño máximo 10MB.',
+        gridProps: { xs: 12 },
+        step: 4 // <--- Añadido
+    },
+    {
+        name: 'infoAdicional',
+        label: 'Información Importante',
+        type: 'static-text',
+        text: 'Recuerda que las solicitudes falsas pueden ser sancionadas. Proporciona información veraz y completa.',
+        helperText: 'Revisado el 01/01/2024',
+        gridProps: { xs: 12 },
+        step: 4 // <--- Añadido (Ejemplo: Puesto al final)
+    },
+    {
+        name: 'aceptaTerminos',
+        label: 'Acepto los términos y condiciones',
+        type: 'checkbox',
+        required: true, // IMPORTANTE: El campo requerido final debe estar en el último paso visible
+        defaultValue: false,
+        helperText: 'Debes aceptar para continuar.',
+        gridProps: { xs: 12 },
+        step: 4 // <--- Añadido (Último paso)
+    },
+];

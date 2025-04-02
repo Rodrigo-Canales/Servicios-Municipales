@@ -1,3 +1,4 @@
+//frontend/src/utils/stringUtils.js
 export function normalizeToCamelCase(name) {
     if (!name) return 'default';
 

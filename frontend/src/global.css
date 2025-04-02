@@ -1,0 +1,12 @@
+/* src/global.css */
+
+/* Solución para SweetAlert2 detrás de MUI Dialog */
+.swal2-container {
+    z-index: 1400 !important; /* Asegura que esté sobre el z-index 1300 del MUI Dialog */
+    }
+    
+  /* Puedes añadir otros estilos globales aquí si los necesitas */
+    body {
+        margin: 0; /* Ejemplo de otro reset global útil */
+        /* ... */
+    }
