@@ -23,10 +23,10 @@ function crearCarpeta(ruta) {
     }
 }
 
-// Configuración de Multer (Sin Cambios)
+// Configuración de Multer 
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pptx', '.docx', '.pdf'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
     const fileExtension = path.extname(file.originalname).toLowerCase();
     if (allowedExtensions.includes(fileExtension)) {
         cb(null, true);

@@ -73,14 +73,15 @@ USE servicios_municipales;
 -- Poblar la tabla Áreas
 -- ------------------------------
 INSERT INTO Areas (nombre_area) VALUES
-('Obras Públicas'),               -- ID 1
-('Medio Ambiente Aseo y Ornato'), -- ID 2
-('Seguridad Ciudadana'),          -- ID 3
-('Desarrollo Comunitario'),       -- ID 4
-('Tránsito y Transporte Público'),-- ID 5
-('Cultura'),                      -- ID 6
-('Educación'),                    -- ID 7
-('Salud Municipal')               -- ID 8
+('Rentas y Patentes'),                    -- ID 1
+('Medio Ambiente'),                       -- ID 2
+('Unidad Vial'),                          -- ID 3
+('OIRS'),                                 -- ID 4
+('Tránsito'),                             -- ID 5
+('Seguridad Pública'),                    -- ID 6
+('Riesgos y Desastres'),                  -- ID 7
+('Juzgado de Policía Local')              -- ID 8
+('Programa Organizaciones Comunitarias')  -- ID 9
 ON DUPLICATE KEY UPDATE nombre_area=nombre_area; -- Evita error si ya existen
 
 -- ------------------------------
@@ -88,20 +89,16 @@ ON DUPLICATE KEY UPDATE nombre_area=nombre_area; -- Evita error si ya existen
 -- ------------------------------
 INSERT INTO Usuarios (RUT, nombre, apellido, correo_electronico, hash_password, rol, area_id) VALUES
 -- Vecinos
-('11111111-1', 'Elena', 'Martínez', 'elena.m@email.com', NULL, 'Vecino', NULL),
-('22222222-2', 'Roberto', 'Silva', 'r.silva@email.com', NULL, 'Vecino', NULL),
-('12345678-9', 'Juan', 'Pérez', 'juan.perez@email.com', NULL, 'Vecino', NULL),
-('23456789-0', 'María', 'González', 'maria.g@email.com', NULL, 'Vecino', NULL),
-('98765432-1', 'Luisa', 'Fernández', 'luisa.f@email.com', NULL, 'Vecino', NULL),
+('11111111-1', 'Benito', 'Ordoñez', NULL, NULL, 'Vecino', NULL),
+('22222222-2', 'Rodrigo', 'Canales', NULL, NULL, 'Vecino', NULL),
+
 -- Funcionarios (Hashes de ejemplo para 'password123')
-('34567890-1', 'Carlos', 'López', 'c.lopez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1),
-('45678901-2', 'Ana', 'Rodríguez', 'a.rodriguez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 2),
-('87654321-0', 'Jorge', 'Ramírez', 'j.ramirez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 5),
-('76543210-9', 'Sofía', 'Castro', 's.castro@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 4),
-('65432109-8', 'Andrés', 'Vargas', 'a.vargas@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1),
+('33333333-3', 'Benito', 'Ordoñez', 'b.ordoñez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 1),
+('44444444-4', 'Rodrigo', 'Canales', 'r.canales@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Funcionario', 2),
+
 -- Administradores
-('56789012-3', 'Pedro', 'Sánchez', 'p.sanchez@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL),
-('10101010-1', 'Isidora', 'Díaz', 'i.diaz@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL)
+('55555555-5', 'Benito', 'Ordoñez', 'b.admin@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL),
+('66666666-6', 'Rodrigo', 'Canales', 'r.admin@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL)
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), apellido=VALUES(apellido), correo_electronico=VALUES(correo_electronico), hash_password=VALUES(hash_password), rol=VALUES(rol), area_id=VALUES(area_id); -- Evita error si ya existen
 
 -- ------------------------------
@@ -126,60 +123,20 @@ INSERT INTO Tipos_Solicitudes (id_tipo, nombre_tipo, descripcion, area_id) VALUE
 (16, 'Programa de vacunación', 'Información sobre campañas de vacunación y horarios.', 8)
 ON DUPLICATE KEY UPDATE nombre_tipo=VALUES(nombre_tipo), descripcion=VALUES(descripcion), area_id=VALUES(area_id); -- Evita error si ya existen
 
--- ------------------------------
--- Poblar la tabla Solicitudes
--- ------------------------------
--- MODIFICADO: Añadir columna correo_notificacion (ejemplos con NULL, puedes poner emails)
-INSERT INTO Solicitudes (id_solicitud, id_tipo, estado, ruta_carpeta, RUT_ciudadano, correo_notificacion, fecha_hora_envio) VALUES
-(1, 1, 'Pendiente', '/srv/sol/11111111-1/1', '11111111-1', 'elena.notif@email.com', NOW() - INTERVAL 7 DAY), -- Correo específico
-(2, 3, 'Aprobada', '/srv/sol/22222222-2/3', '22222222-2', NULL, NOW() - INTERVAL 5 DAY),
-(3, 5, 'Rechazada', '/srv/sol/12345678-9/5', '12345678-9', NULL, NOW() - INTERVAL 4 DAY),
-(4, 8, 'Pendiente', '/srv/sol/23456789-0/8', '23456789-0', NULL, NOW() - INTERVAL 3 DAY),
-(5, 2, 'Pendiente', '/srv/sol/98765432-1/2', '98765432-1', NULL, NOW() - INTERVAL 2 DAY),
-(6, 10, 'Aprobada', '/srv/sol/11111111-1/10', '11111111-1', 'elena.notif@email.com', NOW() - INTERVAL 1 DAY), -- Correo específico
-(7, 15, 'Pendiente', '/srv/sol/22222222-2/15', '22222222-2', NULL, NOW()),
-(8, 4, 'Pendiente', '/srv/sol/12345678-9/4', '12345678-9', 'juan.perez@email.com', NOW() - INTERVAL 6 HOUR) -- Usa el mismo correo del usuario
-ON DUPLICATE KEY UPDATE id_tipo=VALUES(id_tipo), estado=VALUES(estado), ruta_carpeta=VALUES(ruta_carpeta), RUT_ciudadano=VALUES(RUT_ciudadano), correo_notificacion=VALUES(correo_notificacion), fecha_hora_envio=VALUES(fecha_hora_envio); -- Evita error si ya existen
-
--- ------------------------------
--- Poblar la tabla Respuestas
--- ------------------------------
-INSERT INTO Respuestas (id_respuesta, id_solicitud, RUT_trabajador) VALUES
-(1, 2, '45678901-2'),
-(2, 3, '56789012-3'),
-(3, 6, '87654321-0')
-ON DUPLICATE KEY UPDATE id_solicitud=VALUES(id_solicitud), RUT_trabajador=VALUES(RUT_trabajador); -- Evita error si ya existen
-
 ------------------------------
 -- Poblar la tabla Preguntas Frecuentes
 ------------------------------
 INSERT INTO Preguntas_Frecuentes (id_tipo, pregunta, respuesta) VALUES
+
 -- Ejemplos para Reparación de calles (id_tipo = 1)
 (1, '¿Cuánto tiempo tarda la reparación de un bache?', 'El tiempo de reparación varía según la carga de trabajo y la urgencia, pero generalmente intentamos abordar los baches reportados dentro de 5 a 10 días hábiles.'),
-(1, '¿Puedo solicitar la repavimentación completa de mi calle?', 'La repavimentación completa se planifica según un catastro general del estado de las vías. Puede ingresar una solicitud para que se evalúe la condición de su calle.'),
+
 -- Ejemplos para Alumbrado público (id_tipo = 2)
 (2, 'Mi poste de luz no enciende, ¿qué hago?', 'Por favor, ingrese una solicitud indicando la dirección exacta o el número del poste (si es visible) para que nuestro equipo técnico pueda revisarlo.'),
-(2, '¿Puedo solicitar un nuevo punto de luz para mi pasaje?', 'Sí, puede ingresar una solicitud detallando la ubicación donde considera necesario un nuevo punto de luz. Se evaluará la factibilidad técnica y presupuestaria.'),
--- Ejemplos para Limpieza (id_tipo = 3)
-(3, '¿Con qué frecuencia limpian los microbasurales?', 'Intentamos limpiar los puntos críticos identificados regularmente, pero dependemos de los reportes ciudadanos. Ingrese su solicitud para asegurar la limpieza del punto específico.'),
--- Ejemplos para Árboles (id_tipo = 4)
-(4, '¿Necesito permiso para podar un árbol fuera de mi casa?', 'Sí, los árboles en la vía pública son gestionados por el municipio. Debe ingresar una solicitud para que el equipo de Ornato evalúe y realice la poda si corresponde.'),
--- Ejemplos para Ruidos molestos (id_tipo = 5)
-(5, '¿Qué pasa después de denunciar ruidos molestos?', 'Inspectores municipales o personal de seguridad ciudadana pueden acudir al lugar para verificar la situación y cursar las infracciones correspondientes si la normativa se está incumpliendo.'),
--- Ejemplos para Hora Médica (id_tipo = 15)
-(15, '¿Cómo pido hora para un especialista en el CESFAM?', 'La derivación a especialistas generalmente requiere una evaluación previa por médico general en el CESFAM. Solicite primero una hora con médico general para evaluar su caso.'),
-(15, '¿Puedo pedir hora por teléfono?', 'Dependiendo del CESFAM, puede haber horarios específicos para solicitar hora telefónicamente o a través de alguna plataforma online. Consulte directamente con su CESFAM para conocer las vías disponibles.')
-ON DUPLICATE KEY UPDATE pregunta=VALUES(pregunta), respuesta=VALUES(respuesta), id_tipo=VALUES(id_tipo); -- Evita duplicados si se ejecuta de nuevo
 
 
 
 
-
-proteger rutas:
-Verificar el token JWT en cada ruta: En cada ruta protegida (como /panel-administrador), verifica si el usuario tiene un token JWT válido en su cookie. Si no tiene un token válido, redirige al usuario a la página de login.
-Verificar el rol del usuario en cada ruta: Además de verificar si el usuario tiene un token JWT válido, también verifica si el rol del usuario (que está almacenado en el token JWT) es el rol correcto para acceder a esa ruta. Por ejemplo, si el usuario intenta acceder a /panel-administrador, verifica si su rol es "Administrador".
-Utilizar un componente de protección de rutas: Crea un componente de protección de rutas que se encargue de verificar el token JWT y el rol del usuario antes de permitir el acceso a una ruta protegida.
-(implementar eso en el frontend)
 
 Backend
 -------

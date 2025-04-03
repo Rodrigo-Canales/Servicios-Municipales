@@ -7,6 +7,14 @@ export const title = "Formulario General (Ejemplo Completo)";
 export const fields = [
     // --- PASO 1: Información Básica y Referencias ---
     {
+        name: 'infoAdicional',
+        label: 'Información Importante:',
+        type: 'static-text',
+        text: 'Para concretar tu solicitud tienes que completar el formulario que aparece a continuación.\n\nRecuerda adjuntar todos los documentos necesarios para agilizar el proceso.', // <-- Añade \n\n y el nuevo texto
+        gridProps: { xs: 12 },
+        step: 1 
+    },
+    {
         name: 'nombreCompleto',
         label: 'Nombre Completo',
         type: 'text',
@@ -14,6 +22,18 @@ export const fields = [
         placeholder: 'Ingrese su nombre y apellidos',
         gridProps: { xs: 12, sm: 6 },
         step: 1 // <--- Añadido
+    },
+        // --- NUEVO CAMPO DE UBICACIÓN ---
+    {
+        name: 'ubicacionIncidente', // Este es el nombre que el backend recibirá en req.body
+        label: 'Ubicación del Incidente (Opcional)',
+        type: 'location', // Tipo personalizado para que SolicitudModalForm lo reconozca
+        required: false,
+        initialCenter: [-38.9854, -72.6397],
+        initialZoom: 14,   
+        helperText: 'Haz clic en el mapa o usa el botón para indicar la ubicación.',
+        gridProps: { xs: 12 }, // Ocupa todo el ancho
+        step: 1 // Añadido al paso 2
     },
     {
         name: 'correoElectronico',

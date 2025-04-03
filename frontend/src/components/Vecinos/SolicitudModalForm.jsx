@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { normalizeToCamelCase } from '../../utils/stringUtils';
 import { mostrarAlertaAdvertencia } from '../../utils/alertUtils'; 
+import LocationInput from '../LocationInput'; 
 
 const SolicitudModalForm = ({
     open,
@@ -27,8 +28,6 @@ const SolicitudModalForm = ({
     const [fileErrors, setFileErrors] = useState({});
     const [currentStep, setCurrentStep] = useState(0);
 
-
-          
     // *** CÁLCULO DEL TOTAL DE PASOS ***
     const totalSteps = useMemo(() => {
         if (!formFields || formFields.length === 0) return 0; // Si no hay campos, no hay pasos
@@ -40,39 +39,45 @@ const SolicitudModalForm = ({
 
     // --- Carga Dinámica de la Definición del Formulario ---
     useEffect(() => {
-        // Cargar solo si el modal está abierto
+        // Cargar o limpiar basado en si el modal está abierto
         if (open) {
+            // --- Código a ejecutar CUANDO SE ABRE el modal ---
             const loadFormDefinition = async () => {
+                // Resetea estados al inicio de la carga
                 setLoadingDefinition(true);
                 setDefinitionError(null);
                 setFormFields([]);
                 setFormData({});
                 setFileInputs({});
+                setFileErrors({}); // <-- LIMPIAR ERRORES DE ARCHIVO AQUÍ
+                setCurrentStep(0); // <-- RESETEAR AL PRIMER PASO AQUÍ
+
                 let loadedFields = [];
-                let loadedTitle = 'Nueva Solicitud'; // Título por defecto inicial
+                let loadedTitle = 'Nueva Solicitud';
 
                 // Determinar el nombre del archivo a cargar
                 const formName = tipoSeleccionado?.nombre_tipo
                     ? normalizeToCamelCase(tipoSeleccionado.nombre_tipo)
-                    : 'default'; // Si no hay tipo, carga 'default'
+                    : 'default';
 
-                console.log(`[Modal] Intentando cargar definición: ${formName}.js`);
+                console.log(`[Modal] Abierto. Intentando cargar definición: ${formName}.js`);
 
                 try {
+                    // Carga dinámica del módulo de definición
                     const module = await import(`../formDefinitions/${formName}.js`);
                     loadedFields = module?.fields || [];
-                    // Usar título del módulo si existe, si no, construir uno si hay tipo, si no, usar el default
                     loadedTitle = module?.title || (tipoSeleccionado?.nombre_tipo ? `Solicitud: ${tipoSeleccionado.nombre_tipo}` : 'Nueva Solicitud General');
 
                     if (!Array.isArray(loadedFields)) {
                          throw new Error(`El archivo de definición "${formName}.js" no exporta un array 'fields' válido.`);
                     }
-                    console.log(`[Modal] Definición cargada: ${formName}.js`);
+                    console.log(`[Modal] Definición cargada: ${formName}.js (${loadedFields.length} campos)`);
 
                 } catch (error) {
+                     // Manejo de errores al cargar la definición específica
                      console.error(`[Modal] Error al cargar definición "${formName}.js": ${error.message}`);
-                     // Si falla la carga específica Y NO era 'default', intenta cargar 'default'
                      if (formName !== 'default') {
+                        // Intenta cargar 'default.js' como fallback
                         console.warn(`[Modal] Intentando cargar definición por defecto (default.js)...`);
                         try {
                             const defaultModule = await import('../formDefinitions/default.js');
@@ -83,47 +88,69 @@ const SolicitudModalForm = ({
                             }
                             console.log("[Modal] Definición por defecto cargada.");
                         } catch (defaultError) {
+                            // Error al cargar también el default
                             console.error(`[Modal] Falló al cargar definición por defecto. Error: ${defaultError.message}`);
                             setDefinitionError('Error fatal: No se pudo cargar ninguna definición de formulario.');
-                            loadedFields = []; // Asegura que no intente renderizar nada
+                            loadedFields = [];
                         }
                      } else {
-                         // Si ya falló cargando 'default', mostrar error fatal
+                         // Error cargando 'default.js' directamente
                          setDefinitionError('Error fatal: No se pudo cargar la definición del formulario por defecto.');
                          loadedFields = [];
                      }
                 } finally {
+                    // Establece los campos y el título (incluso si hubo error en carga)
                     setFormFields(loadedFields);
                     setFormTitle(loadedTitle);
-                    // Inicializar formData con valores por defecto correctamente
+
+                    // Inicializa formData con valores por defecto correctamente
                     const initialData = loadedFields.reduce((acc, field) => {
                         let defaultValue = field.defaultValue;
                         if (defaultValue === undefined) {
                             switch (field.type) {
                                 case 'checkbox': defaultValue = false; break;
-                                case 'multiselect': defaultValue = []; break; // Para multiselect
-                                case 'number': defaultValue = ''; break; // Evitar NaN
-                                // Añadir otros tipos si necesitan default específico
+                                case 'multiselect': defaultValue = []; break;
+                                case 'number': defaultValue = ''; break;
+                                case 'location': defaultValue = null; break; // Correcto para ubicación
+                                // Asegúrate de tener los defaults que necesites
                                 default: defaultValue = ''; break;
                             }
                         }
                         acc[field.name] = defaultValue;
                         return acc;
                     }, {});
-                    setFormData(initialData);
-                    setLoadingDefinition(false);
+                    setFormData(initialData); // Establece el estado inicial de los datos
+
+                    setLoadingDefinition(false); // Termina la carga
                 }
             };
-            loadFormDefinition();
-        } else { // Limpiar cuando se cierra el modal
-            setFormFields([]);
-            setFormData({});
-            setFileInputs({});
-            setDefinitionError(null);
-            setFormTitle('Nueva Solicitud');
-            setLoadingDefinition(false); // Asegurarse de resetear el estado de carga
+
+            loadFormDefinition(); // Llama a la función asíncrona
+
+        } else {
+            // --- Código a ejecutar CUANDO SE CIERRA el modal (open es false) ---
+            console.log('[Modal] Cerrado. Limpiando estados...');
+            setFormFields([]);       // Limpia la definición de campos
+            setFormData({});         // Limpia los datos del formulario
+            setFileInputs({});       // Limpia los archivos seleccionados
+            setFileErrors({});       // <-- LIMPIAR ERRORES DE ARCHIVO AQUÍ TAMBIÉN
+            setDefinitionError(null); // Limpia errores de carga de definición
+            setFormTitle('Nueva Solicitud'); // Resetea el título
+            setLoadingDefinition(false); // Asegura que el estado de carga esté apagado
+            setCurrentStep(0);       // <-- RESETEAR AL PRIMER PASO AQUÍ TAMBIÉN
         }
-    }, [open, tipoSeleccionado]); // Dependencias clave: abrir/cerrar y cambio de tipo
+
+    // Dependencias del useEffect: se re-ejecuta si 'open' o 'tipoSeleccionado' cambian
+    }, [open, tipoSeleccionado]);
+
+    // **NUEVO HANDLER PARA LocationInput**
+    const handleLocationChange = useCallback((fieldName, locationValue) => {
+        setFormData(prevData => ({
+            ...prevData,
+            [fieldName]: locationValue 
+        }));
+    }, []); 
+
 
     // --- Manejadores de Cambios en Inputs ---
     const handleInputChange = useCallback((eventOrValue, fieldName, fieldType) => {
@@ -157,69 +184,105 @@ const SolicitudModalForm = ({
         }));
     }, []);
 
-    const handleFileChange = useCallback((event, field) => { // <--- AÑADIDO 'field' como argumento
+    // frontend/src/components/Vecinos/SolicitudModalForm.jsx
+
+// ... (dentro del componente SolicitudModalForm, junto a otros handlers)
+
+    const handleFileChange = useCallback((event, field) => { // 'field' contiene la definición (maxSizeMB, accept)
         const { name, files } = event.target;
-        const inputElement = event.target; // Guardar referencia al input
+        const inputElement = event.target; // Referencia al input para resetear si hay error
 
-        // Obtener el límite del field definition (o usar 10MB por defecto)
-        const maxSizeMB = field?.maxSizeMB || 10;
+        // --- Configuración desde la definición del campo ---
+        const maxSizeMB = field?.maxSizeMB || 10; // Límite de tamaño (o 10MB por defecto)
         const maxSizeInBytes = maxSizeMB * 1024 * 1024;
+        const acceptedTypesString = field?.accept || ''; // Tipos aceptados (ej: ".pdf,.jpg")
+        // Convertir string a array de tipos/extensiones limpias y en minúsculas
+        const acceptedTypesArray = acceptedTypesString
+                                    .split(',')
+                                    .map(type => type.trim().toLowerCase())
+                                    .filter(type => type); // Ignora elementos vacíos si hay comas extra
 
-        // Limpiar error anterior para este campo
-        setFileErrors(prevErrors => ({ ...prevErrors, [name]: null }));
+        // Limpiar error previo para este campo específico
+        setFileErrors(prevErrors => {
+            const updatedErrors = { ...prevErrors };
+            delete updatedErrors[name]; // Elimina el error anterior para este campo
+            return updatedErrors;
+        });
+        // Limpiar también el archivo anterior del estado si se intenta cambiar
+        setFileInputs(prevFiles => {
+            const updatedFiles = { ...prevFiles };
+            delete updatedFiles[name]; // Elimina archivo previo para este campo
+            return updatedFiles;
+        });
 
+
+        // --- Procesar archivo seleccionado ---
         if (files && files.length > 0) {
-            const file = files[0]; // Asumimos carga de un solo archivo por ahora
+            const file = files[0]; // Tomamos solo el primer archivo por ahora
 
-            // *** VALIDACIÓN DE TAMAÑO ***
-            if (file.size > maxSizeInBytes) {
-                const errorMsg = `El archivo supera el límite de ${maxSizeMB} MB (tamaño: ${(file.size / (1024 * 1024)).toFixed(2)} MB).`;
-                console.warn(`[Modal] Validación fallida para ${name}: ${errorMsg}`);
-                setFileErrors(prevErrors => ({ ...prevErrors, [name]: errorMsg }));
+            let errorMessages = []; // Array para acumular errores
 
-                // **Importante: No guardar el archivo inválido en el estado**
-                setFileInputs(prevFiles => {
-                    const updated = { ...prevFiles };
-                    delete updated[name]; // Elimina cualquier archivo válido previo para este input
-                    return updated;
+            // --- 1. Validación de Tipo ---
+            if (acceptedTypesArray.length > 0) { // Solo validar si se definieron tipos aceptados
+                const fileExtension = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
+                const fileMimeType = file.type?.toLowerCase() || '';
+
+                const isTypeAccepted = acceptedTypesArray.some(acceptedType => {
+                    if (acceptedType.startsWith('.')) { // Comparar por extensión
+                        return fileExtension === acceptedType;
+                    } else if (acceptedType.endsWith('/*')) { // Comparar por MIME type con wildcard (ej: image/*)
+                        return fileMimeType.startsWith(acceptedType.slice(0, -1));
+                    } else { // Comparar por MIME type exacto
+                        return fileMimeType === acceptedType;
+                    }
                 });
-                // setFormData(prevData => ({ ...prevData, [name]: '' })); // Limpiar nombre si se guarda en formData
 
-                // Resetear el valor del input para que el usuario pueda intentar de nuevo
+                if (!isTypeAccepted) {
+                    // Usar un mensaje más claro indicando qué se espera
+                    let expectedTypes = acceptedTypesArray.map(t => t.startsWith('.') ? t.toUpperCase().substring(1) : t).join(', ');
+                    errorMessages.push(`Tipo de archivo no permitido. Solo se aceptan: ${expectedTypes}.`);
+                }
+            }
+
+            // --- 2. Validación de Tamaño ---
+            if (file.size > maxSizeInBytes) {
+                errorMessages.push(`El archivo supera el límite de ${maxSizeMB} MB.`);
+            }
+
+            // --- 3. Manejo de Errores ---
+            if (errorMessages.length > 0) {
+                const combinedErrorMessage = errorMessages.join(' '); // Unir mensajes si hay más de uno
+                console.warn(`[Modal] Validación fallida para ${name}: ${combinedErrorMessage}`);
+                // Actualizar estado de errores
+                setFileErrors(prevErrors => ({
+                    ...prevErrors,
+                    [name]: combinedErrorMessage // Guarda el mensaje de error combinado
+                }));
+                // Resetear el valor del input file para permitir seleccionar de nuevo (incluso el mismo archivo)
                 if (inputElement) {
                     inputElement.value = null;
                 }
-                return; // Detener el procesamiento aquí
+                return; // Detener aquí, no guardar archivo inválido
             }
 
-            // *** El archivo es válido ***
-            console.log(`[Modal] Archivo válido seleccionado para ${name}: ${file.name}`);
+            // --- Archivo Válido ---
+            // Si llegamos aquí, no hubo errores de tipo ni tamaño
+            console.log(`[Modal] Archivo válido seleccionado para ${name}: ${file.name} (Tipo: ${file.type}, Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            // Guardar el objeto File en el estado fileInputs
             setFileInputs(prevFiles => ({
                 ...prevFiles,
-                [name]: file // Guardar el objeto File
+                [name]: file
             }));
-            // setFormData(prevData => ({ ...prevData, [name]: file.name })); // Opcional: guardar nombre
+            // Opcional: podrías actualizar formData aquí si necesitas el nombre u otra info
+            // setFormData(prevData => ({ ...prevData, [name]: file.name }));
 
         } else {
-            // No se seleccionó archivo o se canceló
+            // No se seleccionó archivo o se canceló la selección
             console.log(`[Modal] No se seleccionó archivo para ${name} o se canceló.`);
-            setFileInputs(prevFiles => {
-                const updated = { ...prevFiles };
-                delete updated[name];
-                return updated;
-            });
-            // setFormData(prevData => ({ ...prevData, [name]: '' }));
+            // Asegurarse de limpiar el estado si se cancela (ya se hizo al principio)
         }
 
-        // Permitir reseleccionar el mismo archivo (si no se hizo ya)
-        // Aunque el return en el caso de error ya lo evita,
-        // y el else maneja la cancelación, dejarlo aquí es seguro
-        // y útil si la lógica cambia.
-        // if (inputElement) {
-        //     inputElement.value = null;
-        // }
-
-    }, []);
+    }, []); // Fin de useCallback handleFileChange
 
     // --- Manejador de Envío ---
     const handleSubmit = (event) => {
@@ -330,9 +393,9 @@ const SolicitudModalForm = ({
                         placeholder={field.placeholder || ''}
                         InputProps={field.InputProps || {}} // Para adornos (ej. $), min/max en inputProps
                         inputProps={{ // Para atributos HTML directos
-                           min: field.min,
-                           max: field.max,
-                           step: field.step || 'any', // Permite decimales por defecto
+                            min: field.min,
+                            max: field.max,
+                            step: field.step || 'any', // Permite decimales por defecto
                         }}
                     />
                 );
@@ -387,14 +450,14 @@ const SolicitudModalForm = ({
                                 </MenuItem>
                             ))}
                         </Select>
-                         {commonProps.helperText && <FormHelperText>{commonProps.helperText}</FormHelperText>}
+                        {commonProps.helperText && <FormHelperText>{commonProps.helperText}</FormHelperText>}
                     </FormControl>
                 );
             case 'multiselect':
                 // Asegurarse de que el valor siempre sea un array para el Select multiple
                 { const multiSelectValue = Array.isArray(value) ? value : [];
                 return (
-                     <FormControl fullWidth required={commonProps.required} size="small" margin="dense" disabled={commonProps.disabled}>
+                    <FormControl fullWidth required={commonProps.required} size="small" margin="dense" disabled={commonProps.disabled}>
                         <InputLabel id={`${field.name}-label`}>{commonProps.label}</InputLabel>
                         <Select
                             labelId={`${field.name}-label`}
@@ -565,24 +628,47 @@ const SolicitudModalForm = ({
                     </Box>
                 );
                 case 'static-text':
-                    // No es un input, solo muestra información
                     return (
                         <Box sx={{
                             mt: 1, mb: 1, p: 1.5,
-                            // Establece el fondo azul sólido directamente
                             bgcolor: 'primary.light',
                             color: 'primary.contrastText',
                             borderRadius: 1
                         }}>
-                            {/* Título opcional: Texto blanco sólido */}
-                            {commonProps.label && <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{commonProps.label}</Typography>}
-                            {/* Texto principal: Texto blanco sólido */}
+                            {commonProps.label &&
+                                <Typography
+                                    variant="text"
+                                    sx={{
+                                        mb: 0.5,
+                                        fontWeight: 'bold' // <-- AÑADIDO PARA NEGRITA
+                                    }}
+                                >
+                                    {commonProps.label}
+                                </Typography>
+                            }
+                            {/* Texto principal (sin cambios) */}
                             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{field.text || ''}</Typography>
-                            {/* Helper text: Texto blanco sólido */}
-                            {/* Nota: FormHelperText necesita el estilo de color explícito aquí */}
-                            {commonProps.helperText && <FormHelperText sx={{ mt: 0.5,  color: 'inherit' }}>{commonProps.helperText}</FormHelperText>}
+                            {/* Helper text (sin cambios) */}
+                            {commonProps.helperText && <FormHelperText sx={{ mt: 0.5, color: 'inherit' }}>{commonProps.helperText}</FormHelperText>}
                         </Box>
                     );
+                    case 'location':
+                        return (
+                            <LocationInput
+                                key={field.name} // Key para React
+                                name={field.name} // Nombre del campo, importante
+                                label={commonProps.label} // Etiqueta del campo
+                                value={formData[field.name]} // Valor actual ({lat, lng} o null) desde el estado
+                                // Llama a nuestro handler cuando la ubicación cambie en el componente hijo
+                                onChange={(locationValue) => handleLocationChange(field.name, locationValue)}
+                                helperText={commonProps.helperText} // Texto de ayuda
+                                disabled={commonProps.disabled} // Estado deshabilitado
+                                required={commonProps.required} // Si es obligatorio
+                                // Opcional: puedes pasar configuraciones iniciales desde la definición
+                                initialCenter={field.initialCenter}
+                                initialZoom={field.initialZoom}
+                            />
+                        );
             // --- Default (Campo desconocido) ---
             default:
                 console.warn(`[Modal] Tipo de campo desconocido encontrado: ${field.type}`);
@@ -671,7 +757,7 @@ const SolicitudModalForm = ({
                 bgcolor: theme.palette.primary.main, // Fondo azul del tema
                 color: theme.palette.primary.contrastText, // Texto blanco del tema
             }}>
-                {loadingDefinition ? 'Cargando formulario...' : (formTitle || 'Nueva Solicitud')}
+                {loadingDefinition ? 'Cargando formulario de solicitud...' : (formTitle || 'Nueva Solicitud')}
             </DialogTitle>
             {/* Usar componente 'form' para habilitar el submit del botón */}
             <Box component="form" onSubmit={handleSubmit} noValidate>
