@@ -1,0 +1,19 @@
+# backend/.dockerignore
+
+# Ignorar la carpeta de módulos de Node local (se instalarán en el contenedor)
+node_modules
+
+# Ignorar logs de npm
+npm-debug.log
+yarn-error.log
+
+# Ignorar archivos de entorno locales (estos se manejan en docker-compose)
+.env
+*.env
+
+# Ignorar la carpeta de Git y el archivo .gitignore
+.git
+.gitignore
+
+# Otros archivos que no quieras en la imagen (ej. archivos de IDE, etc.)
+.vscode/

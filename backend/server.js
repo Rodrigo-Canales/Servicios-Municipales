@@ -4,23 +4,21 @@ const path = require('path');
 const cors = require('cors');
 const db = require('./config/db');
 
-// Cargar variables de entorno antes de usarlas
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuración de CORS para desarrollo
 const corsOptions = {
-    origin: '*', // Permitir cualquier origen en desarrollo
+    origin: 'http://localhost:8080', 
     credentials: true,
 };
 
-app.use(cors(corsOptions)); // Usar CORS con las opciones definidas
+app.use(cors(corsOptions));
 
 // Middlewares
-app.use(express.json()); // Parsear JSON
-app.use(express.urlencoded({ extended: true })); // Parsear URL-encoded
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
 
 // Seguridad con Helmet 
 const helmet = require('helmet');
@@ -52,5 +50,5 @@ app.get('/', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-    console.log(`✅ Servidor corriendo en: http://localhost:${PORT}`);
+    console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });

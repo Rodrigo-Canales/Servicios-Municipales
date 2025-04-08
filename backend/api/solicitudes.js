@@ -1,3 +1,4 @@
+// backend/api/solicitudes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
@@ -52,7 +53,7 @@ router.get('/vecino/:rut', protect, async (req, res) => {
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
                 s.correo_notificacion
             FROM Solicitudes s
-            JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
+            JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
             WHERE s.RUT_ciudadano = ?
             ORDER BY s.fecha_hora_envio DESC
         `;
@@ -75,7 +76,7 @@ router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req,
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
                 s.ruta_carpeta, s.correo_notificacion
             FROM Solicitudes s
-            JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
+            JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
             ORDER BY s.id_solicitud ASC
         `);
         res.status(200).json({ solicitudes });
@@ -95,7 +96,7 @@ router.get('/:id', protect, restrictTo('Administrador, Funcionario'), async (req
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
                 s.ruta_carpeta, s.correo_notificacion
             FROM Solicitudes s
-            JOIN tipos_solicitudes t ON s.id_tipo = t.id_tipo
+            JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
             WHERE s.id_solicitud = ?
         `, [id]);
         if (solicitud.length === 0) {

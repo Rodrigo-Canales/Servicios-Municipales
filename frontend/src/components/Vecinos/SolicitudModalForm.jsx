@@ -4,25 +4,24 @@ import PropTypes from 'prop-types';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
     CircularProgress, Alert, Box, Select, MenuItem, InputLabel, FormControl,
-    Checkbox, FormControlLabel, Typography, useTheme, Input, FormHelperText, // Added Input
-    RadioGroup, Radio, Link, FormGroup, FormLabel // Added FormLabel
+    Checkbox, FormControlLabel, Typography, useTheme, Input, FormHelperText, 
+    RadioGroup, Radio, Link, FormGroup, FormLabel 
 } from '@mui/material';
 import { normalizeToCamelCase } from '../../utils/stringUtils';
 import { mostrarAlertaAdvertencia } from '../../utils/alertUtils';
-import LocationInput from '../LocationInput'; // Assuming this handles its own state/styles
+import LocationInput from '../LocationInput'; 
 
 // --- Helper: Validation Function ---
-// (Keep your existing validateField function as it is)
 const validateField = (name, value, fieldDefinition, formData) => {
     const {
         required,
         type,
         minLength,
         maxLength,
-        min, // For numbers
-        max, // For numbers
-        pattern, // Regex pattern
-        validate, // Custom validation function: (value, formData) => 'error message' | null
+        min,
+        max,
+        pattern,
+        validate,
     } = fieldDefinition;
 
     // 1. Required Check (handles various types)
@@ -30,42 +29,30 @@ const validateField = (name, value, fieldDefinition, formData) => {
         let isEmpty = false;
         switch (type) {
             case 'checkbox':
-                isEmpty = !value; // Must be true if required
+                isEmpty = !value;
                 break;
             case 'multiselect':
                 isEmpty = !Array.isArray(value) || value.length === 0;
                 break;
             case 'file':
-                 // Required check for files needs to happen where fileInputs state is accessible
-                 // This function primarily validates the 'value' which isn't set for files
-                 // We'll handle required file validation separately where needed (e.g., validateStep)
                 break;
             case 'location':
                 isEmpty = !value || typeof value.lat !== 'number' || typeof value.lng !== 'number';
                 break;
             case 'number':
-                // Allow 0 as a valid number if required
                 isEmpty = value === null || value === undefined || value === '';
                 break;
-            default: // text, email, select, radio, date, etc.
+            default: 
                 isEmpty = value === null || value === undefined || value === '';
                 break;
         }
-        if (isEmpty && type !== 'file') { // Skip file required check here
+        if (isEmpty && type !== 'file') {
             return fieldDefinition.requiredMessage || 'Este campo es obligatorio.';
         }
     }
 
-
-    // Return early if not required and empty
-     // Allow validation of non-required fields even if empty (e.g., pattern on optional field)
-     // if (!required && (value === null || value === undefined || value === '')) {
-     //     return null;
-     // }
-
-    // If value is present or field is required (and value might be empty string needing validation like pattern)
     if (value !== null && value !== undefined && value !== '' || required) {
-        // 2. Type-specific Validations (only if value is not empty-ish)
+        
         if (value !== null && value !== undefined && value !== '') {
             switch (type) {
                 case 'email':
@@ -76,24 +63,23 @@ const validateField = (name, value, fieldDefinition, formData) => {
                     break; }
                 case 'url':
                     try {
-                        // Allow relative URLs or simple strings if pattern is used instead
+                        
                         if (!pattern && !value.startsWith('http://') && !value.startsWith('https://')) {
-                             throw new Error('Missing protocol');
+                            throw new Error('Missing protocol');
                         }
-                        new URL(value); // Validate full URL if no specific pattern overrides
+                        new URL(value); 
                     } catch {
-                         // Only return error if no specific pattern is defined that might allow other formats
-                         if (!pattern) {
+                        
+                        if (!pattern) {
                             return fieldDefinition.urlMessage || 'Ingrese una URL válida (ej. https://www.ejemplo.com).';
-                         }
+                        }
                     }
                     break;
                 case 'number':
                     { const numValue = parseFloat(value);
-                    // isNaN check IS useful here because type="number" allows 'e', '+', '-' temporarily
-                    if (isNaN(numValue) || value === '') { // Check if truly not a number OR empty (if required)
+                    
+                    if (isNaN(numValue) || value === '') { 
                         if (required) return fieldDefinition.numberMessage || 'Ingrese un número válido.';
-                        // If not required and empty/NaN, it's not an *error* yet, could be valid if empty is allowed
                     } else {
                         if (min !== undefined && numValue < min) {
                             return fieldDefinition.minMessage || `El valor debe ser mayor o igual a ${min}.`;
@@ -105,8 +91,7 @@ const validateField = (name, value, fieldDefinition, formData) => {
                     break; }
                 case 'text':
                 case 'textarea':
-                    // Convert value to string before checking length
-                     { const stringValue = String(value);
+                    { const stringValue = String(value);
                     if (minLength !== undefined && stringValue.length < minLength) {
                         return fieldDefinition.minLengthMessage || `Debe tener al menos ${minLength} caracteres.`;
                     }
@@ -116,43 +101,39 @@ const validateField = (name, value, fieldDefinition, formData) => {
                     break; }
             }
         } else if (required && type !== 'checkbox' && type !== 'file' && type !== 'location' && type !== 'multiselect') {
-            // If required and still empty after initial check (e.g. spaces), mark as required error
-             // This might be redundant with check 1, but ensures empty strings fail required fields.
-             return fieldDefinition.requiredMessage || 'Este campo es obligatorio.';
+            return fieldDefinition.requiredMessage || 'Este campo es obligatorio.';
         }
 
 
-         // 3. Regex Pattern Check (apply even if value is empty string if pattern needs to match that)
+
         if (pattern) {
             try {
                 const regex = new RegExp(pattern);
-                 // Use String() to handle potential non-string values gracefully before test
-                if (!regex.test(String(value ?? ''))) { // Test against empty string if value is null/undefined
+                if (!regex.test(String(value ?? ''))) { 
                     return fieldDefinition.patternMessage || 'El formato no es válido.';
                 }
             } catch (e) {
                 console.error(`Invalid regex pattern for field ${name}: ${pattern}`, e);
-                return 'Error interno: patrón de validación inválido.' // Avoid crashing form
+                return 'Error interno: patrón de validación inválido.'
             }
         }
     }
 
-    // 4. Custom Validator
+
     if (typeof validate === 'function') {
-        const customError = validate(value, formData); // Pass current value and all form data
+        const customError = validate(value, formData);
         if (typeof customError === 'string' && customError.length > 0) {
             return customError;
         }
     }
 
 
-    // 5. No errors found
+
     return null;
 };
 
 
 const isFieldVisible = (field, currentFormData) => {
-    // Always visible if no condition is defined
     if (!field.visibleWhen) {
         return true;
     }
@@ -196,9 +177,9 @@ const isFieldVisible = (field, currentFormData) => {
     // 5. Check if value is NOT a specific value
     // Example in definition: visibleWhen: { field: 'role', isNot: 'guest' }
     if (typeof expectedValue === 'object' && expectedValue !== null && 'isNot' in expectedValue) {
-         if (Array.isArray(expectedValue.isNot)) {
-              return !expectedValue.isNot.map(String).includes(String(actualValue));
-         }
+        if (Array.isArray(expectedValue.isNot)) {
+            return !expectedValue.isNot.map(String).includes(String(actualValue));
+        }
         return String(actualValue) !== String(expectedValue.isNot);
     }
 
@@ -310,7 +291,7 @@ const SolicitudModalForm = ({
 
                     // Si el archivo que falló NO era 'default.js', SIEMPRE intenta el fallback
                     if (formName !== 'default') {
-                         console.warn(`[Modal] Import failed for "${formName}.js". Attempting fallback to default.js...`);
+                        console.warn(`[Modal] Import failed for "${formName}.js". Attempting fallback to default.js...`);
                         try { // <-- Inicio del try interno para el fallback
                             // Intenta cargar el módulo por defecto
                             const defaultModule = await import('../formDefinitions/default.js');
@@ -321,9 +302,9 @@ const SolicitudModalForm = ({
                             if (!Array.isArray(loadedFields)) {
                                 throw new Error('Default definition file "default.js" does not export a valid \'fields\' array.');
                             }
-                             console.log("[Modal] Default definition loaded successfully after fallback.");
+                            console.log("[Modal] Default definition loaded successfully after fallback.");
                              // IMPORTANTE: Limpia el error si el fallback funcionó para que no se muestre en UI
-                             setDefinitionError(null);
+                            setDefinitionError(null);
 
                         } catch (defaultError) { // <-- Inicio del catch interno para el fallback
                             // Si incluso el fallback falla
@@ -340,7 +321,7 @@ const SolicitudModalForm = ({
                     }
                 // --- FIN DEL BLOQUE CATCH PRINCIPAL ---
                 } finally { // <--- INICIO DEL BLOQUE FINALLY (siempre se ejecuta)
-                     console.log('[Modal] Setting form state...');
+                    console.log('[Modal] Setting form state...');
                     setFormFields(loadedFields);
                     setFormTitle(loadedTitle);
 
@@ -400,24 +381,24 @@ const SolicitudModalForm = ({
         }
 
         const newValue = type === 'checkbox' ? checked : value;
-         let processedValue = newValue;
+        let processedValue = newValue;
 
          // Special handling for number type to store as number if valid, or keep string otherwise
-         if (type === 'number') {
-             const num = parseFloat(value);
+        if (type === 'number') {
+            const num = parseFloat(value);
              // Store the raw string if it's empty, '-', '+', or ends in '.', otherwise store the number
-             if (value === '' || value === '-' || value === '+') {
+            if (value === '' || value === '-' || value === '+') {
                  processedValue = value; // Keep the intermediate string state
-             } else if (!isNaN(num)) {
+            } else if (!isNaN(num)) {
                  processedValue = num; // Store the actual number
-             } else {
+            } else {
                  processedValue = value; // Keep invalid string (validation will catch it)
-             }
-         }
+            }
+        }
 
 
         // Update form data
-         const newFormData = { ...formData, [name]: processedValue };
+        const newFormData = { ...formData, [name]: processedValue };
         setFormData(newFormData); // Update state first
 
         // Validate the field using the *new* data state
@@ -442,16 +423,16 @@ const SolicitudModalForm = ({
                 ...prevTouched,
                 [name]: true,
             }));
-         }
+        }
 
     }, [formFields, formData, touched]); // Added formData and touched
 
 
     // --- Blur Handler (to trigger touch and validation) ---
     const handleBlur = useCallback((fieldName) => {
-         console.log(`[Modal] Blur event on: ${fieldName}`);
+        console.log(`[Modal] Blur event on: ${fieldName}`);
          // Mark as touched
-         setTouched(prevTouched => ({
+        setTouched(prevTouched => ({
             ...prevTouched,
             [fieldName]: true,
         }));
@@ -464,7 +445,7 @@ const SolicitudModalForm = ({
             const errorMessage = validateField(fieldName, currentValue, fieldDefinition, formData);
             // Update errors only if the validation result changes
             if (errors[fieldName] !== errorMessage) {
-                 setErrors(prevErrors => ({
+                setErrors(prevErrors => ({
                     ...prevErrors,
                     [fieldName]: errorMessage,
                 }));
@@ -509,18 +490,18 @@ const SolicitudModalForm = ({
 
         // --- Reset state for this field first ---
          // Remove the file from fileInputs
-         setFileInputs(prevFiles => {
-             const updatedFiles = { ...prevFiles };
-             delete updatedFiles[name];
-             return updatedFiles;
-         });
+        setFileInputs(prevFiles => {
+            const updatedFiles = { ...prevFiles };
+            delete updatedFiles[name];
+            return updatedFiles;
+        });
          // Clear any existing validation error for this file field
-         setErrors(prevErrors => ({
+        setErrors(prevErrors => ({
             ...prevErrors,
             [name]: null
         }));
          // Mark as touched when the input is interacted with
-         setTouched(prevTouched => ({ ...prevTouched, [name]: true }));
+        setTouched(prevTouched => ({ ...prevTouched, [name]: true }));
          // ---------------------------------------
 
 
@@ -536,39 +517,39 @@ const SolicitudModalForm = ({
             if (acceptedTypesArray.length > 0) {
                 const isTypeAccepted = acceptedTypesArray.some(acceptedType => {
                      // Check exact MIME type (e.g., 'image/jpeg')
-                     if (acceptedType.includes('/')) return fileMimeType === acceptedType;
+                    if (acceptedType.includes('/')) return fileMimeType === acceptedType;
                      // Check base MIME type (e.g., 'image/*')
-                     if (acceptedType.endsWith('/*')) return fileMimeType.startsWith(acceptedType.slice(0, -1));
+                    if (acceptedType.endsWith('/*')) return fileMimeType.startsWith(acceptedType.slice(0, -1));
                      // Check extension (e.g., '.pdf')
-                     if (acceptedType.startsWith('.')) return fileExtension === acceptedType;
+                    if (acceptedType.startsWith('.')) return fileExtension === acceptedType;
                     return false; // Should not happen with well-formed 'accept' string
                 });
                 if (!isTypeAccepted) {
                     let expectedTypes = acceptedTypesArray.map(t => t.startsWith('.') ? t.toUpperCase().substring(1) : t).join(', ');
                     fileError = `Tipo inválido (${fileMimeType || fileExtension}). Permitidos: ${expectedTypes}.`;
-                     console.warn(`[Modal] File type validation failed for ${name}. Expected: ${acceptedTypesString}, Got: ${fileMimeType}`);
+                    console.warn(`[Modal] File type validation failed for ${name}. Expected: ${acceptedTypesString}, Got: ${fileMimeType}`);
                 }
             }
 
             // 2. Size Validation (only if type is okay)
             if (!fileError && file.size > maxSizeInBytes) {
                 fileError = `Archivo muy grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${maxSizeMB} MB.`;
-                 console.warn(`[Modal] File size validation failed for ${name}. Max: ${maxSizeInBytes}, Got: ${file.size}`);
+                console.warn(`[Modal] File size validation failed for ${name}. Max: ${maxSizeInBytes}, Got: ${file.size}`);
             }
 
             // 3. Update state based on validation result
             if (fileError) {
-                 console.warn(`[Modal] File validation failed for ${name}: ${fileError}`);
-                 setErrors(prevErrors => ({ ...prevErrors, [name]: fileError }));
+                console.warn(`[Modal] File validation failed for ${name}: ${fileError}`);
+                setErrors(prevErrors => ({ ...prevErrors, [name]: fileError }));
                 // Clear the file input visually for the user
                 if (inputElement) {
                     inputElement.value = null; // Reset file input element
                 }
             } else {
-                 console.log(`[Modal] File valid for ${name}: ${file.name}`);
+                console.log(`[Modal] File valid for ${name}: ${file.name}`);
                 setFileInputs(prevFiles => ({ ...prevFiles, [name]: file }));
                 // Ensure error is cleared if previously set
-                 setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
+                setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
             }
         } else {
             // No file selected or selection cancelled
@@ -639,10 +620,10 @@ const SolicitudModalForm = ({
 
         // Batch update errors state based on this step's validation
          // This avoids potential race conditions or partial updates
-         setErrors(prevErrors => ({ ...prevErrors, ...stepErrors }));
+        setErrors(prevErrors => ({ ...prevErrors, ...stepErrors }));
 
-         console.log(`[Modal] Step ${stepIndex + 1} validation result: ${isStepValid}`);
-         return isStepValid;
+        console.log(`[Modal] Step ${stepIndex + 1} validation result: ${isStepValid}`);
+        return isStepValid;
     }, [getFieldsForStep, formData, fileInputs, errors]); // Added errors dependency
 
 
@@ -789,12 +770,12 @@ const SolicitudModalForm = ({
             return;
         }
          // Reset step, clear errors/touched, call onClose provided by parent
-         setCurrentStep(0);
-         setErrors({});
-         setTouched({});
-         console.log('[Modal] handleDialogClose called, reason:', reason);
+        setCurrentStep(0);
+        setErrors({});
+        setTouched({});
+        console.log('[Modal] handleDialogClose called, reason:', reason);
          onClose(); // Call the parent's close handler
-     };
+    };
 
 
     // --- Field Rendering Logic (MAJOR CHANGES HERE) ---
@@ -845,35 +826,35 @@ const SolicitudModalForm = ({
         // Define common success styles to apply via sx prop
         const successSx = {
              // Target the outlined input border
-             '& .MuiOutlinedInput-root': {
-                 '& fieldset': {
+            '& .MuiOutlinedInput-root': {
+                '& fieldset': {
                      borderColor: theme.palette.success.main, // Green border
-                 },
-                 '&:hover fieldset': {
+                },
+                '&:hover fieldset': {
                       borderColor: theme.palette.success.dark, // Optional: Darker green on hover
-                 },
-                 '&.Mui-focused fieldset': {
+                },
+                '&.Mui-focused fieldset': {
                       borderColor: theme.palette.success.main, // Keep green when focused
-                 },
-             },
+                },
+            },
              // Target the input label
-             '& .MuiInputLabel-root': {
+            '& .MuiInputLabel-root': {
                   // Apply green color only when label is floated (not placeholder) or focused
                   '&:not(.Mui-focused)': { // When not focused
-                     color: showError ? theme.palette.error.main : isSuccess ? theme.palette.success.main : undefined, // Green label if success, Red if error
-                  },
+                    color: showError ? theme.palette.error.main : isSuccess ? theme.palette.success.main : undefined, // Green label if success, Red if error
+                },
                  '&.Mui-focused': { // Keep green when focused
-                      color: theme.palette.success.main,
-                 },
-             },
+                    color: theme.palette.success.main,
+                },
+            },
               // Specific override for Select label color when success
-              '& .MuiInputLabel-root.Mui-focused': {
-                 color: isSuccess ? theme.palette.success.main : undefined, // Explicitly keep label green on focus if success
-             },
-             '& .MuiFormLabel-root.Mui-focused': { // Handles RadioGroup/CheckboxGroup label
-                  color: isSuccess ? theme.palette.success.main : undefined,
-             },
-         };
+            '& .MuiInputLabel-root.Mui-focused': {
+                color: isSuccess ? theme.palette.success.main : undefined, // Explicitly keep label green on focus if success
+            },
+            '& .MuiFormLabel-root.Mui-focused': { // Handles RadioGroup/CheckboxGroup label
+                color: isSuccess ? theme.palette.success.main : undefined,
+            },
+        };
 
         // --- Render based on type ---
         switch (field.type) {
@@ -902,7 +883,7 @@ const SolicitudModalForm = ({
 
             case 'number':
                 return (
-                     <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}
@@ -918,15 +899,15 @@ const SolicitudModalForm = ({
                                 max: field.max,
                                 step: field.stepAttribute || 'any',
                             }}
-                             helperText={showError ? fieldError : (field.helperText || '')}
-                             required={field.required}
+                            helperText={showError ? fieldError : (field.helperText || '')}
+                            required={field.required}
                         />
-                     </FormControl>
+                    </FormControl>
                 );
 
             case 'textarea':
                 return (
-                     <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}
@@ -938,7 +919,7 @@ const SolicitudModalForm = ({
                             helperText={showError ? fieldError : (field.helperText || '')}
                             required={field.required}
                         />
-                     </FormControl>
+                    </FormControl>
                 );
 
             case 'checkbox':
@@ -997,9 +978,9 @@ const SolicitudModalForm = ({
                             // disabled automatically handled by FormControl
                         >
                             {/* Placeholder option */}
-                             <MenuItem value="" disabled={field.required}>
-                                 <em>{field.placeholder || (field.required ? 'Seleccione...' : 'Opcional')}</em>
-                             </MenuItem>
+                            <MenuItem value="" disabled={field.required}>
+                                <em>{field.placeholder || (field.required ? 'Seleccione...' : 'Opcional')}</em>
+                            </MenuItem>
                              {/* Dynamic options */}
                             {field.options?.map(option => (
                                 <MenuItem key={option.value} value={option.value}>
@@ -1011,7 +992,7 @@ const SolicitudModalForm = ({
                     </FormControl>
                 );
 
-             case 'multiselect':
+            case 'multiselect':
                 { const multiSelectValue = Array.isArray(currentValue) ? currentValue : [];
                 return (
                     <FormControl {...formControlProps} variant="outlined" size="small" sx={isSuccess ? successSx : {}}>
@@ -1036,7 +1017,7 @@ const SolicitudModalForm = ({
                                                 bgcolor: 'action.selected',
                                                 }}
                                             >
-                                                 {option ? option.label : val}
+                                                {option ? option.label : val}
                                             </Typography>
                                         );
                                     })}
@@ -1045,12 +1026,12 @@ const SolicitudModalForm = ({
                             MenuProps={{ PaperProps: { style: { maxHeight: 250 } } }}
                         >
                              {/* Placeholder/Instructions */}
-                             {multiSelectValue.length === 0 && !field.required && (
-                                 <MenuItem value="" disabled style={{ display: 'none' }}>
-                                     <em>{field.placeholder || 'Seleccione uno o más...'}</em>
-                                 </MenuItem>
-                             )}
-                             {field.options?.map(option => (
+                            {multiSelectValue.length === 0 && !field.required && (
+                                <MenuItem value="" disabled style={{ display: 'none' }}>
+                                    <em>{field.placeholder || 'Seleccione uno o más...'}</em>
+                                </MenuItem>
+                            )}
+                            {field.options?.map(option => (
                                 <MenuItem key={option.value} value={option.value}>
                                     <Checkbox checked={multiSelectValue.includes(option.value)} size="small" />
                                     {option.label}
@@ -1061,23 +1042,23 @@ const SolicitudModalForm = ({
                     </FormControl>
                 );}
 
-             case 'radio-group':
+            case 'radio-group':
                  // RadioGroup success/error state managed by FormControl error prop and HelperText.
                  // Success state can color the FormLabel.
-                 return (
+                return (
                     <FormControl component="fieldset" {...formControlProps} sx={isSuccess ? successSx : {}}>
                          {/* Group label (legend) */}
-                         <FormLabel
-                             component="legend"
-                             sx={{
-                                 mb: 0.5,
+                        <FormLabel
+                            component="legend"
+                            sx={{
+                                mb: 0.5,
                                  fontSize: '0.875rem', // Match TextField label size
                                  color: showError ? 'error.main' : isSuccess ? 'success.main' : 'text.secondary' // Apply colors
-                             }}
+                            }}
                              // focused={/* Can check focus state if needed */}
-                          >
+                        >
                              {inputProps.label}{field.required ? ' *' : ''}
-                         </FormLabel>
+                        </FormLabel>
                         <RadioGroup
                             row={field.row || false} // Allow horizontal layout
                             aria-label={inputProps.label}
@@ -1098,13 +1079,13 @@ const SolicitudModalForm = ({
                         </RadioGroup>
                         <FormHelperText>{showError ? fieldError : (field.helperText || '')}</FormHelperText>
                     </FormControl>
-                 );
+                );
 
             case 'date':
             case 'datetime-local':
             case 'time':
-                 return (
-                     <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                return (
+                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}
@@ -1116,31 +1097,31 @@ const SolicitudModalForm = ({
                             helperText={showError ? fieldError : (field.helperText || '')}
                             required={field.required}
                         />
-                     </FormControl>
-                 );
+                    </FormControl>
+                );
 
             case 'file': {
                 // File input needs custom styling for success/error states on its wrapper/label
-                 const fileFieldError = errors[fieldName]; // Specific file errors (size, type, required)
-                 const showFileError = touched[fieldName] && !!fileFieldError;
-                 const isFileSuccess = touched[fieldName] && !fileFieldError && !!fileInputs[fieldName]; // Success only if a file is selected and valid
-                 const currentFile = fileInputs[fieldName];
+                const fileFieldError = errors[fieldName]; // Specific file errors (size, type, required)
+                const showFileError = touched[fieldName] && !!fileFieldError;
+                const isFileSuccess = touched[fieldName] && !fileFieldError && !!fileInputs[fieldName]; // Success only if a file is selected and valid
+                const currentFile = fileInputs[fieldName];
 
-                 return (
+                return (
                     // Use FormControl for layout, state, and text
-                     <FormControl fullWidth margin="dense" required={field.required} disabled={isSubmitting || loadingDefinition} error={showFileError}>
+                    <FormControl fullWidth margin="dense" required={field.required} disabled={isSubmitting || loadingDefinition} error={showFileError}>
                          {/* Label for the file input */}
-                         <FormLabel
-                             sx={{
-                                 mb: 0.5,
-                                 fontSize: '0.875rem',
-                                 color: showFileError ? 'error.main' : isFileSuccess ? 'success.main' : 'text.secondary' // Conditional label color
-                             }}
-                         >
-                             {field.label || fieldName}{field.required ? ' *' : ''}
-                         </FormLabel>
-                         {/* Basic Input type="file" with custom border */}
-                         <Input
+                        <FormLabel
+                            sx={{
+                                mb: 0.5,
+                                fontSize: '0.875rem',
+                                color: showFileError ? 'error.main' : isFileSuccess ? 'success.main' : 'text.secondary' // Conditional label color
+                            }}
+                        >
+                            {field.label || fieldName}{field.required ? ' *' : ''}
+                        </FormLabel>
+                        {/* Basic Input type="file" with custom border */}
+                        <Input
                             key={`${fieldName}-input`} // Add key suffix to ensure reset on error
                             name={fieldName}
                             id={fieldName}
@@ -1152,38 +1133,38 @@ const SolicitudModalForm = ({
                                 // multiple: field.multiple || false, // Handle multiple if needed
                             }}
                              // Style the visible wrapper of the Input component
-                             sx={{
-                                 border: `1px solid ${showFileError ? theme.palette.error.main : isFileSuccess ? theme.palette.success.main : theme.palette.divider}`,
-                                 borderRadius: theme.shape.borderRadius,
-                                 p: 1,
-                                 '&::before, &::after': { display: 'none' }, // Hide default underline
-                                 color: 'text.primary', // Ensure text inside is readable
+                            sx={{
+                                border: `1px solid ${showFileError ? theme.palette.error.main : isFileSuccess ? theme.palette.success.main : theme.palette.divider}`,
+                                borderRadius: theme.shape.borderRadius,
+                                p: 1,
+                                '&::before, &::after': { display: 'none' }, // Hide default underline
+                                color: 'text.primary', // Ensure text inside is readable
                                  // Add hover styles if desired
-                                  '&:hover': {
-                                      borderColor: showFileError ? theme.palette.error.dark : isFileSuccess ? theme.palette.success.dark : theme.palette.action.hover,
-                                  },
-                             }}
-                             aria-describedby={`${fieldName}-helper-text`}
+                                    '&:hover': {
+                                        borderColor: showFileError ? theme.palette.error.dark : isFileSuccess ? theme.palette.success.dark : theme.palette.action.hover,
+                                    },
+                            }}
+                            aria-describedby={`${fieldName}-helper-text`}
                              // Value is uncontrolled for native file input
-                         />
+                        />
                          {/* Helper text: Show error, selected file name, or default helper */}
-                         <FormHelperText id={`${fieldName}-helper-text`} error={showFileError}>
-                             {showFileError
+                        <FormHelperText id={`${fieldName}-helper-text`} error={showFileError}>
+                            {showFileError
                                  ? fileFieldError // Display specific validation error
-                                 : currentFile
+                                : currentFile
                                      ? `Archivo seleccionado: ${currentFile.name}` // Show file name on success
                                      : (field.helperText || '') // Show field's helper text
-                             }
-                         </FormHelperText>
-                     </FormControl>
-                 );
-             }
+                            }
+                        </FormHelperText>
+                    </FormControl>
+                );
+            }
 
             case 'location':
                  // LocationInput is custom. Pass success/error state down as props.
                  // LocationInput component needs to be modified internally to use these.
-                 return (
-                     <LocationInput
+                return (
+                    <LocationInput
                         key={fieldName}
                         name={fieldName}
                         label={field.label || fieldName}
@@ -1200,55 +1181,54 @@ const SolicitudModalForm = ({
                         theme={theme} // Pass theme down if needed for styling
                     />
                     // TODO: Modify LocationInput.jsx to use the 'success' prop for styling (e.g., green border)
-                 );
+                );
 
             case 'static-text':
                  // No validation styling needed
-                 return (
-                     <Box sx={{
-                         my: 1.5, p: 1.5, // Adjusted spacing/padding
-                         bgcolor: 'action.hover', // Use theme color for subtle background
-                         border: `1px solid ${theme.palette.divider}`,
-                         borderRadius: theme.shape.borderRadius,
-                     }}>
-                         {field.label &&
-                             <Typography variant="overline" display="block" sx={{ mb: 0.5, color: 'text.secondary', lineHeight: 1.2 }}>
-                                 {field.label}
-                             </Typography>
-                         }
-                         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{field.text || ''}</Typography>
-                         {field.helperText && <FormHelperText sx={{ mt: 0.5 }}>{field.helperText}</FormHelperText>}
-                     </Box>
-                 );
-
-             case 'download-link':
-                 // No validation styling needed
-                 if (!field.href || !field.linkText) {
-                      return <Alert severity="warning" sx={{ my: 1 }}>Campo 'download-link' requiere 'href' y 'linkText'.</Alert>;
-                 }
-                 return (
-                    <Box sx={{ my: 1.5, p: 1.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
-                         {field.label &&
+                return (
+                    <Box sx={{
+                        my: 1.5, p: 1.5, // Adjusted spacing/padding
+                        bgcolor: 'action.hover', // Use theme color for subtle background
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: theme.shape.borderRadius,
+                    }}>
+                        {field.label &&
                             <Typography variant="overline" display="block" sx={{ mb: 0.5, color: 'text.secondary', lineHeight: 1.2 }}>
                                 {field.label}
                             </Typography>
-                         }
-                         <Link
-                             href={field.href}
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             color='info.main'
-                             download={field.downloadName || true} // Add download attribute
-                             variant="body1"
-                             sx={{ fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
-                         >
-                             {field.linkText}
-                             {/* Optional: <DownloadIcon fontSize="small" /> */}
-                         </Link>
-                         {field.helperText && <FormHelperText sx={{ mt: 0.5 }}>{field.helperText}</FormHelperText>}
-                     </Box>
-                 );
+                        }
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{field.text || ''}</Typography>
+                        {field.helperText && <FormHelperText sx={{ mt: 0.5 }}>{field.helperText}</FormHelperText>}
+                    </Box>
+                );
 
+            case 'download-link':
+                 // No validation styling needed
+                if (!field.href || !field.linkText) {
+                    return <Alert severity="warning" sx={{ my: 1 }}>Campo 'download-link' requiere 'href' y 'linkText'.</Alert>;
+                }
+                return (
+                    <Box sx={{ my: 1.5, p: 1.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
+                        {field.label &&
+                            <Typography variant="overline" display="block" sx={{ mb: 0.5, color: 'text.secondary', lineHeight: 1.2 }}>
+                                {field.label}
+                            </Typography>
+                        }
+                        <Link
+                            href={field.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            color='info.main'
+                            download={field.downloadName || true} // Add download attribute
+                            variant="body1"
+                            sx={{ fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+                        >
+                            {field.linkText}
+                             {/* Optional: <DownloadIcon fontSize="small" /> */}
+                        </Link>
+                        {field.helperText && <FormHelperText sx={{ mt: 0.5 }}>{field.helperText}</FormHelperText>}
+                    </Box>
+                );
             default:
                 console.warn(`[Modal] Unsupported field type: ${field.type}`);
                 return <Alert severity="warning" sx={{ my: 1 }}>Tipo de campo no soportado: {field.type}</Alert>;
@@ -1259,22 +1239,22 @@ const SolicitudModalForm = ({
     // --- Render Component ---
     return (
         <Dialog
-             open={open}
-             onClose={handleDialogClose}
-             maxWidth="md" // Or "sm", "lg" depending on form complexity
-             fullWidth
-             scroll="paper" // Allows content to scroll independently
-             disableEscapeKeyDown={isSubmitting || loadingDefinition} // Prevent closing via Esc when busy
-             PaperProps={{
+            open={open}
+            onClose={handleDialogClose}
+            maxWidth="md" // Or "sm", "lg" depending on form complexity
+            fullWidth
+            scroll="paper" // Allows content to scroll independently
+            disableEscapeKeyDown={isSubmitting || loadingDefinition} // Prevent closing via Esc when busy
+            PaperProps={{
                  component: 'form', // Render the Paper component (dialog container) as a form
-                 onSubmit: handleSubmit,
+                onSubmit: handleSubmit,
                  noValidate: true, // Disable browser validation, rely on ours
-             }}
+            }}
         >
             <DialogTitle sx={{ /* ... your styles ... */
-                 m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText',
-                 display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-             }}>
+                m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
                 {formTitle || 'Nueva Solicitud'}
                 {loadingDefinition && <CircularProgress size={24} color="inherit" sx={{ ml: 2 }} />}
             </DialogTitle>
@@ -1376,7 +1356,7 @@ const SolicitudModalForm = ({
                         )}
                     </Box>
                 </DialogActions>
-             )}
+            )}
         </Dialog>
     );
 };

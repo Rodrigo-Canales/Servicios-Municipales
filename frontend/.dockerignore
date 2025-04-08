@@ -1,0 +1,28 @@
+# frontend/.dockerignore
+
+# Ignorar módulos de Node locales (se instalarán dentro del contenedor durante el build)
+node_modules
+
+# Ignorar logs de npm/yarn
+npm-debug.log
+yarn-error.log
+
+# Ignorar archivos de entorno locales
+.env
+*.env
+
+# Ignorar carpeta de Git y archivo .gitignore
+.git
+.gitignore
+
+# Ignorar carpeta de build/dist local (se genera dentro del contenedor)
+dist
+build
+
+# Ignorar archivos específicos de IDEs si los usas
+.vscode/
+.idea/
+
+# Ignorar archivos de configuración de linters/formatters si no son necesarios en la imagen
+# .eslintrc.js
+# .prettierrc.js

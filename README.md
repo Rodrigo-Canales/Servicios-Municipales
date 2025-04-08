@@ -66,7 +66,9 @@ CREATE TABLE IF NOT EXISTS Preguntas_Frecuentes (
 );
 
 
--- Usa la base de datos creada previamente
+
+
+
 USE servicios_municipales;
 
 -- ------------------------------
@@ -80,7 +82,7 @@ INSERT INTO Areas (nombre_area) VALUES
 ('Tránsito'),                             -- ID 5
 ('Seguridad Pública'),                    -- ID 6
 ('Riesgos y Desastres'),                  -- ID 7
-('Juzgado de Policía Local')              -- ID 8
+('Juzgado de Policía Local'),             -- ID 8
 ('Programa Organizaciones Comunitarias')  -- ID 9
 ON DUPLICATE KEY UPDATE nombre_area=nombre_area; -- Evita error si ya existen
 
@@ -148,3 +150,15 @@ Backend
 Frontend
 --------
     - npm run dev
+
+
+
+
+
+docker run --name mysql_servicios_municipales \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -e MYSQL_DATABASE=servicios_municipales \
+  -e MYSQL_USER=usuario \
+  -e MYSQL_PASSWORD=clave123 \
+  -p 3306:3306 \
+  -d mysql:latest

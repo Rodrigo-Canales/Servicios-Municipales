@@ -5,7 +5,7 @@ import axios from 'axios';
 const api = axios.create({
     // Define la URL base de tu API backend.
     // Asegúrate de que coincida con donde está corriendo tu backend (puerto 3001 en tu caso).
-    baseURL: 'http://localhost:3001/api',
+    baseURL: '/api',
     // Puedes añadir otras configuraciones por defecto si las necesitas
     // headers: { 'Content-Type': 'application/json' }, // Axios lo hace por defecto para POST/PUT JSON
 });
