@@ -183,176 +183,338 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
 });
 
 
-// --- Crear una nueva solicitud (CON LAS MODIFICACIONES PUNTUALES) ---
-// *** CAMBIO 1: Usar upload.any() en lugar de upload.array('archivos') ***
-router.post('/', protect, upload.any(), async (req, res) => {
-    // Mantener la desestructuración para los campos opcionales y otrosDatos
-    const { estado, correo_notificacion, ...otrosDatos } = req.body;
-    const fecha = new Date();
-    console.log('--- Inicia Validación POST /solicitudes ---');
-    console.log('Valor de req.body.rut_ciudadano:', req.body.rut_ciudadano);
-    console.log('Tipo de req.body.rut_ciudadano:', typeof req.body.rut_ciudadano);
-    console.log('Valor de req.body.id_tipo:', req.body.id_tipo);
-    console.log('Tipo de req.body.id_tipo:', typeof req.body.id_tipo);
-    console.log('Contenido completo de req.body:', JSON.stringify(req.body, null, 2));
+const FOOTER_HEIGHT = 65; // Puntos (pts). Ajusta si cambias el footer.
 
-    // *** CAMBIO 2: Validar rut_ciudadano y id_tipo directamente desde req.body ***
-    if (!req.body.rut_ciudadano || !req.body.id_tipo) {
-        console.error('Error de Validación Backend: Falta rut_ciudadano o id_tipo en req.body', req.body); // Log para depurar
-        return res.status(400).json({ message: 'Faltan campos obligatorios: rut_ciudadano, id_tipo' });
+// --- Función para dibujar el footer en cada página (actualizada con posicionamiento absoluto) ---
+const drawFooter = (doc, pageNum, totalPages) => {
+  const page = doc.page; // Página actual
+  const contentWidth = page.width - page.margins.left - page.margins.right;
+
+  // Textos del footer
+  const footerText = "Documento generado a través de la Plataforma de Solicitudes Municipales, con autenticación por Clave Única.";
+  const footerExtraText = "Municipalidad de Pitrufquén - Solicitudes Ciudadanas - https://www.mpitrufquen.cl/ (Reemplazar URL)";
+
+  // Calcular posiciones absolutas basadas en la altura total de la página.
+  const bottomPadding = 10; // Espacio desde el borde físico inferior
+  const pageNumY = page.height - bottomPadding - 10; // Y para el número de página
+  const footerY = pageNumY - 12;                     // Y para el texto principal
+  const footerExtraY = footerY - 14;                 // Y para el texto extra
+  const lineY = footerExtraY - 6;                    // Y para la línea
+  const startX = page.margins.left;
+
+  doc.save(); // Guardar estado general
+
+  // Dibujar línea separadora (sin alterar el puntero de texto)
+  doc.strokeColor('#CCCCCC')
+     .lineWidth(0.5)
+     .moveTo(startX, lineY)
+     .lineTo(page.width - page.margins.right, lineY)
+     .stroke();
+
+  // Dibujar el texto extra usando translate para posicionar de forma local.
+  doc.save();
+  doc.translate(startX, footerExtraY);
+  doc.font('Helvetica-Bold')
+     .fontSize(9)
+     .fillColor('#555555')
+     .text(footerExtraText, 0, 0, {
+       width: contentWidth,
+       align: 'center',
+       lineBreak: false // No forzamos salto de línea
+     });
+  doc.restore();
+
+  // Dibujar el texto principal del footer
+  doc.save();
+  doc.translate(startX, footerY);
+  doc.font('Helvetica')
+     .fontSize(8)
+     .fillColor('#666666')
+     .text(footerText, 0, 0, {
+       width: contentWidth,
+       align: 'center',
+       lineBreak: false
+     });
+  doc.restore();
+
+  // Dibujar el número de página
+  doc.save();
+  doc.translate(startX, pageNumY);
+  doc.font('Helvetica')
+     .fontSize(8)
+     .fillColor('#666666')
+     .text(`Página ${pageNum} de ${totalPages}`, 0, 0, {
+       width: contentWidth,
+       align: 'center',
+       lineBreak: false
+     });
+  doc.restore();
+
+  doc.restore(); // Restaurar estado general
+};
+
+
+// --- En el endpoint POST, se mantiene la estructura general, con modificaciones en la sección de PDF ---
+router.post('/', upload.any(), async (req, res) => {
+  // Validaciones iniciales (sin cambios)
+  const { estado, correo_notificacion, ...otrosDatos } = req.body;
+  const fecha = new Date();
+  if (!req.body.rut_ciudadano || !req.body.id_tipo) {
+    return res.status(400).json({ message: 'Faltan campos obligatorios: rut_ciudadano, id_tipo' });
+  }
+  const rut_ciudadano = req.body.rut_ciudadano;
+  const id_tipo = req.body.id_tipo;
+  if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
+    return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
+  }
+
+  let connection;
+  let pdfPath = '';
+  let rutaSolicitud = ''; // Ruta relativa para guardar en BD
+  let rutaAbsolutaSolicitud = ''; // Ruta absoluta para trabajar localmente
+
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // 1) Obtener nombre del tipo de solicitud
+    const [tipoResult] = await connection.query(
+      'SELECT nombre_tipo FROM Tipos_Solicitudes WHERE id_tipo = ?',
+      [id_tipo]
+    );
+    if (tipoResult.length === 0) {
+      await connection.rollback();
+      connection.release();
+      return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' });
     }
-    console.log('--- Validación superada ---'); // Log si pasa
-    // Validación de correo (se mantiene igual)
-    if (correo_notificacion && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo_notificacion)) {
-        return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
-    }
+    const nombre_tipo = tipoResult[0].nombre_tipo;
+    const estado_inicial = estado || 'Pendiente';
+    const correo_para_insert = correo_notificacion || null;
 
-    let connection;
-    let pdfPath = '';
-    let rutaSolicitud = '';
+    // 2) Insertar registro en la BD
+    const [result] = await connection.query(
+      'INSERT INTO Solicitudes (RUT_ciudadano, id_tipo, fecha_hora_envio, estado, ruta_carpeta, correo_notificacion) VALUES (?, ?, NOW(), ?, ?, ?)',
+      [rut_ciudadano, id_tipo, estado_inicial, '', correo_para_insert]
+    );
+    const id_solicitud_num = result.insertId;
+    const id_solicitud_str = id_solicitud_num.toString().padStart(10, '0');
 
+    // 3) Obtener nombre completo del usuario
+    let nombreCompleto = rut_ciudadano;
     try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        // *** CAMBIO 2 (Continuación): Usar req.body.id_tipo en la consulta ***
-        const [tipoResult] = await connection.query(
-            'SELECT nombre_tipo FROM tipos_solicitudes WHERE id_tipo = ?',
-            [req.body.id_tipo] // Acceso directo
-        );
-        if (tipoResult.length === 0) {
-            await connection.rollback();
-            return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' });
-        }
-        const nombre_tipo = tipoResult[0].nombre_tipo;
-
-        // Insertar la solicitud en la BD
-        const estado_inicial = estado || 'Pendiente'; // OK usar variable desestructurada
-        const correo_para_insert = correo_notificacion || null; // OK usar variable desestructurada
-
-        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano y req.body.id_tipo en INSERT ***
-        const [result] = await connection.query(
-            'INSERT INTO Solicitudes (RUT_ciudadano, id_tipo, fecha_hora_envio, estado, ruta_carpeta, correo_notificacion) VALUES (?, ?, NOW(), ?, ?, ?)',
-            [
-                req.body.rut_ciudadano, // Acceso directo
-                req.body.id_tipo,       // Acceso directo
-                estado_inicial,
-                '', // ruta_carpeta se actualiza después
-                correo_para_insert
-            ]
-        );
-        const id_solicitud_num = result.insertId;
-        const id_solicitud_str = id_solicitud_num.toString().padStart(10, '0');
-
-        // Obtener nombre y apellido del ciudadano
-        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano ***
-        let nombreCompleto = req.body.rut_ciudadano; // Fallback inicial
-        const [rowsUsuario] = await connection.query(
-            'SELECT nombre, apellido FROM usuarios WHERE RUT = ?',
-            [req.body.rut_ciudadano] // Acceso directo
-        );
-        if (rowsUsuario.length > 0) {
-            nombreCompleto = `${rowsUsuario[0].nombre.trim()} ${rowsUsuario[0].apellido.trim()}`;
-        } else {
-             // Usar req.body.rut_ciudadano en el log
-            console.warn(`No se encontró el usuario con RUT ${req.body.rut_ciudadano} para obtener datos completos.`);
-        }
-
-        // --- Crear estructura de carpetas (Sin Cambios) ---
-        const anio = fecha.getFullYear();
-        let mes = format(fecha, 'MMMM', { locale: es });
-        mes = mes.charAt(0).toUpperCase() + mes.slice(1);
-        const rutaAnio = `./solicitudes/${anio}`;
-        const rutaMes = `${rutaAnio}/${mes}`;
-        crearCarpeta(rutaAnio);
-        crearCarpeta(rutaMes);
-        const fechaDiaMesAnio = format(fecha, 'dd-MM-yyyy', { locale: es });
-        rutaSolicitud = `${rutaMes}/${nombre_tipo} - ${nombreCompleto}, ${fechaDiaMesAnio}, ${id_solicitud_str}`;
-        crearCarpeta(rutaSolicitud);
-
-        // --- Guardar archivos adjuntos (Sin Cambios) ---
-        if (req.files && req.files.length > 0) {
-            req.files.forEach(file => {
-                const filePath = path.join(rutaSolicitud, file.originalname);
-                try { fs.writeFileSync(filePath, file.buffer); }
-                catch(writeErr) { console.error(`Error al escribir archivo ${file.originalname}:`, writeErr); throw new Error(`Error al guardar adjunto: ${writeErr.message}`);}
-            });
-        }
-
-        // --- Crear el PDF (Sin Cambios, excepto uso de req.body.rut_ciudadano) ---
-        const pdfDoc = new PDFDocument({ size: 'LETTER', margins: { top: 50, bottom: 50, left: 72, right: 72 } });
-        pdfPath = path.join(rutaSolicitud, 'solicitud.pdf');
-        const writeStream = fs.createWriteStream(pdfPath);
-        pdfDoc.pipe(writeStream);
-
-        const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png');
-        if (fs.existsSync(logoPath)) { pdfDoc.image(logoPath, pdfDoc.page.margins.left, pdfDoc.y, { width: 80 }); pdfDoc.moveDown(0.5); }
-        pdfDoc.y = pdfDoc.page.margins.top + (fs.existsSync(logoPath) ? 20 : 0);
-
-        pdfDoc.font('Helvetica-Bold').fontSize(16).text('COMPROBANTE DE SOLICITUD', { align: 'center' }).moveDown(1.5);
-        pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
-
-        const [solicitudRow] = await connection.query( 'SELECT fecha_hora_envio FROM Solicitudes WHERE id_solicitud = ?', [id_solicitud_num] );
-        const fecha_hora_envio_real = format( new Date(solicitudRow[0].fecha_hora_envio), 'dd/MM/yyyy hh:mm:ss a', { locale: es } );
-
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos de la Solicitud:').moveDown(0.5);
-        pdfDoc.font('Helvetica').fontSize(11);
-        pdfDoc.text(`ID Solicitud: ${id_solicitud_str}`);
-        pdfDoc.text(`Tipo Solicitud: ${nombre_tipo}`);
-        pdfDoc.text(`Fecha y Hora de Envío: ${fecha_hora_envio_real}`).moveDown(1);
-
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos del Solicitante:').moveDown(0.5);
-        pdfDoc.font('Helvetica').fontSize(11);
-        // *** CAMBIO 2 (Continuación): Usar req.body.rut_ciudadano en PDF ***
-        pdfDoc.text(`RUT: ${req.body.rut_ciudadano}`); // Acceso directo
-        pdfDoc.text(`Nombre: ${nombreCompleto}`);
-        pdfDoc.text(`Correo Notificación: ${correo_notificacion || 'No especificado'}`).moveDown(2); // OK usar variable
-
-        pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
-
-        if (Object.keys(otrosDatos).length > 0) {
-            pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Ingresados:', { underline: true }).moveDown(1);
-            pdfDoc.font('Helvetica').fontSize(11);
-            for (const key in otrosDatos) { const keyFormateada = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); pdfDoc.text(`${keyFormateada}: ${otrosDatos[key]}`, { align: 'justify' }).moveDown(0.5); }
-            pdfDoc.moveDown(2);
-            pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(2);
-        }
-
-        if (req.files && req.files.length > 0) {
-            pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos (Referencia):', { underline: true }).moveDown(1).font('Helvetica').fontSize(10);
-            req.files.forEach(file => { pdfDoc.text(`- ${file.originalname}`).moveDown(0.5); });
-            pdfDoc.moveDown(1);
-            req.files.forEach(file => { const fileExtension = path.extname(file.originalname).toLowerCase(); if (['.jpg', '.jpeg', '.png'].includes(fileExtension)) { const imagePath = path.join(rutaSolicitud, file.originalname); try { pdfDoc.addPage().font('Helvetica-Bold').fontSize(12).text(`Adjunto: ${file.originalname}`, {align: 'center'}).moveDown(1); const img = pdfDoc.openImage(imagePath); const pageHeight = pdfDoc.page.height - pdfDoc.page.margins.top - pdfDoc.page.margins.bottom - 50; const pageWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right; pdfDoc.image(imagePath, { fit: [pageWidth, pageHeight], align: 'center', valign: 'center' }); } catch (imageError) { console.error(`Error al agregar imagen ${file.originalname} al PDF:`, imageError); } } });
-        }
-        // --- Fin Contenido PDF ---
-
-        pdfDoc.end();
-        await new Promise((resolve, reject) => { writeStream.on('finish', resolve); writeStream.on('error', (err) => reject(new Error(`Fallo al escribir PDF de solicitud: ${err.message}`))); });
-        console.log(`PDF de solicitud creado: ${pdfPath}`);
-
-        // --- Actualizar ruta_carpeta (Sin Cambios) ---
-        await connection.query( 'UPDATE Solicitudes SET ruta_carpeta = ? WHERE id_solicitud = ?', [rutaSolicitud, id_solicitud_num] );
-        console.log(`Ruta carpeta actualizada para solicitud ${id_solicitud_num}`);
-
-        // --- Commit (Sin Cambios) ---
-        await connection.commit();
-        console.log(`Transacción completada para solicitud ${id_solicitud_num}`);
-
-        // --- Respuesta Exitosa (Sin Cambios) ---
-        res.status(201).json({ message: 'Solicitud creada exitosamente', id: id_solicitud_str, ruta: rutaSolicitud });
-
-    } catch (error) { // --- Manejo de Errores (Sin Cambios) ---
-        console.error('Error detallado al crear solicitud:', error);
-        if (connection) { try { await connection.rollback(); console.log("Rollback completado (solicitudes)."); } catch (rbError) { console.error("Error durante rollback (solicitudes):", rbError); } }
-        if (pdfPath && fs.existsSync(pdfPath)) { try { fs.unlinkSync(pdfPath); console.log("PDF de solicitud erróneo eliminado."); } catch(e) {console.error("Error al eliminar PDF erróneo:", e)} }
-        if (rutaSolicitud && fs.existsSync(rutaSolicitud)) { try { fs.rmdirSync(rutaSolicitud, { recursive: true }); console.log("Carpeta de solicitud errónea eliminada."); } catch(e) {console.error("Error al eliminar carpeta errónea:", e)} }
-
-        if (error.message === 'Tipo de archivo no permitido para la solicitud') { return res.status(400).json({ message: error.message }); }
-        if (error.message.startsWith('Error al guardar adjunto') || error.message.startsWith('Fallo al escribir PDF') || error.message.startsWith('No se pudo crear')) { return res.status(500).json({ message: `Error interno del servidor: ${error.message}` }); }
-        res.status(500).json({ message: 'Error interno del servidor al crear la solicitud' });
-    } finally { // --- Liberar Conexión (Sin Cambios) ---
-        if (connection) { connection.release(); console.log("Conexión liberada (solicitudes)."); }
+      const [rowsUsuario] = await connection.query(
+        'SELECT nombre, apellido FROM Usuarios WHERE RUT = ?',
+        [rut_ciudadano]
+      );
+      if (rowsUsuario.length > 0) {
+        const nombre = rowsUsuario[0].nombre || '';
+        const apellido = rowsUsuario[0].apellido || '';
+        nombreCompleto = `${nombre.trim()} ${apellido.trim()}`.trim() || rut_ciudadano;
+      }
+    } catch (userErr) {
+      console.warn(`Advertencia: No se pudo obtener nombre para RUT ${rut_ciudadano}:`, userErr.message);
     }
+
+    // 4) Crear carpetas para el PDF y archivos adjuntos
+    const anio = fecha.getFullYear();
+    let mes = format(fecha, 'MMMM', { locale: es });
+    mes = mes.charAt(0).toUpperCase() + mes.slice(1);
+    const baseSolicitudesDir = path.resolve(__dirname, '../solicitudes');
+    const rutaAnio = path.join(baseSolicitudesDir, anio.toString());
+    const rutaMes = path.join(rutaAnio, mes);
+    crearCarpeta(rutaAnio);
+    crearCarpeta(rutaMes);
+
+    const fechaDiaMesAnio = format(fecha, 'dd-MM-yyyy', { locale: es });
+    const nombreCarpetaSeguro = nombreCompleto
+      .replace(/[^a-zA-Z0-9ñÑáéíóúüÁÉÍÓÚÜ\s\-]/g, '')
+      .replace(/\s+/g, '_');
+    const nombreTipoSeguro = nombre_tipo
+      .replace(/[^a-zA-Z0-9ñÑáéíóúüÁÉÍÓÚÜ\s\-]/g, '')
+      .replace(/\s+/g, '_');
+
+    const nombreDirectorioSolicitud = `${nombreTipoSeguro}-${nombreCarpetaSeguro}_${fechaDiaMesAnio}_ID-${id_solicitud_str}`;
+    rutaAbsolutaSolicitud = path.join(rutaMes, nombreDirectorioSolicitud);
+    rutaSolicitud = path.relative(baseSolicitudesDir, rutaAbsolutaSolicitud);
+    crearCarpeta(rutaAbsolutaSolicitud);
+
+    // 5) Guardar archivos adjuntos en disco
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const safeName = path.basename(file.originalname);
+        const filePath = path.join(rutaAbsolutaSolicitud, safeName);
+        fs.writeFileSync(filePath, file.buffer);
+      }
+    }
+
+    // --- 6) Crear el PDF con margen inferior reservado para el footer ---
+    const pdfDoc = new PDFDocument({
+      size: 'LETTER',
+      margins: { top: 50, bottom: FOOTER_HEIGHT, left: 60, right: 60 },
+      bufferPages: true // Necesario para actualizar el footer en todas las páginas
+    });
+
+    pdfPath = path.join(rutaAbsolutaSolicitud, `solicitud_${id_solicitud_str}.pdf`);
+    const writeStream = fs.createWriteStream(pdfPath);
+    pdfDoc.pipe(writeStream);
+
+    // --- 7) Agregar contenido al PDF ---
+    // 7.1 Cabecera
+    {
+      const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png');
+      let currentY = pdfDoc.page.margins.top;
+      try {
+        if (fs.existsSync(logoPath)) {
+          pdfDoc.image(logoPath, pdfDoc.page.margins.left, currentY, { width: 70 });
+          currentY += 75;
+        } else {
+          console.warn("Advertencia: Logo no encontrado en", logoPath);
+          currentY += 15;
+        }
+      } catch (imgErr) {
+        console.error("Error al cargar imagen del logo:", imgErr);
+        currentY += 15;
+      }
+      pdfDoc.y = currentY;
+      pdfDoc.font('Helvetica-Bold').fontSize(14).text('Municipalidad de Pitrufquén', { align: 'center' });
+      pdfDoc.moveDown(0.5);
+      pdfDoc.fontSize(16).text('COMPROBANTE DE INGRESO DE SOLICITUD', { align: 'center' });
+      pdfDoc.moveDown(1.5);
+      const yLine = pdfDoc.y;
+      pdfDoc.strokeColor('#cccccc').lineWidth(0.5)
+            .moveTo(pdfDoc.page.margins.left, yLine)
+            .lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, yLine)
+            .stroke();
+      pdfDoc.moveDown(1.5);
+    }
+
+    // 7.2 Detalles de la Solicitud
+    {
+      let fechaEnvio = 'Fecha no disponible';
+      try {
+        const [solRow] = await connection.query(
+          'SELECT fecha_hora_envio FROM Solicitudes WHERE id_solicitud = ?',
+          [id_solicitud_num]
+        );
+        if (solRow.length > 0 && solRow[0].fecha_hora_envio) {
+          fechaEnvio = format(
+            new Date(solRow[0].fecha_hora_envio),
+            "dd 'de' MMMM 'de' yyyy, HH:mm:ss",
+            { locale: es }
+          );
+        }
+      } catch (fechaErr) {
+        console.error("Error obteniendo fecha_hora_envio:", fechaErr);
+      }
+      pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Solicitud:', { underline: true }).moveDown(0.75);
+      pdfDoc.font('Helvetica').fontSize(11)
+            .text(`ID de solicitud: ${id_solicitud_str}`)
+            .text(`Tipo de Solicitud: ${nombre_tipo}`)
+            .text(`Fecha y Hora de envío: ${fechaEnvio}`)
+            .moveDown(1.5);
+    }
+
+    // 7.3 Información del Solicitante
+    {
+      pdfDoc.font('Helvetica-Bold').fontSize(12).text('Información del Solicitante:', { underline: true }).moveDown(0.75);
+      pdfDoc.font('Helvetica').fontSize(11)
+            .text(`RUT: ${rut_ciudadano}`)
+            .text(`Nombre y Apellido: ${nombreCompleto}`)
+            .text(`Correo Electrónico de Notificación: ${correo_notificacion || 'No proporcionado'}`)
+            .moveDown(1.5);
+    }
+
+    // 7.4 Datos Adicionales Proporcionados
+    {
+      const datosAdicionales = { ...otrosDatos };
+      ['rut_ciudadano','id_tipo','estado','correo_notificacion'].forEach(k => delete datosAdicionales[k]);
+      if (Object.keys(datosAdicionales).length > 0) {
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Proporcionados:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica').fontSize(10);
+        for (const key in datosAdicionales) {
+          if (Object.hasOwnProperty.call(datosAdicionales, key)) {
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const value = datosAdicionales[key] != null ? String(datosAdicionales[key]) : 'No proporcionado';
+            pdfDoc.font('Helvetica-Bold').text(`${label}: `, { continued: true });
+            pdfDoc.font('Helvetica').text(value);
+            pdfDoc.moveDown(0.5);
+          }
+        }
+        pdfDoc.moveDown(1);
+      }
+    }
+
+    // 7.5 Archivos Adjuntos
+    {
+      if (req.files && req.files.length > 0) {
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos Registrados:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica').fontSize(10);
+        req.files.forEach(f => {
+          const nombreArchivo = f.originalname ? path.basename(f.originalname) : 'archivo_sin_nombre';
+          pdfDoc.text(`- ${nombreArchivo}`);
+          pdfDoc.moveDown(0.4);
+        });
+        pdfDoc.moveDown(1);
+      }
+    }
+
+    // --- 8) Actualizar el footer en cada página sin provocar saltos extra ---
+    const range = pdfDoc.bufferedPageRange();
+    const totalPages = range.count;
+    for (let i = 0; i < totalPages; i++) {
+      pdfDoc.switchToPage(i);
+      // Llamamos a drawFooter para dibujar el footer de forma absoluta
+      drawFooter(pdfDoc, i + 1, totalPages);
+    }
+
+    // --- 9) Finalizar y escribir el PDF ---
+    pdfDoc.end();
+    await new Promise((resolve, reject) => {
+      writeStream.on('finish', resolve);
+      writeStream.on('error', (err) => {
+        console.error("Error escribiendo stream PDF:", err);
+        reject(new Error('Fallo al escribir PDF'));
+      });
+    });
+
+    // 10) Actualizar la ruta en BD y hacer commit
+    await connection.query(
+      'UPDATE Solicitudes SET ruta_carpeta = ? WHERE id_solicitud = ?',
+      [rutaSolicitud, id_solicitud_num]
+    );
+    await connection.commit();
+    connection.release();
+
+    res.status(201).json({
+      message: 'Solicitud creada exitosamente',
+      id_solicitud: id_solicitud_str,
+      ruta_carpeta: rutaSolicitud,
+      pdf_path: path.join(rutaSolicitud, `solicitud_${id_solicitud_str}.pdf`)
+    });
+
+  } catch (error) {
+    console.error('Error detallado en POST /solicitudes:', error);
+    if (connection) {
+      try { await connection.rollback(); } catch (rbErr) { console.error('Error en rollback:', rbErr); }
+      connection.release();
+    }
+    if (pdfPath && fs.existsSync(pdfPath)) {
+      try { fs.unlinkSync(pdfPath); } catch (ulErr) { console.error("Error borrando PDF:", ulErr); }
+    }
+    let statusCode = 500;
+    let message = 'Error interno del servidor al crear la solicitud.';
+    if (error instanceof multer.MulterError) {
+      statusCode = 400;
+      message = `Error carga archivo: ${error.message}`;
+    } else if (error.message === 'El tipo de solicitud especificado no existe.') {
+      statusCode = 400;
+      message = error.message;
+    } else if (error.message === 'Fallo al escribir PDF') {
+      message = 'Error interno al guardar el documento PDF.';
+    }
+    res.status(statusCode).json({ message });
+  }
 });
 
-module.exports = router; // Solo un exportf
+module.exports = router;
+
