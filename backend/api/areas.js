@@ -10,7 +10,6 @@ const { protect, restrictTo } = require('../middleware/authMiddleware');
 router.get('/', protect, async (req, res) => {
     // Middleware 'protect' ya verificó el token
     // req.user contiene { rut, rol }
-    console.log(`[GET /api/areas] Solicitado por usuario RUT: ${req.user.rut}, Rol: ${req.user.rol}`);
     try {
         const [rows] = await db.query('SELECT * FROM Areas ORDER BY nombre_area ASC'); // Ordenar alfabéticamente
         res.status(200).json(rows);
@@ -24,7 +23,6 @@ router.get('/', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
     // Middleware 'protect' ya verificó el token
     const id = req.params.id;
-    console.log(`[GET /api/areas/${id}] Solicitado por usuario RUT: ${req.user.rut}, Rol: ${req.user.rol}`);
     try {
         const [rows] = await db.query('SELECT * FROM Areas WHERE id_area = ?', [id]);
         if (rows.length === 0) {
@@ -45,7 +43,6 @@ router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     if (!nombre_area || nombre_area.trim() === '') {
         return res.status(400).json({ message: 'El nombre del área es requerido.' });
     }
-    console.log(`[POST /api/areas] (Admin: ${req.user.rut}) Creando área: ${nombre_area}`);
     try {
         const [result] = await db.query(
             'INSERT INTO Areas (nombre_area) VALUES (?)',
@@ -71,7 +68,6 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     if (!nombre_area || nombre_area.trim() === '') {
         return res.status(400).json({ message: 'El nombre del área es requerido.' });
     }
-    console.log(`[PUT /api/areas/${id}] (Admin: ${req.user.rut}) Actualizando a: ${nombre_area}`);
     try {
         const [result] = await db.query(
             'UPDATE Areas SET nombre_area = ? WHERE id_area = ?',
@@ -94,23 +90,19 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
 router.delete('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     // Middlewares 'protect' y 'restrictTo' ya verificaron token y rol Admin
     const id = req.params.id;
-    console.log(`[DELETE /api/areas/${id}] (Admin: ${req.user.rut}) Intentando eliminar área.`);
     try {
         const [result] = await db.query(
             'DELETE FROM Areas WHERE id_area = ?',
             [id]
         );
         if (result.affectedRows === 0) {
-            console.log(`[DELETE /api/areas/${id}] (Admin: ${req.user.rut}) Área no encontrada.`);
             return res.status(404).json({ message: 'Área no encontrada' });
         }
-        console.log(`[DELETE /api/areas/${id}] (Admin: ${req.user.rut}) Área eliminada exitosamente.`);
         res.status(200).json({ message: 'Área eliminada exitosamente' });
     } catch (error) {
         console.error(`[DELETE /api/areas/${id}] (Admin: ${req.user.rut}) Error al eliminar área:`, error);
         // Manejar error si el área está referenciada por otras tablas (Tipos_Solicitudes, Usuarios)
         if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
-            console.log(`[DELETE /api/areas/${id}] (Admin: ${req.user.rut}) No se puede eliminar, área en uso.`);
             return res.status(409).json({ message: 'No se puede eliminar el área porque está asignada a tipos de solicitud o usuarios.' });
         }
         res.status(500).json({ message: 'Error al eliminar área' });

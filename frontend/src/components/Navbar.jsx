@@ -21,7 +21,6 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        console.log("Cerrando sesión...");
         logout();
         navigate('/login');
     };

@@ -5,10 +5,6 @@ import { AuthContext } from './AuthContextValue.jsx'; // O .js si así se llama 
 
 // --- Funciones Auxiliares (Simuladas/Placeholders) ---
 const validateToken = async (token) => {
-    console.log("[AuthContext] Simulando validación de token:", token);
-    // Lógica futura: Llamar a un endpoint del backend '/api/auth/validate-token'
-    // que verifique la firma y expiración del token.
-    // Por ahora, si existe un token, lo consideramos "válido".
     return !!token;
 };
 
@@ -49,21 +45,17 @@ export const AuthProvider = ({ children }) => {
     // Efecto para verificar la autenticación al montar
     useEffect(() => {
         const checkAuthState = async () => {
-            console.log("[AuthContext] Verificando estado inicial de autenticación...");
             setLoading(true);
             const storedToken = localStorage.getItem('authToken'); // Lee el token real
             // *** PASO 7.2: Actualizar estado del token ***
             setToken(storedToken); // Siempre actualiza el estado con lo que hay en localStorage
 
             if (storedToken) {
-                console.log("[AuthContext] Token encontrado en localStorage.");
                 try {
                     const isValid = await validateToken(storedToken); // Usa el token real
                     if (isValid) {
-                        console.log("[AuthContext] Token considerado válido.");
                         const userData = getUserDataFromToken(storedToken); // Usa el token real
                         if (userData) {
-                            console.log("[AuthContext] Datos de usuario restaurados:", userData);
                             setUser(userData);
                         } else {
                             console.warn("[AuthContext] Token válido pero no se encontraron datos de usuario. Limpiando.");
@@ -73,7 +65,6 @@ export const AuthProvider = ({ children }) => {
                             setToken(null); // *** Limpia estado token ***
                         }
                     } else {
-                        console.log("[AuthContext] Token inválido. Limpiando.");
                         localStorage.removeItem('authToken');
                         localStorage.removeItem('userData');
                         setUser(null);
@@ -87,12 +78,10 @@ export const AuthProvider = ({ children }) => {
                     setToken(null); // *** Limpia estado token ***
                 }
             } else {
-                console.log("[AuthContext] No se encontró token en localStorage.");
                 setUser(null);
                 setToken(null); // *** Asegura que el estado token sea null si no hay en localStorage ***
             }
             setLoading(false);
-            console.log("[AuthContext] Verificación inicial completada.");
         };
 
         checkAuthState();
@@ -105,7 +94,6 @@ export const AuthProvider = ({ children }) => {
             console.error("[AuthContext] Intento de login con datos o token inválidos:", {userData, receivedToken});
             return;
         }
-        console.log("[AuthContext] Iniciando sesión y guardando datos y token:", {userData, token: receivedToken});
         setUser(userData);
         setToken(receivedToken); // *** Guarda el token en el estado ***
         localStorage.setItem('authToken', receivedToken); // *** Guarda el token real en localStorage ***
@@ -115,7 +103,6 @@ export const AuthProvider = ({ children }) => {
     // Función para limpiar el estado cuando el usuario cierra sesión
     // *** PASO 7.4: Modificar logout para limpiar el token ***
     const logout = () => {
-        console.log("[AuthContext] Cerrando sesión...");
         logoutUser();
         localStorage.removeItem('authToken'); // Elimina el token real
         localStorage.removeItem('userData');

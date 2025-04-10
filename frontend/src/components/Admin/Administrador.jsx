@@ -105,7 +105,6 @@ function Administrador({ toggleTheme }) {
 
     // --- Fetch Genérico ---
     const fetchGenericData = useCallback(async (endpoint, dataKey) => {
-        console.log(`[fetchGenericData] Fetching ${dataKey}...`);
         try {
             const response = await api.get(endpoint);
             let data = response.data;
@@ -136,7 +135,6 @@ function Administrador({ toggleTheme }) {
                 }
             }
 
-            console.log(`[fetchGenericData] Success: ${data.length} for ${dataKey}`);
             if (dataKey === 'usuarios') {
                 return data.map(u => { const { hash_password: _, ...rest } = u; return rest; });
             }
@@ -370,7 +368,6 @@ function Administrador({ toggleTheme }) {
 
         return () => {
             isMounted = false;
-            console.log(`Unmounting effect for ${currentSectionKey || 'none'}`);
         };
     }, [currentConfig, currentSectionKey, sectionConfig]); // Dependencias correctas
 
@@ -518,7 +515,6 @@ function Administrador({ toggleTheme }) {
     // --- Refrescar Datos Helper ---
     const refreshData = useCallback(async (config) => {
         if (!config || !config.fetchFn || !config.setDataFn) return;
-        console.log(`Refreshing data for section: ${config.title}`);
         try {
             const updatedData = await config.fetchFn();
             // Solo actualiza el estado si la sección actual sigue siendo la misma
@@ -597,7 +593,6 @@ function Administrador({ toggleTheme }) {
 
             const logPayload = { ...payload };
             if (logPayload.password) logPayload.password = '***';
-            console.log(`[handleSubmit] ${httpMethod.toUpperCase()} ${apiUrl} Payload:`, logPayload);
 
             await api[httpMethod](apiUrl, payload);
 
@@ -623,7 +618,6 @@ function Administrador({ toggleTheme }) {
         const { apiPath, title } = currentConfig;
         const apiUrl = `${apiPath}/${encodeURIComponent(itemId)}`;
         try {
-            console.log(`[handleDeleteItem] DELETE ${apiUrl}`);
             await api.delete(apiUrl);
             await mostrarAlertaExito('Eliminado', `${title} eliminado correctamente.`);
             await refreshData(currentConfig);

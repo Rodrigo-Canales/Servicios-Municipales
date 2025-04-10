@@ -21,7 +21,6 @@ api.interceptors.request.use(
         if (token) {
             // El formato estándar es 'Bearer <token>'
             config.headers['Authorization'] = `Bearer ${token}`;
-            console.log('[API Interceptor] Token añadido a la cabecera:', `Bearer ${token.substring(0, 15)}...`); // Log para depuración (no mostrar token completo)
         } else {
             console.log('[API Interceptor] No se encontró token para añadir a la cabecera.');
         }
@@ -41,7 +40,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => {
         // Si la respuesta es exitosa (status 2xx), simplemente la devuelve.
-        console.log('[API Interceptor] Respuesta recibida:', response.status, response.config.url);
         return response;
     },
     (error) => {

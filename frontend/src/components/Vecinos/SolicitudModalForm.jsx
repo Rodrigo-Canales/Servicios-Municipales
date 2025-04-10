@@ -250,7 +250,6 @@ const SolicitudModalForm = ({
     useEffect(() => {
         if (open) {
             const loadFormDefinition = async () => {
-                console.log('[Modal] Opening - Loading form definition...');
                 setLoadingDefinition(true);
                 setDefinitionError(null); // Limpia error previo al iniciar carga
                 setFormFields([]);
@@ -267,8 +266,6 @@ const SolicitudModalForm = ({
                     ? normalizeToCamelCase(tipoSeleccionado.nombre_tipo)
                     : 'default';
 
-                console.log(`[Modal] Attempting to load definition: ${formName}.js`);
-
                 try { // <--- INICIO DEL TRY PRINCIPAL
                     // Intenta importar dinámicamente el archivo específico
                     const module = await import(
@@ -282,7 +279,6 @@ const SolicitudModalForm = ({
                     if (!Array.isArray(loadedFields)) {
                         throw new Error(`Definition file "${formName}.js" does not export a valid 'fields' array.`);
                     }
-                    console.log(`[Modal] Definition loaded successfully: ${formName}.js (${loadedFields.length} fields)`);
 
                 // --- FIN DEL TRY PRINCIPAL ---
                 } catch (error) { // <--- INICIO DEL BLOQUE CATCH (CORRECTAMENTE COLOCADO)
@@ -302,7 +298,6 @@ const SolicitudModalForm = ({
                             if (!Array.isArray(loadedFields)) {
                                 throw new Error('Default definition file "default.js" does not export a valid \'fields\' array.');
                             }
-                            console.log("[Modal] Default definition loaded successfully after fallback.");
                              // IMPORTANTE: Limpia el error si el fallback funcionó para que no se muestre en UI
                             setDefinitionError(null);
 
@@ -321,7 +316,6 @@ const SolicitudModalForm = ({
                     }
                 // --- FIN DEL BLOQUE CATCH PRINCIPAL ---
                 } finally { // <--- INICIO DEL BLOQUE FINALLY (siempre se ejecuta)
-                    console.log('[Modal] Setting form state...');
                     setFormFields(loadedFields);
                     setFormTitle(loadedTitle);
 
@@ -349,7 +343,6 @@ const SolicitudModalForm = ({
                     setTouched(initialTouched); // Set initial touched state
 
                     setLoadingDefinition(false);
-                    console.log('[Modal] Form definition processing complete.');
                 // --- FIN DEL BLOQUE FINALLY ---
                 }
             }; // Fin de loadFormDefinition
@@ -430,7 +423,6 @@ const SolicitudModalForm = ({
 
     // --- Blur Handler (to trigger touch and validation) ---
     const handleBlur = useCallback((fieldName) => {
-        console.log(`[Modal] Blur event on: ${fieldName}`);
          // Mark as touched
         setTouched(prevTouched => ({
             ...prevTouched,
@@ -510,7 +502,6 @@ const SolicitudModalForm = ({
             // Basic file info
             const fileExtension = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
             const fileMimeType = file.type?.toLowerCase() || '';
-            console.log(`[Modal] File selected: ${file.name}, Type: ${fileMimeType}, Size: ${file.size} bytes`);
 
 
             // 1. Type Validation
@@ -546,14 +537,11 @@ const SolicitudModalForm = ({
                     inputElement.value = null; // Reset file input element
                 }
             } else {
-                console.log(`[Modal] File valid for ${name}: ${file.name}`);
                 setFileInputs(prevFiles => ({ ...prevFiles, [name]: file }));
                 // Ensure error is cleared if previously set
                 setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
             }
         } else {
-            // No file selected or selection cancelled
-            console.log(`[Modal] No file selected or selection cancelled for ${name}.`);
             // Re-validate if the field is required, now that it's empty
             const fieldDefinition = formFields.find(f => f.name === name);
             if (fieldDefinition?.required && isFieldVisible(fieldDefinition, formData)) {
@@ -571,7 +559,6 @@ const SolicitudModalForm = ({
 
     // --- Step Validation Logic ---
     const validateStep = useCallback((stepIndex) => {
-        console.log(`[Modal] Validating step ${stepIndex + 1}...`);
         const fieldsToValidate = getFieldsForStep(stepIndex);
         let isStepValid = true;
         const stepErrors = {}; // Collect errors for this step validation pass
@@ -622,7 +609,6 @@ const SolicitudModalForm = ({
          // This avoids potential race conditions or partial updates
         setErrors(prevErrors => ({ ...prevErrors, ...stepErrors }));
 
-        console.log(`[Modal] Step ${stepIndex + 1} validation result: ${isStepValid}`);
         return isStepValid;
     }, [getFieldsForStep, formData, fileInputs, errors]); // Added errors dependency
 
@@ -650,7 +636,6 @@ const SolicitudModalForm = ({
     // (Keep your existing handleSubmit logic, ensuring it uses the final validateStep check)
     const handleSubmit = useCallback(async (event) => { // Consider adding useCallback
         event.preventDefault();
-        console.log('[Modal] Submit button clicked.');
 
         // Validate the FINAL step before submitting
         // validateStep now correctly handles hidden fields
@@ -666,7 +651,6 @@ const SolicitudModalForm = ({
             console.warn("[Modal] Submission blocked (already submitting, loading, or definition error).");
             return;
         }
-        console.log("[Modal] Form is valid. Preparing data for submission...");
 
         const submissionData = new FormData();
 
@@ -729,19 +713,6 @@ const SolicitudModalForm = ({
             console.warn("[Modal] No 'id_tipo_solicitud' available to send.");
         }
 
-        // Log FormData contents (Optional for debugging)
-        console.log("--- FormData to be submitted ---");
-        for (let [key, value] of submissionData.entries()) {
-            if (value instanceof File) {
-                console.log(`[FormData] ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-            } else {
-                console.log(`[FormData] ${key}:`, value);
-            }
-        }
-        console.log("------------------------------");
-
-
-        console.log("[Modal] Calling onSubmit prop...");
         // Use await if onSubmit is async, otherwise remove async/await
         // await onSubmit(submissionData); // Example if onSubmit returns a promise
         onSubmit(submissionData); // Pass the FormData object
@@ -773,7 +744,6 @@ const SolicitudModalForm = ({
         setCurrentStep(0);
         setErrors({});
         setTouched({});
-        console.log('[Modal] handleDialogClose called, reason:', reason);
          onClose(); // Call the parent's close handler
     };
 

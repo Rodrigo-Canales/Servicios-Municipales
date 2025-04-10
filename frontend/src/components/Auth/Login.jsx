@@ -73,8 +73,6 @@ const Login = ({ toggleTheme }) => {
         setLoading(true); // Iniciar carga
 
         try {
-            // Log (sin cambios)
-            console.log("Datos enviados:", { correo_electronico: email, password: password });
 
             // Llamada a la API (sin cambios)
             const response = await fetch('http://localhost:3001/api/auth/trabajadores/login', {
@@ -85,7 +83,6 @@ const Login = ({ toggleTheme }) => {
 
             // Obtener respuesta (sin cambios)
             const data = await response.json();
-            console.log("Respuesta del servidor:", data);
 
             // Verificar si la respuesta NO fue exitosa (sin cambios)
             if (!response.ok) {

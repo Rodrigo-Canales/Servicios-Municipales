@@ -26,7 +26,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     //    guardada en localStorage pero el contexto aún no la ha cargado.
     if (loading) {
         // Log añadido para claridad durante la carga
-        console.log(`[ProtectedRoute] Verificando autenticación para ${location.pathname}... (Loading)`);
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: 'background.default' }}>
                 <CircularProgress />
@@ -36,18 +35,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
     // 2. Si la carga terminó y NO hay usuario, redirigir a /login
     if (!user) {
-        console.log(`[ProtectedRoute] Acceso denegado a ${location.pathname}. No hay usuario autenticado. Redirigiendo a /login.`);
         // `replace` evita que la ruta protegida quede en el historial del navegador.
         // `state={{ from: location }}` pasa la ruta original para que Login pueda redirigir de vuelta.
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
-
-    // --- Log de Depuración Añadido ---
-    // Imprime el rol del usuario y los roles permitidos ANTES de la comprobación
-    // Usamos user?.rol y allowedRoles?.join para evitar errores si alguno fuera undefined
-    console.log(`[ProtectedRoute] Verificando ruta ${location.pathname}. User Rol: "${user?.rol}", Allowed Roles: [${allowedRoles?.join(', ')}]`);
-    // --- Fin Log Añadido ---
-
     // 3. Si se especificaron roles permitidos (`allowedRoles`) Y el rol del usuario
     //    NO está incluido en esa lista, redirigir.
     //    (Asegura que allowedRoles sea un array antes de usar .includes)
@@ -56,14 +47,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         if (location.pathname === '/vecinos') {
             console.warn(`[ProtectedRoute] Acceso temporal permitido a /vecinos para rol "${user.rol}".`);
         } else {
-            console.log(`[ProtectedRoute] Acceso denegado a ${location.pathname}. Rol "${user.rol}" NO está en roles permitidos [${allowedRoles.join(', ')}].`);
             return <Navigate to="/" state={{ from: location }} replace />;
         }
     }
-
-    // 4. Si la carga terminó, hay un usuario Y (si se especificaron roles) el rol es permitido,
-    //    renderizar el componente hijo (la página protegida).
-    console.log(`[ProtectedRoute] Acceso PERMITIDO a ${location.pathname} para usuario con rol "${user.rol}".`);
     return children;
 };
 
