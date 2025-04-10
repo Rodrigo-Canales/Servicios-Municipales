@@ -15,7 +15,6 @@ function crearCarpeta(ruta) {
     if (!fs.existsSync(ruta)) {
         try {
             fs.mkdirSync(ruta, { recursive: true });
-            console.log(`Carpeta creada: ${ruta}`);
         } catch (mkdirError) {
             console.error(`Error al crear carpeta ${ruta}:`, mkdirError);
             // Lanzar error para manejo centralizado
@@ -191,7 +190,7 @@ const drawFooter = (doc, pageNum, totalPages) => {
   const contentWidth = page.width - page.margins.left - page.margins.right;
 
   // Textos del footer
-  const footerText = "Documento generado a través de la Plataforma de Solicitudes Municipales, con autenticación por Clave Única.";
+  const footerText = "Documento emitido por la Plataforma de Solicitudes Municipales y usuario autenticado mediante Clave Única.";
   const footerExtraText = "Municipalidad de Pitrufquén - Solicitudes Ciudadanas - https://www.mpitrufquen.cl/ (Reemplazar URL)";
 
   // Calcular posiciones absolutas basadas en la altura total de la página.
@@ -416,14 +415,123 @@ router.post('/', upload.any(), async (req, res) => {
 
     // 7.3 Información del Solicitante
     {
-      pdfDoc.font('Helvetica-Bold').fontSize(12).text('Información del Solicitante:', { underline: true }).moveDown(0.75);
-      pdfDoc.font('Helvetica').fontSize(11)
-            .text(`RUT: ${rut_ciudadano}`)
-            .text(`Nombre y Apellido: ${nombreCompleto}`)
-            .text(`Correo Electrónico de Notificación: ${correo_notificacion || 'No proporcionado'}`)
-            .moveDown(1.5);
-    }
+        // --- Variables de diseño ---
+        const startX = pdfDoc.page.margins.left;
+        const initialY = pdfDoc.y; // Y donde empieza esta sección
 
+        if (isNaN(initialY)) {
+            console.error("ERROR CRÍTICO v8: pdfDoc.y es NaN antes de empezar.");
+            // Considera manejar este error de forma más robusta si ocurre
+            return res.status(500).json({ message: 'Error interno generando PDF (posición Y inválida).' });
+        }
+
+        const boxTopY = initialY; // Y superior del recuadro
+        const contentWidth = pdfDoc.page.width - pdfDoc.page.margins.left - pdfDoc.page.margins.right;
+        const recuadroHeight = 85;  // AUMENTAR altura para el título
+        const recuadroPadding = 12; // Padding interno
+        const cornerRadius = 8;     // Radio para bordes redondos
+        const logoWidth = 35;
+        const logoPaddingRight = 12;
+        const lineSpacingFactor = 0.3; // Espacio entre líneas de texto principal
+
+        // --- Título ---
+        const tituloTexto = "Información del Solicitante";
+        const tituloFontSize = 10; // Tamaño más pequeño para el título
+        const tituloSpacingBottom = 8; // Espacio debajo del título
+
+        // --- Dibujar el recuadro azul con bordes redondos ---
+        pdfDoc.save();
+        pdfDoc.fillColor('#0D47A1');
+        // Usar roundedRect en lugar de rect
+        pdfDoc.roundedRect(startX, boxTopY, contentWidth, recuadroHeight, cornerRadius).fill();
+        pdfDoc.restore();
+
+        // --- Preparar contenido de texto ---
+        const logoPath = path.join(__dirname, '../img/claveunica.png');
+        const rutTexto = `RUT: ${rut_ciudadano || 'No disponible'}`;
+        const nombreTexto = `Nombre y Apellido: ${nombreCompleto || 'No disponible'}`;
+        const correoTexto = `Correo Electrónico de Notificación: ${correo_para_insert || 'No especificado'}`;
+
+        // --- Calcular posiciones (considerando el título) ---
+        const logoActualX = startX + recuadroPadding;
+        const textBlockStartX = logoActualX + logoWidth + logoPaddingRight;
+
+        // Posición Y del Título
+        const tituloY = boxTopY + recuadroPadding;
+
+        // Calcular dónde empezará el contenido principal (logo y texto RUT/Nombre/...)
+        // Se necesita saber la altura del título para posicionar debajo
+        let mainContentStartY = tituloY; // Inicializar con la Y del título
+        pdfDoc.save(); // Usar save/restore para medir sin afectar
+        pdfDoc.font('Helvetica-Bold').fontSize(tituloFontSize); // Usar fuente del título
+        mainContentStartY += pdfDoc.heightOfString(tituloTexto, { width: contentWidth - (recuadroPadding * 2) }); // Añadir altura del título
+        mainContentStartY += tituloSpacingBottom; // Añadir espacio debajo del título
+        pdfDoc.restore(); // Restaurar fuente/tamaño
+
+        // Posición Y del logo (alineado con el inicio del contenido principal)
+        const logoAbsoluteY = mainContentStartY;
+        // Posición Y del primer texto (RUT) (alineado con el inicio del contenido principal)
+        const textAbsoluteStartY = mainContentStartY;
+
+
+        // --- Dibujar logo (izquierda) ---
+        if (fs.existsSync(logoPath)) {
+            try {
+                 // Dibujar logo en su nueva posición Y
+                 pdfDoc.image(logoPath, logoActualX, logoAbsoluteY, { width: logoWidth });
+            } catch (imgErr) { console.warn(`Warn logo load: ${imgErr.message}`); }
+        } else { console.warn(`Warn logo path: ${logoPath}`); }
+
+        // --- Dibujar Título y Texto Principal (derecha) ---
+        pdfDoc.save(); // Guardar estado (color/fuente por defecto)
+        pdfDoc.fillColor('#FFFFFF'); // Todo el texto dentro será blanco
+
+        // 1. Dibujar Título
+        pdfDoc.font('Helvetica-Bold').fontSize(tituloFontSize); // Fuente para el título
+        pdfDoc.text(tituloTexto, startX + recuadroPadding, tituloY, { // Alinear título a la izquierda con padding
+             width: contentWidth - (recuadroPadding * 2), // Ancho completo menos paddings
+             align: 'left' // O 'center' si lo prefieres centrado
+        });
+        // pdfDoc.y se actualiza después del texto del título
+
+        // 2. Dibujar Texto Principal (RUT, Nombre, Correo)
+        pdfDoc.font('Helvetica-Bold').fontSize(11); // Cambiar a la fuente del texto principal
+
+        try {
+            if (isNaN(textAbsoluteStartY) || isNaN(textBlockStartX)) {
+                console.error("ERROR CRÍTICO v8: NaN detectado antes de dibujar texto principal.");
+                // Manejar el error
+            } else {
+                 // --- Draw RUT (SIN OPCIONES) ---
+                 // Usar la Y calculada 'textAbsoluteStartY' para la primera línea
+                 pdfDoc.text(rutTexto, textBlockStartX, textAbsoluteStartY);
+                 pdfDoc.moveDown(lineSpacingFactor);
+
+                 // --- Draw Nombre (SIN OPCIONES) ---
+                 pdfDoc.text(nombreTexto, textBlockStartX);
+                 pdfDoc.moveDown(lineSpacingFactor);
+
+                 // --- Draw Correo (SIN OPCIONES) ---
+                 pdfDoc.text(correoTexto, textBlockStartX);
+            }
+        } catch (textError) {
+             console.error("ERROR caught during pdfDoc.text (v8):", textError);
+             throw textError;
+        } finally {
+             pdfDoc.restore(); // Restaurar estado (color/fuente a negro/default)
+        }
+
+        // --- Ajustar la posición Y global para el siguiente bloque ---
+        pdfDoc.y = boxTopY + recuadroHeight + 20; // Usar la nueva altura del recuadro
+
+    } // Fin del bloque 7.3
+
+    // !! IMPORTANTE: Asegurarse que el color de texto vuelva a ser negro !!
+    // (Aunque el pdfDoc.restore() ya debería hacerlo, una doble seguridad no hace daño)
+    pdfDoc.fillColor('black');
+    // Opcional: Resetear X por si acaso
+    pdfDoc.x = pdfDoc.page.margins.left;
+    
     // 7.4 Datos Adicionales Proporcionados
     {
       const datosAdicionales = { ...otrosDatos };

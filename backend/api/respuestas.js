@@ -31,7 +31,7 @@ transporter.verify(function(error, success) {
 // Funciones Auxiliares
 function crearCarpetaSiNoExiste(ruta) {
     if (!fs.existsSync(ruta)) {
-        try { fs.mkdirSync(ruta, { recursive: true }); console.log(`Carpeta creada: ${ruta}`); }
+        try { fs.mkdirSync(ruta, { recursive: true }); }
         catch (mkdirError) { console.error(`Error al crear carpeta ${ruta}:`, mkdirError); throw new Error(`No se pudo crear la estructura de carpetas necesaria: ${mkdirError.message}`); }
     }
 }
@@ -45,17 +45,90 @@ const fileFilterRespuesta = (req, file, cb) => {
 };
 const uploadRespuesta = multer({ storage: storageRespuesta, fileFilter: fileFilterRespuesta });
 
+
+const FOOTER_HEIGHT = 65;
+
+// --- Función para dibujar el footer en cada página ---
+const drawFooter = (doc, pageNum, totalPages) => {
+    const page = doc.page;
+    const contentWidth = page.width - page.margins.left - page.margins.right;
+
+    // Textos del footer con el nuevo formato
+    const footerText = "Documento emitido por la Plataforma de Solicitudes Municipales y usuario autenticado mediante Clave Única";
+    const footerExtraText = "Municipalidad de Pitrufquén - (Contactos) https://www.mpitrufquen.cl/portal/acontactos/fonomunicipal.html";
+
+    // Calcular posiciones absolutas basadas en la altura total de la página
+    const bottomPadding = 10; // Espacio desde el borde físico inferior
+    const pageNumY = page.height - bottomPadding - 10; // Y para el número de página
+    const footerY = pageNumY - 12;                     // Y para el texto principal
+    const footerExtraY = footerY - 14;                 // Y para el texto extra
+    const lineY = footerExtraY - 6;                    // Y para la línea
+    const startX = page.margins.left;
+
+    doc.save(); // Guardar estado general
+
+    // Dibujar línea separadora
+    doc.strokeColor('#CCCCCC')
+        .lineWidth(0.5)
+        .moveTo(startX, lineY)
+        .lineTo(page.width - page.margins.right, lineY)
+        .stroke();
+
+    // Dibujar el texto extra usando translate para posicionar sin alterar el flujo
+    doc.save();
+    doc.translate(startX, footerExtraY);
+    doc.font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor('#555555')
+        .text(footerExtraText, 0, 0, {
+            width: contentWidth,
+            align: 'center',
+            lineBreak: false
+        });
+    doc.restore();
+
+    // Dibujar el texto principal
+    doc.save();
+    doc.translate(startX, footerY);
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#666666')
+       .text(footerText, 0, 0, {
+           width: contentWidth,
+           align: 'center',
+           lineBreak: false
+       });
+    doc.restore();
+
+    // Dibujar el número de página
+    doc.save();
+    doc.translate(startX, pageNumY);
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#666666')
+       .text(`Página ${pageNum} de ${totalPages}`, 0, 0, {
+           width: contentWidth,
+           align: 'center',
+           lineBreak: false
+       });
+    doc.restore();
+
+    doc.restore(); // Restaurar estado general
+};
+
 // --- Rutas CRUD para Respuestas ---
 
-
 // Crear una nueva respuesta, PDF, guardar adjuntos y enviar notificación por correo.
-
-router.post('/', protect, restrictTo('Funcionario'), uploadRespuesta.array('archivosRespuesta'), async (req, res) => {
+router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) => {
     const { id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud } = req.body;
     const estadosValidos = ['Aprobada', 'Rechazada'];
 
-    if (!id_solicitud || !RUT_trabajador || !respuesta_texto || !estado_solicitud) { return res.status(400).json({ message: 'Faltan campos obligatorios: id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud' }); }
-    if (!estadosValidos.includes(estado_solicitud)) { return res.status(400).json({ message: `Estado de solicitud inválido. Debe ser '${estadosValidos.join("' o '")}'.` }); }
+    if (!id_solicitud || !RUT_trabajador || !respuesta_texto || !estado_solicitud) {
+        return res.status(400).json({ message: 'Faltan campos obligatorios: id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud' });
+    }
+    if (!estadosValidos.includes(estado_solicitud)) {
+        return res.status(400).json({ message: `Estado de solicitud inválido. Debe ser '${estadosValidos.join("' o '")}'.` });
+    }
 
     let connection;
     let pdfPath = '';
@@ -65,154 +138,278 @@ router.post('/', protect, restrictTo('Funcionario'), uploadRespuesta.array('arch
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        //  Obtener datos de solicitud y ciudadano (incluyendo correo_notificacion)
-        const [solicitudes] = await connection.query(
-            `SELECT s.id_solicitud, s.ruta_carpeta, s.fecha_hora_envio, s.RUT_ciudadano, s.correo_notificacion, t.nombre_tipo, u_ciud.nombre AS nombre_ciudadano, u_ciud.apellido AS apellido_ciudadano FROM Solicitudes s JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo JOIN Usuarios u_ciud ON s.RUT_ciudadano = u_ciud.RUT WHERE s.id_solicitud = ?`, [id_solicitud] );
-        if (solicitudes.length === 0) { await connection.rollback(); return res.status(404).json({ message: 'Solicitud no encontrada' }); }
-        const solicitud = solicitudes[0];
-        const rutaCarpetaSolicitud = solicitud.ruta_carpeta;
-        const correoDestino = solicitud.correo_notificacion;
-
-        if (!rutaCarpetaSolicitud || !fs.existsSync(rutaCarpetaSolicitud)) { await connection.rollback(); console.error(`Ruta carpeta solicitud ${id_solicitud} inválida: ${rutaCarpetaSolicitud}`); return res.status(500).json({ message: 'Error: No se encontró la carpeta de la solicitud original.' }); }
-        if (!correoDestino) { console.warn(`Solicitud ${id_solicitud} no tiene correo de notificación especificado. No se enviará email.`); }
-
-        //  Verificar trabajador
-        const [trabajadores] = await connection.query( 'SELECT nombre, apellido FROM Usuarios WHERE RUT = ? AND rol IN (?, ?)', [RUT_trabajador, 'Funcionario', 'Administrador'] );
-        if (trabajadores.length === 0) { await connection.rollback(); return res.status(404).json({ message: 'Trabajador no encontrado o sin permisos para responder' }); }
-        const trabajador = trabajadores[0];
-        const nombreCompletoTrabajador = `${trabajador.nombre} ${trabajador.apellido}`;
-        const nombreCompletoCiudadano = `${solicitud.nombre_ciudadano} ${solicitud.apellido_ciudadano}`;
-
-        //  Insertar respuesta en BD
-        const fechaRespuesta = new Date();
-        const [resultInsert] = await connection.query( 'INSERT INTO Respuestas (id_solicitud, RUT_trabajador, fecha_hora_respuesta) VALUES (?, ?, ?)', [id_solicitud, RUT_trabajador, fechaRespuesta] );
-        const id_respuesta = resultInsert.insertId;
-        const id_respuesta_formateado = id_respuesta.toString().padStart(10, '0');
-
-        //  Crear subcarpeta "Respuesta"
-        rutaCarpetaRespuesta = path.join(rutaCarpetaSolicitud, 'Respuesta');
-        crearCarpetaSiNoExiste(rutaCarpetaRespuesta);
-
-        //  Guardar adjuntos de respuesta y preparar para correo
-        const nombresArchivosAdjuntos = [];
-        const attachmentObjects = [];
-        if (req.files && req.files.length > 0) {
-            console.log(`Guardando ${req.files.length} archivos adjuntos para respuesta ${id_respuesta}...`);
-            req.files.forEach(file => {
-                const filePath = path.join(rutaCarpetaRespuesta, file.originalname);
-                try { fs.writeFileSync(filePath, file.buffer); nombresArchivosAdjuntos.push(file.originalname); attachmentObjects.push({ filename: file.originalname, content: file.buffer }); console.log(`Archivo guardado: ${filePath}`); }
-                catch (writeError) { console.error(`Error al guardar el archivo ${file.originalname}:`, writeError); throw new Error(`Fallo al escribir archivo adjunto: ${writeError.message}`); }
-            });
-        }
-
-        //  Crear PDF de respuesta - LÓGICA COMPLETA RESTAURADA
-        const pdfDoc = new PDFDocument({ size: 'LETTER', margins: { top: 50, bottom: 50, left: 72, right: 72 } });
-        pdfPath = path.join(rutaCarpetaRespuesta, 'respuesta.pdf');
-        const writeStream = fs.createWriteStream(pdfPath);
-        pdfDoc.pipe(writeStream);
-
-        // --- Inicio Contenido del PDF ---
-        const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png'); // Ajusta la ruta si es diferente
-        if (fs.existsSync(logoPath)) {
-            pdfDoc.image(logoPath, pdfDoc.page.margins.left, pdfDoc.y, { width: 80 });
-            pdfDoc.moveDown(0.5); // Espacio después del logo
-        } else {
-            console.warn("Logo no encontrado en", logoPath);
-             pdfDoc.y = pdfDoc.page.margins.top; // Empezar desde el margen superior
-        }
-         // Ajustar Y si se añadió logo para que el título quede bien
-        pdfDoc.y = pdfDoc.page.margins.top + (fs.existsSync(logoPath) ? 20 : 0);
-
-        // Título Principal
-        pdfDoc.font('Helvetica-Bold').fontSize(16).text('RESPUESTA A SOLICITUD', { align: 'center' }).moveDown(1.5);
-
-        // Línea separadora
-        pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
-
-        // Datos de la Respuesta
-        pdfDoc.font('Helvetica').fontSize(11);
-        pdfDoc.text(`ID Respuesta: ${id_respuesta_formateado}`);
-        pdfDoc.text(`Fecha Respuesta: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
-        pdfDoc.text(`Respondido por: ${nombreCompletoTrabajador} (RUT: ${RUT_trabajador})`).moveDown(1);
-
-        // Datos de la Solicitud Original
-        pdfDoc.font('Helvetica-Bold').text('Referente a Solicitud:'); // Título para sección
-        pdfDoc.font('Helvetica').fontSize(11);
-        pdfDoc.text(`ID Solicitud: ${solicitud.id_solicitud.toString().padStart(10, '0')}`);
-        pdfDoc.text(`Tipo de Solicitud: ${solicitud.nombre_tipo}`);
-        pdfDoc.text(`Fecha Solicitud: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
-        pdfDoc.text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${solicitud.RUT_ciudadano})`);
-        pdfDoc.text(`Correo de Notificación: ${correoDestino || 'No proporcionado'}`).moveDown(1.5); // Mostrar correo destino
-
-        // Línea separadora
-        pdfDoc.strokeColor('#cccccc').lineWidth(1).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke().moveDown(1.5);
-
-        // Detalle de la Respuesta
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalle de la Respuesta:', { underline: true }).moveDown(1);
-        pdfDoc.font('Helvetica').fontSize(11).text(respuesta_texto || 'Sin texto de respuesta proporcionado.', { align: 'justify' }).moveDown(1.5);
-
-        // Lista de Archivos Adjuntos (si existen)
-        if (nombresArchivosAdjuntos.length > 0) {
-            pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos (Referencia):', { underline: true }).moveDown(1);
-            pdfDoc.font('Helvetica').fontSize(10);
-            nombresArchivosAdjuntos.forEach(nombre => pdfDoc.text(`- ${nombre}`).moveDown(0.2)); // Menos espacio entre items
-            pdfDoc.moveDown(1);
-        }
-        // --- Fin Contenido del PDF ---
-        pdfDoc.end(); // Finalizar la escritura del PDF
-
-        // Esperar a que el stream de escritura finalice
-        await new Promise((resolve, reject) => {
-            writeStream.on('finish', resolve);
-            writeStream.on('error', (err) => { console.error("Error al escribir el PDF:", err); reject(new Error(`Fallo al escribir el PDF: ${err.message}`)); });
+      // 1) Obtener datos de solicitud y ciudadano (incluyendo correo_notificacion)
+      const [solicitudes] = await connection.query(
+        `SELECT s.id_solicitud, s.ruta_carpeta, s.fecha_hora_envio, s.RUT_ciudadano, s.correo_notificacion, t.nombre_tipo, 
+                u_ciud.nombre AS nombre_ciudadano, u_ciud.apellido AS apellido_ciudadano 
+         FROM Solicitudes s 
+         JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo 
+         JOIN Usuarios u_ciud ON s.RUT_ciudadano = u_ciud.RUT 
+         WHERE s.id_solicitud = ?`,
+        [id_solicitud]
+      );
+      if (solicitudes.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: 'Solicitud no encontrada' });
+      }
+      const solicitud = solicitudes[0];
+      const correoDestino = solicitud.correo_notificacion;
+  
+      // Definir la carpeta base de solicitudes (ajusta la ruta según tu estructura de proyecto)
+      const baseSolicitudesDir = path.join(__dirname, '../solicitudes');
+      // Construir la ruta absoluta a la carpeta de la solicitud
+      const rutaCarpetaSolicitud = path.join(baseSolicitudesDir, solicitud.ruta_carpeta);
+  
+      if (!rutaCarpetaSolicitud || !fs.existsSync(rutaCarpetaSolicitud)) {
+        await connection.rollback();
+        console.error(`Ruta carpeta solicitud ${id_solicitud} inválida: ${rutaCarpetaSolicitud}`);
+        return res.status(500).json({ message: 'Error: No se encontró la carpeta de la solicitud original.' });
+      }
+      if (!correoDestino) {
+        console.warn(`Solicitud ${id_solicitud} no tiene correo de notificación especificado. No se enviará email.`);
+      }
+  
+      // 2) Verificar que el trabajador exista y tenga permisos
+      const [trabajadores] = await connection.query(
+        'SELECT nombre, apellido FROM Usuarios WHERE RUT = ? AND rol IN (?, ?)',
+        [RUT_trabajador, 'Funcionario', 'Administrador']
+      );
+      if (trabajadores.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: 'Trabajador no encontrado o sin permisos para responder' });
+      }
+      const trabajador = trabajadores[0];
+      const nombreCompletoTrabajador = `${trabajador.nombre} ${trabajador.apellido}`;
+      const nombreCompletoCiudadano = `${solicitud.nombre_ciudadano} ${solicitud.apellido_ciudadano}`;
+  
+      // 3) Insertar la respuesta en la BD
+      const fechaRespuesta = new Date();
+      const [resultInsert] = await connection.query(
+        'INSERT INTO Respuestas (id_solicitud, RUT_trabajador, fecha_hora_respuesta) VALUES (?, ?, ?)',
+        [id_solicitud, RUT_trabajador, fechaRespuesta]
+      );
+      const id_respuesta = resultInsert.insertId;
+      const id_respuesta_formateado = id_respuesta.toString().padStart(10, '0');
+  
+      // 4) Crear subcarpeta "Respuesta" dentro de la carpeta de la solicitud
+      rutaCarpetaRespuesta = path.join(rutaCarpetaSolicitud, 'Respuesta');
+      crearCarpetaSiNoExiste(rutaCarpetaRespuesta);
+  
+      // 5) Guardar archivos adjuntos de la respuesta y armar lista para enviar en correo
+      const nombresArchivosAdjuntos = [];
+      const attachmentObjects = [];
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          const filePath = path.join(rutaCarpetaRespuesta, file.originalname);
+          try {
+            fs.writeFileSync(filePath, file.buffer);
+            nombresArchivosAdjuntos.push(file.originalname);
+            attachmentObjects.push({ filename: file.originalname, content: file.buffer });
+          } catch (writeError) {
+            console.error(`Error al guardar el archivo ${file.originalname}:`, writeError);
+            throw new Error(`Fallo al escribir archivo adjunto: ${writeError.message}`);
+          }
         });
-        console.log(`PDF de respuesta creado: ${pdfPath}`);
-
-
-        //  Actualizar estado de solicitud original
-        const [updateResult] = await connection.query( 'UPDATE Solicitudes SET estado = ? WHERE id_solicitud = ?', [estado_solicitud, id_solicitud] );
-        if (updateResult.affectedRows > 0) console.log(`Estado de solicitud ${id_solicitud} actualizado a ${estado_solicitud}.`);
-        else console.warn(`No se pudo actualizar el estado de la solicitud ${id_solicitud} a '${estado_solicitud}'`);
-
-        //  Confirmar transacción ANTES de enviar correo
-        await connection.commit();
-        console.log(`Transacción completada para respuesta ${id_respuesta}`);
-
-        //  --- ENVÍO DE CORREO REAL ---
-        if (correoDestino) {
-            console.log(`Intentando enviar notificación a ${correoDestino}...`);
-            try {
-                const finalAttachments = [ { filename: 'respuesta.pdf', path: pdfPath }, ...attachmentObjects ];
-                const mailOptions = {
-                    from: `"Municipalidad de Pitrufquén" <${process.env.EMAIL_USER}>`,
-                    to: correoDestino,
-                    subject: `Respuesta a su Solicitud #${solicitud.id_solicitud.toString().padStart(10, '0')} - ${solicitud.nombre_tipo}`,
-                    text: `Estimado(a) ${nombreCompletoCiudadano},\n\nSu solicitud de '${solicitud.nombre_tipo}' ha sido respondida (${estado_solicitud}).\n\nRespuesta:\n${respuesta_texto}\n\nSe adjuntan los detalles y archivos correspondientes.\n\nAtentamente,\nMunicipalidad de Pitrufquén`,
-                    html: `<p>Estimado(a) ${nombreCompletoCiudadano},</p><p>Su solicitud de '${solicitud.nombre_tipo}' ha sido respondida y marcada como '<b>${estado_solicitud}</b>'.</p><p><b>Respuesta:</b></p><p>${respuesta_texto.replace(/\n/g, '<br/>')}</p><p>Se adjuntan los detalles y archivos correspondientes.</p><p>Atentamente,<br/>Municipalidad de Pitrufquén</p>`,
-                    attachments: finalAttachments
-                };
-                let info = await transporter.sendMail(mailOptions);
-                console.log(`Notificación enviada exitosamente a ${correoDestino}. Message ID: ${info.messageId}`);
-                res.status(201).json({ message: 'Respuesta creada, solicitud actualizada y notificación enviada exitosamente.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
-            } catch (mailError) {
-                console.error(`Error al enviar correo de notificación a ${correoDestino}:`, mailError);
-                res.status(201).json({ message: 'Respuesta creada y solicitud actualizada, pero falló el envío de la notificación por correo.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta, error_correo: mailError.message });
-            }
-        } else {
-            res.status(201).json({ message: 'Respuesta creada y solicitud actualizada exitosamente (Sin correo de notificación especificado).', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
+      }
+  
+      // --- 6) Crear el PDF con el mismo formato que las solicitudes ---
+      // Configuramos los márgenes y reservamos espacio para el footer
+      const pdfDoc = new PDFDocument({
+        size: 'LETTER',
+        margins: { top: 50, bottom: FOOTER_HEIGHT, left: 60, right: 60 },
+        bufferPages: true
+      });
+      // Puedes formar el nombre del PDF según prefieras; a modo de ejemplo usamos "respuesta.pdf"
+      pdfPath = path.join(rutaCarpetaRespuesta, 'respuesta.pdf');
+      const writeStream = fs.createWriteStream(pdfPath);
+      pdfDoc.pipe(writeStream);
+  
+      // --- 7) Cabecera con logo y títulos (similar al de solicitudes) ---
+      {
+        const logoPath = path.join(__dirname, '../img/LOGO PITRUFQUEN.png');
+        let currentY = pdfDoc.page.margins.top;
+        try {
+          if (fs.existsSync(logoPath)) {
+            pdfDoc.image(logoPath, pdfDoc.page.margins.left, currentY, { width: 70 });
+            currentY += 75;
+          } else {
+            console.warn("Advertencia: Logo no encontrado en", logoPath);
+            currentY += 15;
+          }
+        } catch (imgErr) {
+          console.error("Error al cargar imagen del logo:", imgErr);
+          currentY += 15;
         }
-        // --- FIN ENVÍO DE CORREO ---
-
+        pdfDoc.y = currentY;
+        pdfDoc.font('Helvetica-Bold').fontSize(14).text('Municipalidad de Pitrufquén', { align: 'center' });
+        pdfDoc.moveDown(0.5);
+        pdfDoc.fontSize(16).text('RESPUESTA A SOLICITUD', { align: 'center' });
+        pdfDoc.moveDown(1.5);
+        const yLine = pdfDoc.y;
+        pdfDoc.strokeColor('#cccccc').lineWidth(0.5)
+              .moveTo(pdfDoc.page.margins.left, yLine)
+              .lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, yLine)
+              .stroke();
+        pdfDoc.moveDown(1.5);
+      }
+  
+      // --- 8) Detalles de la Respuesta ---
+      {
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Respuesta:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica').fontSize(11)
+              .text(`ID Respuesta: ${id_respuesta_formateado}`)
+              .text(`Fecha y Hora: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
+              .text(`Respondido por: ${nombreCompletoTrabajador} (RUT: ${RUT_trabajador})`)
+              .moveDown(1.5);
+      }
+  
+      // --- 9) Datos de la Solicitud Original ---
+      {
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos de la Solicitud Original:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica').fontSize(11)
+              .text(`ID Solicitud: ${solicitud.id_solicitud.toString().padStart(10, '0')}`)
+              .text(`Tipo de Solicitud: ${solicitud.nombre_tipo}`)
+              .text(`Fecha de Envío: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
+              .text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${solicitud.RUT_ciudadano})`)
+              .text(`Correo de Notificación: ${correoDestino || 'No proporcionado'}`)
+              .moveDown(1.5);
+      }
+  
+      // --- 10) Contenido de la Respuesta ---
+      {
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalle de la Respuesta:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica').fontSize(11)
+              .text(respuesta_texto || 'Sin texto de respuesta proporcionado.', { align: 'justify' })
+              .moveDown(1.5);
+      }
+  
+      // --- 11) Archivos Adjuntos (si existen)
+      {
+        if (nombresArchivosAdjuntos.length > 0) {
+          pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos:', { underline: true }).moveDown(0.75);
+          pdfDoc.font('Helvetica').fontSize(10);
+          nombresArchivosAdjuntos.forEach(nombre => {
+            pdfDoc.text(`- ${nombre}`);
+            pdfDoc.moveDown(0.4);
+          });
+          pdfDoc.moveDown(1);
+        }
+      }
+  
+      // --- 12) Actualizar el footer en cada página ---
+      const range = pdfDoc.bufferedPageRange();
+      const totalPages = range.count;
+      for (let i = 0; i < totalPages; i++) {
+        pdfDoc.switchToPage(i);
+        drawFooter(pdfDoc, i + 1, totalPages);
+      }
+  
+      // --- 13) Finalizar y guardar el PDF ---
+      pdfDoc.end();
+      await new Promise((resolve, reject) => {
+        writeStream.on('finish', resolve);
+        writeStream.on('error', (err) => {
+          console.error("Error al escribir el PDF:", err);
+          reject(new Error(`Fallo al escribir el PDF: ${err.message}`));
+        });
+      });
+  
+      // 14) Actualizar estado de la solicitud original
+      const [updateResult] = await connection.query(
+        'UPDATE Solicitudes SET estado = ? WHERE id_solicitud = ?',
+        [estado_solicitud, id_solicitud]
+      );
+      if (updateResult.affectedRows > 0)
+        console.log(`Estado de solicitud ${id_solicitud} actualizado a ${estado_solicitud}.`);
+      else
+        console.warn(`No se pudo actualizar el estado de la solicitud ${id_solicitud} a '${estado_solicitud}'`);
+  
+      // 15) Confirmar transacción ANTES de enviar correo
+      await connection.commit();
+  
+      // --- 16) ENVÍO DE CORREO ---
+      if (correoDestino) {
+        try {
+          const finalAttachments = [{ filename: 'respuesta.pdf', path: pdfPath }, ...attachmentObjects];
+          const mailOptions = {
+            from: `"Municipalidad de Pitrufquén" <${process.env.EMAIL_USER}>`,
+            to: correoDestino,
+            subject: `Respuesta a su Solicitud #${solicitud.id_solicitud.toString().padStart(10, '0')} - ${solicitud.nombre_tipo}`,
+            text: `Estimado(a) ${nombreCompletoCiudadano},\n\nSu solicitud de '${solicitud.nombre_tipo}' ha sido respondida (${estado_solicitud}).\n\nRespuesta:\n${respuesta_texto}\n\nSe adjuntan los detalles y archivos correspondientes.\n\nAtentamente,\nMunicipalidad de Pitrufquén`,
+            html: `<p>Estimado(a) ${nombreCompletoCiudadano},</p>
+                   <p>Su solicitud de '${solicitud.nombre_tipo}' ha sido respondida y marcada como '<b>${estado_solicitud}</b>'.</p>
+                   <p><b>Respuesta:</b></p>
+                   <p>${respuesta_texto.replace(/\n/g, '<br/>')}</p>
+                   <p>Se adjuntan los detalles y archivos correspondientes.</p>
+                   <p>Atentamente,<br/>Municipalidad de Pitrufquén</p>`,
+            attachments: finalAttachments
+          };
+          let info = await transporter.sendMail(mailOptions);
+          res.status(201).json({ message: 'Respuesta creada, solicitud actualizada y notificación enviada exitosamente.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
+        } catch (mailError) {
+          console.error(`Error al enviar correo de notificación a ${correoDestino}:`, mailError);
+          res.status(201).json({ message: 'Respuesta creada y solicitud actualizada, pero falló el envío de la notificación por correo.', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta, error_correo: mailError.message });
+        }
+      } else {
+        res.status(201).json({ message: 'Respuesta creada y solicitud actualizada exitosamente (Sin correo de notificación especificado).', id_respuesta: id_respuesta, ruta_respuesta: rutaCarpetaRespuesta });
+      }
+      // --- FIN ENVÍO DE CORREO ---
+  
     } catch (error) {
-        console.error('Error detallado al crear respuesta (catch principal):', error);
-        if (connection) { try { await connection.rollback(); console.log("Rollback completado."); } catch (rbError) { console.error("Error durante rollback:", rbError); } }
-        if (pdfPath && fs.existsSync(pdfPath)) { try { fs.unlinkSync(pdfPath); console.log("PDF de respuesta erróneo eliminado."); } catch(e) {console.error("Error al eliminar PDF erróneo:", e)} }
-        if (rutaCarpetaRespuesta && fs.existsSync(rutaCarpetaRespuesta)) { try { fs.rmdirSync(rutaCarpetaRespuesta, { recursive: true }); console.log("Carpeta de respuesta errónea eliminada."); } catch(e) {console.error("Error al eliminar carpeta errónea:", e)} }
-        if (error.message.includes('Fallo al escribir') || error.message.includes('No se pudo crear')) { return res.status(500).json({ message: `Error interno del servidor: ${error.message}` }); }
-        if (error.message === 'Tipo de archivo no permitido para la respuesta') { return res.status(400).json({ message: error.message }); }
-        res.status(500).json({ message: 'Error interno del servidor al crear la respuesta' });
+      console.error('Error detallado al crear respuesta (catch principal):', error);
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch (rbError) {
+          console.error("Error durante rollback:", rbError);
+        }
+      }
+      if (pdfPath && fs.existsSync(pdfPath)) {
+        try {
+          fs.unlinkSync(pdfPath);
+        } catch (e) {
+          console.error("Error al eliminar PDF erróneo:", e);
+        }
+      }
+      if (rutaCarpetaRespuesta && fs.existsSync(rutaCarpetaRespuesta)) {
+        try {
+          fs.rmdirSync(rutaCarpetaRespuesta, { recursive: true });
+        } catch (e) {
+          console.error("Error al eliminar carpeta errónea:", e);
+        }
+      }
+      if (error.message.includes('Fallo al escribir') || error.message.includes('No se pudo crear')) {
+        return res.status(500).json({ message: `Error interno del servidor: ${error.message}` });
+      }
+      if (error.message === 'Tipo de archivo no permitido para la respuesta') {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: 'Error interno del servidor al crear la respuesta' });
     } finally {
-        if (connection) { connection.release(); console.log("Conexión liberada."); }
+      if (connection) {
+        connection.release();
+      }
+    }
+  });
+
+// Obtener todas las respuestas de solicitudes pendientes
+router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
+    try {
+        const query = `
+            SELECT s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado, s.RUT_ciudadano, 
+                   u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano, ts.nombre_tipo, 
+                   s.fecha_hora_envio, s.estado, s.ruta_carpeta, s.correo_notificacion 
+            FROM Solicitudes s 
+            JOIN Usuarios u ON s.RUT_ciudadano = u.RUT 
+            JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo 
+            WHERE s.estado = 'Pendiente' 
+            ORDER BY s.fecha_hora_envio ASC
+        `;
+        const [solicitudesPendientes] = await db.query(query);
+        res.status(200).json({ solicitudes: solicitudesPendientes });
+    } catch (error) {
+        console.error('Error al obtener solicitudes pendientes:', error);
+        res.status(500).json({ message: 'Error interno al obtener solicitudes pendientes' });
     }
 });
 
