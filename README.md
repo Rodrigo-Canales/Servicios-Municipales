@@ -1,6 +1,65 @@
-# Servicios-Municipales
+# Servicios Municipales
 
--- Crear la base de datos
+## Introducción
+Servicios Municipales es una plataforma integral diseñada para gestionar solicitudes y trámites municipales de manera eficiente. Este sistema permite a los ciudadanos interactuar con el municipio a través de solicitudes específicas, mientras que los funcionarios y administradores pueden gestionar dichas solicitudes, responderlas y mantener un registro organizado de las mismas.
+
+---
+
+## Ventajas de Utilizar Servicios Municipales
+- **Eficiencia en la Gestión:** Centraliza la administración de solicitudes, reduciendo tiempos de respuesta y mejorando la organización.
+- **Accesibilidad:** Los ciudadanos pueden realizar solicitudes desde cualquier lugar con acceso a internet.
+- **Transparencia:** Permite a los usuarios rastrear el estado de sus solicitudes y recibir notificaciones.
+- **Escalabilidad:** Diseñado para adaptarse a las necesidades de diferentes municipios.
+- **Automatización:** Generación automática de PDFs y notificaciones por correo electrónico.
+
+---
+
+## Flujo de Trabajo
+1. **Creación de Solicitudes:**
+   - Los ciudadanos pueden crear solicitudes seleccionando un tipo específico (e.g., reparación de calles, poda de árboles).
+   - Se pueden adjuntar documentos y proporcionar un correo electrónico para notificaciones.
+
+2. **Gestión por Funcionarios:**
+   - Los funcionarios revisan las solicitudes asignadas a su área.
+   - Pueden aprobar, rechazar o responder las solicitudes, generando documentos PDF como comprobantes.
+
+3. **Notificaciones:**
+   - Los ciudadanos reciben notificaciones por correo electrónico sobre el estado de sus solicitudes.
+
+4. **Administración:**
+   - Los administradores tienen acceso a todas las áreas y pueden gestionar usuarios, áreas y tipos de solicitudes.
+
+---
+
+## Estructura del Proyecto
+
+### Backend
+- **Tecnología:** Node.js con Express.
+- **Base de Datos:** MySQL.
+- **Características:**
+  - API RESTful para gestionar usuarios, áreas, tipos de solicitudes, solicitudes y respuestas.
+  - Generación de PDFs para solicitudes y respuestas.
+  - Envío de correos electrónicos mediante Nodemailer.
+
+### Frontend
+- **Tecnología:** React con Vite.
+- **Características:**
+  - Interfaces separadas para ciudadanos, funcionarios y administradores.
+  - Diseño responsivo y moderno.
+  - Uso de Material-UI para componentes estilizados.
+
+### Docker
+- Contenedores para el backend, frontend y base de datos MySQL.
+- Configuración simplificada mediante `docker-compose`.
+
+---
+
+## Configuración de la Base de Datos
+
+### Crear la Base de Datos
+Ejecuta los siguientes comandos SQL para crear y poblar la base de datos:
+
+```sql
 CREATE DATABASE IF NOT EXISTS servicios_municipales;
 USE servicios_municipales;
 
@@ -64,16 +123,14 @@ CREATE TABLE IF NOT EXISTS Preguntas_Frecuentes (
         ON DELETE CASCADE  -- Si se elimina el tipo de solicitud, eliminar sus preguntas frecuentes
         ON UPDATE CASCADE  -- Si cambia el id_tipo (raro), actualizar aquí
 );
+```
 
+---
 
+## Poblar la Base de Datos
 
-
-
-USE servicios_municipales;
-
--- ------------------------------
--- Poblar la tabla Áreas
--- ------------------------------
+### Poblar la tabla Áreas
+```sql
 INSERT INTO Areas (nombre_area) VALUES
 ('Rentas y Patentes'),                    -- ID 1
 ('Medio Ambiente'),                       -- ID 2
@@ -85,10 +142,10 @@ INSERT INTO Areas (nombre_area) VALUES
 ('Juzgado de Policía Local'),             -- ID 8
 ('Programa Organizaciones Comunitarias')  -- ID 9
 ON DUPLICATE KEY UPDATE nombre_area=nombre_area; -- Evita error si ya existen
+```
 
--- ------------------------------
--- Poblar la tabla Usuarios
--- ------------------------------
+### Poblar la tabla Usuarios
+```sql
 INSERT INTO Usuarios (RUT, nombre, apellido, correo_electronico, hash_password, rol, area_id) VALUES
 -- Vecinos
 ('11111111-1', 'Benito', 'Ordoñez', NULL, NULL, 'Vecino', NULL),
@@ -102,10 +159,10 @@ INSERT INTO Usuarios (RUT, nombre, apellido, correo_electronico, hash_password, 
 ('55555555-5', 'Benito', 'Ordoñez', 'b.admin@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL),
 ('66666666-6', 'Rodrigo', 'Canales', 'r.admin@municipalidad.cl', '$2b$10$E9pwsV9yv9jmnmxcMpX.Ne94PCHfAU0j7yqAP5Q9./wJp3RfzUfZe', 'Administrador', NULL)
 ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), apellido=VALUES(apellido), correo_electronico=VALUES(correo_electronico), hash_password=VALUES(hash_password), rol=VALUES(rol), area_id=VALUES(area_id); -- Evita error si ya existen
+```
 
--- ------------------------------
--- Poblar la tabla Tipos_Solicitudes
--- ------------------------------
+### Poblar la tabla Tipos_Solicitudes
+```sql
 INSERT INTO Tipos_Solicitudes (id_tipo, nombre_tipo, descripcion, area_id) VALUES
 (1, 'Reparación de calles y veredas', 'Solicitud para reparar baches, grietas o daños en calles y aceras.', 1),
 (2, 'Mantención de alumbrado público', 'Informar sobre luminarias apagadas, intermitentes o dañadas.', 1),
@@ -124,37 +181,53 @@ INSERT INTO Tipos_Solicitudes (id_tipo, nombre_tipo, descripcion, area_id) VALUE
 (15, 'Solicitud de hora médica en CESFAM', 'Pedir hora para atención médica general o especialidad en Centros de Salud Familiar.', 8),
 (16, 'Programa de vacunación', 'Información sobre campañas de vacunación y horarios.', 8)
 ON DUPLICATE KEY UPDATE nombre_tipo=VALUES(nombre_tipo), descripcion=VALUES(descripcion), area_id=VALUES(area_id); -- Evita error si ya existen
+```
 
-------------------------------
--- Poblar la tabla Preguntas Frecuentes
-------------------------------
+### Poblar la tabla Preguntas Frecuentes
+```sql
 INSERT INTO Preguntas_Frecuentes (id_tipo, pregunta, respuesta) VALUES
 
 -- Ejemplos para Reparación de calles (id_tipo = 1)
 (1, '¿Cuánto tiempo tarda la reparación de un bache?', 'El tiempo de reparación varía según la carga de trabajo y la urgencia, pero generalmente intentamos abordar los baches reportados dentro de 5 a 10 días hábiles.'),
 
 -- Ejemplos para Alumbrado público (id_tipo = 2)
-(2, 'Mi poste de luz no enciende, ¿qué hago?', 'Por favor, ingrese una solicitud indicando la dirección exacta o el número del poste (si es visible) para que nuestro equipo técnico pueda revisarlo.'),
+(2, 'Mi poste de luz no enciende, ¿qué hago?', 'Por favor, ingrese una solicitud indicando la dirección exacta o el número del poste (si es visible) para que nuestro equipo técnico pueda revisarlo.');
+```
 
+---
 
+## Ejecución del Backend
 
+### Comandos
+- Iniciar el servidor:
+  ```bash
+  npm start
+  ```
+  Nota: Si realizas cambios en el código, reinicia el servidor manualmente.
 
+- Iniciar el servidor con reinicio automático (usando nodemon):
+  ```bash
+  npm run server
+  ```
 
-Backend
--------
-    - npm start (iniciar y si hay cambios hay que apagarlo y prenderlo de nuevo)
-    - npm run server (si uno hace un cambio se reinicia automáticamente gracias a nodemon)
+---
 
+## Ejecución del Frontend
 
+### Comandos
+- Iniciar el servidor de desarrollo:
+  ```bash
+  npm run dev
+  ```
 
-Frontend
---------
-    - npm run dev
+---
 
+## Uso de Docker
 
+### Crear un Contenedor MySQL
+Ejecuta el siguiente comando para crear un contenedor MySQL:
 
-
-
+```bash
 docker run --name mysql_servicios_municipales \
   -e MYSQL_ROOT_PASSWORD=root123 \
   -e MYSQL_DATABASE=servicios_municipales \
@@ -162,3 +235,48 @@ docker run --name mysql_servicios_municipales \
   -e MYSQL_PASSWORD=clave123 \
   -p 3306:3306 \
   -d mysql:latest
+```
+
+### Comandos Útiles de Docker
+
+- Reiniciar un contenedor:
+  ```bash
+  docker restart <nombre_del_contenedor>
+  ```
+
+- Ver el estado de un contenedor:
+  ```bash
+  docker ps | grep <nombre_del_contenedor>
+  ```
+
+- Ver los últimos 50 logs de un contenedor:
+  ```bash
+  docker logs --tail 50 <nombre_del_contenedor>
+  ```
+
+- Activar módulos de Apache en un contenedor:
+  ```bash
+  docker exec <nombre_del_contenedor> a2enmod proxy proxy_http rewrite headers
+  ```
+
+---
+
+## Comandos Adicionales
+
+### Copiar Archivos al Contenedor
+- Copiar un archivo editable al contenedor:
+  ```bash
+  docker cp /ruta/local/archivo.conf <nombre_del_contenedor>:/ruta/destino/archivo.conf
+  ```
+
+### Listar Módulos de Apache
+- Ver los módulos habilitados en Apache dentro de un contenedor:
+  ```bash
+  docker exec <nombre_del_contenedor> ls -l /etc/apache2/mods-enabled/
+  ```
+
+---
+
+## Notas
+- Asegúrate de configurar correctamente las variables de entorno para el backend y el frontend.
+- Consulta los archivos de configuración (`docker-compose.yml`, `vite.config.js`, etc.) para más detalles sobre la configuración del proyecto.
