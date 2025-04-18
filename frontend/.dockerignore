@@ -7,10 +7,6 @@ node_modules
 npm-debug.log
 yarn-error.log
 
-# Ignorar archivos de entorno locales
-.env
-*.env
-
 # Ignorar carpeta de Git y archivo .gitignore
 .git
 .gitignore

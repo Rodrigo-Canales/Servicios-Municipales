@@ -277,6 +277,213 @@ docker run --name mysql_servicios_municipales \
 
 ---
 
-## Notas
-- Asegúrate de configurar correctamente las variables de entorno para el backend y el frontend.
-- Consulta los archivos de configuración (`docker-compose.yml`, `vite.config.js`, etc.) para más detalles sobre la configuración del proyecto.
+
+
+
+
+
+
+C## Documentación de comandos de despliegue Docker y configuración de servidores
+
+Este documento recopila los comandos utilizados para la gestión de contenedores Docker, configuración de Apache y Nginx dentro de contenedores, y operaciones relacionadas con el firewall y la red. Se presentan en el orden en que fueron ejecutados, con una breve descripción de lo que hace cada uno y su propósito.
+
+---
+
+### 1. Copiar configuración de Apache al contenedor
+```bash
+docker cp /root/sgd/000-default.conf.editable sgd_fe:/etc/apache2/sites-available/000-default.conf
+```
+- **Qué hace**: Copia el archivo `000-default.conf.editable` desde el host al contenedor `sgd_fe`, sobrescribiendo `000-default.conf`.
+- **Para qué sirve**: Actualizar la configuración por defecto de Apache dentro del contenedor con la versión personalizada.
+
+### 2. Habilitar módulos de Apache en el contenedor
+```bash
+docker exec sgd_fe a2enmod proxy proxy_http rewrite headers
+```
+- **Qué hace**: Activa los módulos `proxy`, `proxy_http`, `rewrite` y `headers` de Apache dentro del contenedor `sgd_fe`.
+- **Para qué sirve**: Permitir que Apache funcione como proxy inverso, gestione reescrituras de URL y manipule cabeceras HTTP.
+
+### 3. Reiniciar Apache en el host o contenedor
+```bash
+service apache2 restart
+```
+- **Qué hace**: Reinicia el servicio de Apache.
+- **Para qué sirve**: Aplicar inmediatamente los cambios de configuración.
+
+### 4. Reiniciar el contenedor `sgd_fe`
+```bash
+docker restart sgd_fe
+```
+- **Qué hace**: Detiene y arranca nuevamente el contenedor `sgd_fe`.
+- **Para qué sirve**: Asegurar que todos los procesos dentro del contenedor se inicien con la configuración actualizada.
+
+### 5. Verificar que el contenedor esté en ejecución
+```bash
+docker ps | grep sgd_fe
+```
+- **Qué hace**: Lista los contenedores activos y filtra por `sgd_fe`.
+- **Para qué sirve**: Confirmar que el contenedor está corriendo.
+
+### 6. Detener y eliminar recursos de Docker Compose
+```bash
+docker compose down
+```
+- **Qué hace**: Detiene y elimina contenedores, redes y volúmenes anónimos definidos en el archivo `docker-compose.yml`.
+- **Para qué sirve**: Realizar un apagado limpio antes de reconstruir o modificar servicios.
+
+### 7. Reconstruir imágenes y levantar servicios en segundo plano
+```bash
+docker compose up --build -d
+```
+- **Qué hace**: Reconstruye las imágenes según los Dockerfiles y levanta todos los servicios en modo detached.
+- **Para qué sirve**: Actualizar el código o dependencias y mantener la terminal libre.
+
+### 8. Listar contenedores activos
+```bash
+docker ps
+```
+- **Qué hace**: Muestra todos los contenedores en ejecución.
+- **Para qué sirve**: Obtener una visión general del estado del entorno Docker.
+
+### 9. Ver logs del servicio de base de datos
+```bash
+docker compose logs db
+```
+- **Qué hace**: Muestra la salida de logs del servicio `db` definido en Docker Compose.
+- **Para qué sirve**: Depurar errores o revisar el arranque y funcionamiento de la base de datos.
+
+### 10. Consultar el estado del firewall UFW
+```bash
+sudo ufw status
+```
+- **Qué hace**: Muestra las reglas activas del firewall UFW en el host.
+- **Para qué sirve**: Verificar que los puertos necesarios estén abiertos.
+
+### 11. Reconstruir y levantar sólo el frontend
+```bash
+docker compose up --build -d frontend
+```
+- **Qué hace**: Reconstruye la imagen del servicio `frontend` y lo levanta en segundo plano.
+- **Para qué sirve**: Actualizar únicamente la parte de frontend sin afectar otros servicios.
+
+### 12. Reiniciar el servicio backend
+```bash
+docker compose restart backend
+```
+- **Qué hace**: Detiene y arranca nuevamente el contenedor `backend`.
+- **Para qué sirve**: Aplicar cambios de código o configuración en el backend.
+
+### 13. Conectar un contenedor a una red Docker
+```bash
+docker network connect servicios_municipales_net <nombre_contenedor>
+```
+- **Qué hace**: Añade el contenedor especificado a la red `servicios_municipales_net`.
+- **Para qué sirve**: Permitir comunicación entre contenedores en la misma red.
+
+### 14. Reconstruir el frontend sin cache
+```bash
+docker compose build --no-cache frontend
+```
+- **Qué hace**: Fuerza la reconstrucción completa de la imagen `frontend` ignorando capas cacheadas.
+- **Para qué sirve**: Asegurar que todos los cambios, incluidas dependencias, se apliquen.
+
+### 15. Levantar todos los servicios en segundo plano
+```bash
+docker compose up -d
+```
+- **Qué hace**: Inicia todos los servicios definidos en modo detached.
+- **Para qué sirve**: Mantener el entorno corriendo sin bloquear la terminal.
+
+### 16. Ver logs del contenedor frontend
+```bash
+docker logs frontend_servicios_municipales
+```
+- **Qué hace**: Muestra los logs del contenedor `frontend_servicios_municipales`.
+- **Para qué sirve**: Depurar errores o confirmar el arranque correcto del frontend.
+
+### 17. Ver logs del contenedor backend
+```bash
+docker logs backend_servicios_municipales
+```
+- **Qué hace**: Muestra los logs del contenedor `backend_servicios_municipales`.
+- **Para qué sirve**: Revisar errores o información de arranque del backend.
+
+
+### 18. Copiar configuración de Apache nuevamente
+```bash
+docker cp /root/sgd/000-default.conf.editable sgd_fe:/etc/apache2/sites-available/000-default.conf
+```
+- **Qué hace**: Sobrescribe la configuración de Apache en el contenedor `sgd_fe`.
+- **Para qué sirve**: Asegurar que la última versión del archivo esté presente antes de probar la sintaxis.
+
+### 19. Verificar sintaxis de Apache
+```bash
+docker exec sgd_fe apachectl configtest
+```
+- **Qué hace**: Ejecuta la prueba de configuración de Apache dentro de `sgd_fe`.
+- **Para qué sirve**: Comprobar que no hay errores de sintaxis antes de reiniciar.
+
+### 20. Reiniciar Apache en el contenedor
+```bash
+docker exec sgd_fe service apache2 restart
+```
+*(o `apachectl restart`)*
+- **Qué hace**: Reinicia el servicio de Apache dentro del contenedor.
+- **Para qué sirve**: Aplicar la configuración validada sin salir del contenedor.
+
+### 21. Probar sintaxis de Nginx en el contenedor gateway
+```bash
+docker exec sgd_gtw nginx -t
+```
+- **Qué hace**: Verifica la sintaxis de la configuración de Nginx en `sgd_gtw`.
+- **Para qué sirve**: Asegurar que no hay errores antes de recargar el servicio.
+
+### 22. Reiniciar el contenedor gateway
+```bash
+docker restart sgd_gtw
+```
+- **Qué hace**: Detiene y arranca de nuevo el contenedor `sgd_gtw`.
+- **Para qué sirve**: Recargar todo el contenedor, incluido Nginx, con la nueva configuración.
+
+### 23. Recargar configuración de Nginx sin interrumpir conexiones
+```bash
+docker exec sgd_gtw nginx -s reload
+```
+- **Qué hace**: Envía la señal de recarga a Nginx dentro de `sgd_gtw`.
+- **Para qué sirve**: Aplicar cambios de configuración en caliente, sin detener el servicio.
+
+---
+
+
+docker network ls
+docker network connect servicios_municipales_net sgd_gtw
+docker exec -it sgd_gtw curl http://backend_servicios_municipales:3000/api
+cat /etc/apache2/apache2.conf
+
+
+
+
+
+
+
+
+
+
+
+Para parar y eliminar los contenedores
+
+    docker-compose down
+
+Para los contenedores de Docker Compose
+
+    docker-compose up -d --build
+
+
+Cuando hago un cambio en el front
+
+    docker compose up -d --no-deps --build frontend
+
+
+Cuando hago un cambio en el back
+
+    docker compose restart backend

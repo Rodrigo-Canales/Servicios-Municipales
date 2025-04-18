@@ -49,18 +49,16 @@ function App() {
                         <Route
                             path="/vecinos"
                             element={
-                                // --- TEMPORARY DEV - Allow Admin - TODO: Remove 'Administrador' before deploy ---
-                                <ProtectedRoute allowedRoles={['Vecino']}>
+                                <ProtectedRoute allowedRoles={['Vecino', 'Administrador']}>
                                     <Vecinos toggleTheme={toggleTheme} />
                                 </ProtectedRoute>
-                                // --- END TEMPORARY DEV ---
                             }
                         />
                         {/* Ruta para Funcionarios */}
                         <Route
                             path="/funcionarios"
                             element={
-                                <ProtectedRoute allowedRoles={['Funcionario']}> {/* Solo permite rol 'Funcionario' */}
+                                <ProtectedRoute allowedRoles={['Funcionario', 'Administrador']}> {/* Solo permite rol 'Funcionario' */}
                                     <Funcionario toggleTheme={toggleTheme} />
                                 </ProtectedRoute>
                             }

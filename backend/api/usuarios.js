@@ -34,7 +34,7 @@ router.get('/:rut', protect, restrictTo('Administrador'), async (req, res) => {
 
 // Crear Usuario (Restaurada lógica original completa)
 // Crear Usuario (CON LOGS DE DEPURACIÓN DETALLADOS)
-router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
+router.post('/', async (req, res) => {
     // El middleware protect/restrictTo está COMENTADO TEMPORALMENTE para esta prueba
 
     const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;

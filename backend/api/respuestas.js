@@ -220,7 +220,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         bufferPages: true
       });
       // Puedes formar el nombre del PDF según prefieras; a modo de ejemplo usamos "respuesta.pdf"
-      pdfPath = path.join(rutaCarpetaRespuesta, 'respuesta.pdf');
+      pdfPath = path.join(rutaCarpetaRespuesta, `respuesta_${id_respuesta_formateado}.pdf`);
       const writeStream = fs.createWriteStream(pdfPath);
       pdfDoc.pipe(writeStream);
   
@@ -259,7 +259,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.font('Helvetica').fontSize(11)
               .text(`ID Respuesta: ${id_respuesta_formateado}`)
               .text(`Fecha y Hora: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
-              .text(`Respondido por: ${nombreCompletoTrabajador} (RUT: ${RUT_trabajador})`)
+              .text(`Respondido por: ${nombreCompletoTrabajador}`)
               .moveDown(1.5);
       }
   
@@ -330,7 +330,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
       // --- 16) ENVÍO DE CORREO ---
       if (correoDestino) {
         try {
-          const finalAttachments = [{ filename: 'respuesta.pdf', path: pdfPath }, ...attachmentObjects];
+          const finalAttachments = [{ filename: `respuesta_${id_respuesta_formateado}.pdf`, path: pdfPath }, ...attachmentObjects];
           const mailOptions = {
             from: `"Municipalidad de Pitrufquén" <${process.env.EMAIL_USER}>`,
             to: correoDestino,
@@ -435,6 +435,93 @@ router.get('/:id', protect, restrictTo('Administrador', 'Funcionario'), async (r
     } catch (error) { console.error(`Error al obtener la respuesta ${id}:`, error); res.status(500).json({ message: 'Error interno al obtener la respuesta' }); }
 });
 
+// Obtener la respuesta de una solicitud específica
+router.get('/by-solicitud/:id', async (req, res) => {
+    const { id } = req.params;
+    if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) {
+        return res.status(400).json({ message: 'ID de solicitud inválido.' });
+    }
+    try {
+        const query = `
+            SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador,
+                   ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador,
+                   s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado,
+                   ts.nombre_tipo AS nombre_tipo_solicitud,
+                   s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano,
+                   s.ruta_carpeta AS ruta_carpeta_solicitud
+            FROM Respuestas r
+            JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud
+            JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT
+            JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT
+            JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo
+            WHERE r.id_solicitud = ?
+            ORDER BY r.fecha_hora_respuesta DESC
+            LIMIT 1
+        `;
+        const [respuestaArr] = await db.query(query, [id]);
+        if (respuestaArr.length === 0) {
+            return res.status(404).json({ message: 'No hay respuesta para esta solicitud.' });
+        }
+        const respuesta = respuestaArr[0];
+
+        // --- Buscar archivos adjuntos y PDFs con manejo robusto de errores ---
+        let archivosAdjuntosSolicitante = [];
+        let archivosAdjuntosFuncionario = [];
+        let pdfSolicitud = null;
+        let pdfRespuesta = null;
+        try {
+            if (respuesta.ruta_carpeta_solicitud && typeof respuesta.ruta_carpeta_solicitud === 'string' && respuesta.ruta_carpeta_solicitud.trim() !== '') {
+                const baseDir = path.join(__dirname, '../solicitudes');
+                const carpetaSolicitud = path.join(baseDir, respuesta.ruta_carpeta_solicitud);
+                const carpetaRespuesta = path.join(carpetaSolicitud, 'Respuesta');
+                const baseUrlSolicitud = `/solicitudes/${respuesta.ruta_carpeta_solicitud.replace(/\\/g, '/')}`;
+                const baseUrlRespuesta = `${baseUrlSolicitud}/Respuesta`;
+
+                // Archivos del solicitante
+                if (fs.existsSync(carpetaSolicitud)) {
+                    try {
+                        const files = fs.readdirSync(carpetaSolicitud);
+                        pdfSolicitud = files.find(f => /^solicitud_.*\.pdf$/i.test(f)) ? `${baseUrlSolicitud}/${files.find(f => /^solicitud_.*\.pdf$/i.test(f))}` : null;
+                        archivosAdjuntosSolicitante = files
+                            .filter(f => !/^solicitud_.*\.pdf$/i.test(f))
+                            .map(f => ({ nombre: f, url: `${baseUrlSolicitud}/${f}` }));
+                    } catch (e) {
+                        console.error('Error leyendo archivos del solicitante:', e);
+                        archivosAdjuntosSolicitante = [];
+                        pdfSolicitud = null;
+                    }
+                }
+
+                // Archivos del funcionario
+                if (fs.existsSync(carpetaRespuesta)) {
+                    try {
+                        const files = fs.readdirSync(carpetaRespuesta);
+                        pdfRespuesta = files.find(f => /^respuesta.*\.pdf$/i.test(f)) ? `${baseUrlRespuesta}/${files.find(f => /^respuesta.*\.pdf$/i.test(f))}` : null;
+                        archivosAdjuntosFuncionario = files
+                            .filter(f => !/^respuesta.*\.pdf$/i.test(f))
+                            .map(f => ({ nombre: f, url: `${baseUrlRespuesta}/${f}` }));
+                    } catch (e) {
+                        console.error('Error leyendo archivos del funcionario:', e);
+                        archivosAdjuntosFuncionario = [];
+                        pdfRespuesta = null;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error general al buscar archivos adjuntos/PDFs:', err);
+        }
+
+        respuesta.archivos_adjuntos_solicitante = archivosAdjuntosSolicitante;
+        respuesta.archivos_adjuntos_funcionario = archivosAdjuntosFuncionario;
+        respuesta.pdf_solicitud = pdfSolicitud;
+        respuesta.pdf_respuesta = pdfRespuesta;
+
+        res.status(200).json({ respuesta });
+    } catch (error) {
+        console.error(`Error al obtener la respuesta por solicitud ${id}:`, error);
+        res.status(500).json({ message: 'Error interno al obtener la respuesta por solicitud', detalle: error.message });
+    }
+});
 
 // Obtener todas las respuestas de un ciudadano
 router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
@@ -445,4 +532,4 @@ router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Func
     } catch (error) { console.error('Error al obtener solicitudes pendientes:', error); res.status(500).json({ message: 'Error interno al obtener solicitudes pendientes' }); }
 });
 
-module.exports = router; 
+module.exports = router;

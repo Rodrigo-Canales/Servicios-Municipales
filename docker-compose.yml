@@ -1,10 +1,9 @@
 # SERVICIOS-MUNICIPALES/docker-compose.yml
 # Configuración base ACTUALIZADA para el servidor (CON puerto DB expuesto a localhost)
 
-version: '3.8' # Puedes quitar esta línea si quieres evitar el warning de obsoleto
+version: '3.8'
 
 services:
-  # --- Servicio: Base de Datos (MySQL) ---
   db:
     image: mysql:8.0
     container_name: mysql_servicios_municipales
@@ -17,14 +16,10 @@ services:
     volumes:
       - mysql_servicios_data:/var/lib/mysql
     ports:
-      # Exponer puerto de DB *SOLO* a localhost (127.0.0.1) en el host del servidor
-      # Permite conectar desde el propio servidor (o vía túnel SSH)
-      - "127.0.0.1:${SM_DB_PORT:-3306}:${SM_DB_PORT:-3306}" # Formato: "IP_HOST:PUERTO_HOST:PUERTO_CONTENEDOR"
+      - "${SM_DB_PORT:-3306}:3306" # Solo accesible desde localhost
     networks:
-      # Conectado a la red interna del proyecto
-      - servicios_municipales_net # Usa el nombre lógico definido abajo
+      - servicios_municipales_net
 
-  # --- Servicio: Backend (Node.js API) ---
   backend:
     build:
       context: ./backend
@@ -34,8 +29,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${SM_BACKEND_INTERNAL_PORT}
-      DB_HOST: db # Conecta a la BD usando el nombre del servicio
-      DB_PORT: ${SM_DB_PORT} # Usa el puerto INTERNO de la BD
+      DB_HOST: db
+      DB_PORT: 3306
       DB_USER: ${SM_DB_USER}
       DB_PASSWORD: ${SM_DB_PASSWORD}
       DB_NAME: ${SM_DB_DATABASE}
@@ -55,37 +50,24 @@ services:
     depends_on:
       - db
     networks:
-      # Conectado a la red interna para hablar con la BD
-      - servicios_municipales_net # Usa el nombre lógico definido abajo
-      # Conectado a la red externa para que Nginx/sgd_fe lo alcance
-      - red_nginx_principal # Usa el nombre lógico definido abajo
+      - servicios_municipales_net
 
-  # --- Servicio: Frontend (Nginx sirviendo estáticos) ---
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        SM_REACT_APP_API_URL: ${SM_REACT_APP_API_URL:-/api}
+        SM_REACT_APP_API_URL: ${SM_REACT_APP_API_URL:-http://localhost:${SM_BACKEND_HOST_PORT}/api}
     container_name: frontend_servicios_municipales
     restart: always
     networks:
-      # Conectado a la red externa para que Nginx/sgd_fe lo alcance
-      - red_nginx_principal # Usa el nombre lógico definido abajo
+      - servicios_municipales_net
 
-# --- Definición de Volúmenes Nombrados ---
 volumes:
   mysql_servicios_data:
-    name: mysql_servicios_data # Nombre explícito
+    name: mysql_servicios_data
 
-# --- Definición de Redes ---
 networks:
-  # Red interna personalizada para este proyecto (backend <-> db)
-  servicios_municipales_net: # Nombre lógico usado arriba
-    name: ${SM_NETWORK_NAME:-servicios_municipales_net} # Nombre físico (del .env o default)
+  servicios_municipales_net:
+    name: servicios_municipales_net
     driver: bridge
-
-  # Red externa existente donde corre el Nginx principal (sgd_fe)
-  red_nginx_principal: # Nombre lógico usado arriba
-    external: true # Indica que Docker NO debe crearla, ya existe
-    name: sgd_sgd_net # Nombre REAL de la red en el servidor

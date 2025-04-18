@@ -43,9 +43,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     //    NO está incluido en esa lista, redirigir.
     //    (Asegura que allowedRoles sea un array antes de usar .includes)
     if (allowedRoles && Array.isArray(allowedRoles) && !allowedRoles.includes(user.rol)) {
-        // TEMPORAL: Permitir acceso al panel de vecinos para cualquier rol
-        if (location.pathname === '/vecinos') {
-            console.warn(`[ProtectedRoute] Acceso temporal permitido a /vecinos para rol "${user.rol}".`);
+        // Permitir acceso a administradores a cualquier ruta
+        if (user.rol === 'Administrador') {
+            console.info(`[ProtectedRoute] Acceso permitido a ${location.pathname} para rol "Administrador".`);
         } else {
             return <Navigate to="/" state={{ from: location }} replace />;
         }

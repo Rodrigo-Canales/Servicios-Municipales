@@ -1,4 +1,4 @@
-// vite.config.js
+//frontend/vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -25,6 +25,11 @@ export default defineConfig({
         // NOTA: No necesitas 'rewrite' porque tus rutas backend ya están
         //       preparadas para recibir '/api/...' (ej., GET '/' en areas.js
         //       se convierte en GET '/api/areas' si lo montas correctamente en Express)
+        },
+        '/solicitudes': {
+        target: backendUrl,
+        changeOrigin: true,
+        secure: false,
         }
       // Podrías añadir más reglas de proxy aquí si tuvieras otras APIs o rutas especiales
     }

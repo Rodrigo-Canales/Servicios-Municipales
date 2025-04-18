@@ -1,53 +1,17 @@
 # SERVICIOS-MUNICIPALES/docker-compose.override.yml
-# Sobrescrituras y adiciones SÓLO para el entorno de DESARROLLO LOCAL
-
-version: '3.8' # La versión debe coincidir o ser compatible con el archivo base
+version: '3.8'
 
 services:
-  # --- Sobrescrituras para: Base de Datos (db) ---
-  db:
-    # Exponer el puerto de la BD al HOST local
-    # Permite conectar tu gestor de BD (DBeaver, Workbench, etc.)
-    ports:
-      # Lee el puerto HOST del archivo .env raíz
-      - "${SM_DB_HOST_PORT}:${SM_DB_PORT}" # Ej: "3306:3306"
-
-  # --- Sobrescrituras para: Backend (backend) ---
   backend:
-    # Exponer el puerto del backend al HOST local
-    # Permite acceder a tu API desde el navegador, Postman, o el frontend local
     ports:
-      - "${SM_BACKEND_HOST_PORT}:${SM_BACKEND_INTERNAL_PORT}" # Ej: "3001:3001"
+      - "${SM_BACKEND_HOST_PORT:-3001}:${SM_BACKEND_INTERNAL_PORT:-3001}"
     volumes:
-      # Montar el código fuente local DENTRO del contenedor
-      # Esto permite ver los cambios en el código al instante sin reconstruir la imagen
-      # (asumiendo que usas una herramienta como 'nodemon' que vigila cambios)
-      - ./backend:/app # Mapea tu carpeta local 'backend' a '/app' en el contenedor
-      # Volumen anónimo para evitar que node_modules local sobreescriba el del contenedor
-      # Es importante si 'npm install/ci' se ejecuta en el Dockerfile base
+      - ./backend:/app
       - /app/node_modules
     environment:
-      # Asegurarnos de que el entorno sea 'development' en local
       NODE_ENV: development
-      # Puedes añadir otras variables específicas de desarrollo aquí si las necesitas
-    command: # Sobrescribir el comando de inicio para usar nodemon
-      # Ejecuta 'npm run dev' (si existe en tu backend/package.json y usa nodemon)
-      # O directamente 'nodemon server.js' si tienes nodemon instalado globalmente
-      # en la imagen o como dependencia de desarrollo.
-      # ¡Asegúrate que nodemon esté disponible! Si no, instálalo como devDependency
-      # en backend/package.json y ajusta el Dockerfile base o usa una imagen dev.
-      node server.js # Cambia esto si tu script para nodemon se llama diferente
+    command: npm run server
 
-  # --- Sobrescrituras para: Frontend (frontend) ---
   frontend:
-    # Exponer el puerto del servidor Nginx (que sirve los archivos compilados) al HOST local
     ports:
-      - "${SM_FRONTEND_HOST_PORT}:${SM_FRONTEND_INTERNAL_PORT}" # Ej: "8080:80"
-    # NOTA: Con esta configuración, CADA cambio en el código frontend requerirá
-    # reconstruir la imagen (`docker-compose up --build`) para ver los cambios,
-    # ya que estamos sirviendo el resultado del build con Nginx.
-    # Si quieres hot-reloading para el frontend DENTRO de Docker, necesitarías
-    # cambiar el 'build' aquí para usar un Dockerfile.dev, montar el volumen
-    # del código fuente de frontend, y cambiar el 'command' a 'npm run dev'.
-
-# No es necesario redefinir volumes o networks si no hay cambios específicos para local
+      - "${SM_FRONTEND_HOST_PORT:-8080}:${SM_FRONTEND_INTERNAL_PORT:-80}"

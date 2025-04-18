@@ -66,16 +66,18 @@ router.get('/vecino/:rut', protect, async (req, res) => {
     }
 });
 
-// Obtener todas las solicitudes (Sin Cambios)
+// Obtener todas las solicitudes
 router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const [solicitudes] = await db.query(`
             SELECT
                 s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado,
-                s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
+                s.RUT_ciudadano, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano,
+                t.id_tipo, t.nombre_tipo, s.fecha_hora_envio, s.estado,
                 s.ruta_carpeta, s.correo_notificacion
             FROM Solicitudes s
             JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
+            JOIN Usuarios u ON s.RUT_ciudadano = u.RUT
             ORDER BY s.id_solicitud ASC
         `);
         res.status(200).json({ solicitudes });
@@ -85,28 +87,73 @@ router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req,
     }
 });
 
-// Obtener una solicitud por su ID (Sin Cambios)
-router.get('/:id', protect, restrictTo('Administrador, Funcionario'), async (req, res) => {
+// Obtener una solicitud por su ID (modificado para adjuntos y PDF)
+router.get('/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
         const id = req.params.id;
-        const [solicitud] = await db.query(`
+        const [solicitudArr] = await db.query(`
             SELECT
                 s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado,
                 s.RUT_ciudadano, t.nombre_tipo, s.fecha_hora_envio, s.estado,
-                s.ruta_carpeta, s.correo_notificacion
+                s.ruta_carpeta, s.correo_notificacion, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano
             FROM Solicitudes s
             JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
+            JOIN Usuarios u ON s.RUT_ciudadano = u.RUT
             WHERE s.id_solicitud = ?
         `, [id]);
-        if (solicitud.length === 0) {
+        if (solicitudArr.length === 0) {
             return res.status(404).json({ message: 'Solicitud no encontrada' });
         }
-        res.status(200).json({ solicitud: solicitud[0] });
+        const solicitud = solicitudArr[0];
+
+        // --- NUEVO: Buscar archivos adjuntos y PDF ---
+        let archivos_adjuntos = [];
+        let pdf_url = null;
+        if (solicitud.ruta_carpeta) {
+            const baseDir = path.join(__dirname, '../solicitudes');
+            const carpeta = path.join(baseDir, solicitud.ruta_carpeta);
+            const baseUrl = `/solicitudes/${solicitud.ruta_carpeta}`.replace(/\\/g, '/');
+            if (fs.existsSync(carpeta)) {
+                const allFiles = getAllFilesRecursive(carpeta, baseUrl);
+                // El PDF principal es el que comienza con 'solicitud_' y termina en .pdf
+                const pdfFile = allFiles.find(f => /^solicitud_.*\.pdf$/i.test(f.nombre));
+                pdf_url = pdfFile ? pdfFile.url : null;
+                // Todos los demás archivos, incluyendo otros PDFs, son adjuntos
+                archivos_adjuntos = allFiles.filter(f => !/^solicitud_.*\.pdf$/i.test(f.nombre));
+            }
+        }
+
+        res.status(200).json({
+            solicitud: {
+                ...solicitud,
+                archivos_adjuntos,
+                pdf_url
+            }
+        });
     } catch (error) {
         console.error('Error al obtener la solicitud:', error);
         res.status(500).json({ message: 'Error al obtener la solicitud' });
     }
 });
+
+function getAllFilesRecursive(dir, baseUrl) {
+    let results = [];
+    if (!fs.existsSync(dir)) return results;
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat && stat.isDirectory()) {
+            results = results.concat(getAllFilesRecursive(filePath, baseUrl + '/' + file));
+        } else {
+            results.push({
+                nombre: file,
+                url: baseUrl + '/' + file
+            });
+        }
+    });
+    return results;
+}
 
 // Actualizar ESTADO de una solicitud (Sin Cambios)
 router.put('/estado/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {

@@ -1,3 +1,4 @@
+// backend/server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
@@ -23,6 +24,15 @@ app.use(express.urlencoded({ extended: true }));
 // Seguridad con Helmet 
 const helmet = require('helmet');
 app.use(helmet()); 
+
+// Log de depuración para archivos estáticos de solicitudes
+app.use('/solicitudes', (req, res, next) => {
+  console.log('Intentando servir archivo:', req.path);
+  next();
+});
+
+// Servir archivos estáticos desde la carpeta 'solicitudes'
+app.use('/solicitudes', express.static(path.join(__dirname, 'solicitudes')));
 
 // Importar y usar routers
 const usuariosRoutes = require('./api/usuarios');
