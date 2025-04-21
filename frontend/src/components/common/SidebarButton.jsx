@@ -25,6 +25,7 @@ const SidebarButton = ({
   children,
   level = 0,
   currentSection,
+  panelType, // <-- NUEVO: para saber si es vecino
 }) => {
   const hasSubItems = item.subItems && item.subItems.length > 0;
   // Determinar si este botón o alguno de sus subItems está seleccionado
@@ -109,6 +110,23 @@ const SidebarButton = ({
         sx={theme => ({
           ...getButtonSx(theme),
           ...sx,
+          // Solo aplicar el estilo especial a los ítems de vecino
+          ...(panelType === 'vecino' && isSelected && level === 0 && !hasSubItems ? {
+            border: `2.5px solid ${theme.palette.primary.main}`,
+            boxShadow: `${theme.shadows[2]}, 0 0 0 2px ${theme.palette.primary.main}55`,
+            zIndex: 2,
+            position: 'relative',
+            color: theme.palette.primary.main,
+            background: theme.palette.background.paper,
+            '& .MuiListItemIcon-root': {
+              color: theme.palette.primary.main,
+            },
+            '& .MuiListItemText-primary': {
+              color: theme.palette.primary.main,
+              fontWeight: 800,
+              letterSpacing: 0.5,
+            },
+          } : {})
         })}
       >
         {item.icon && (
@@ -131,7 +149,9 @@ const SidebarButton = ({
                 key={sub.id}
                 item={sub}
                 selected={selected === sub.id}
-                expanded={selected && (selected.startsWith(sub.id) || selected === sub.id)}
+                expanded={
+                  typeof selected === 'string' && selected.startsWith(sub.id) || selected === sub.id
+                }
                 onClick={onSelect ? () => onSelect(sub.id) : undefined}
                 onSelect={onSelect}
                 onCloseDrawer={onCloseDrawer}

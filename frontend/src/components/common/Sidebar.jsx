@@ -136,10 +136,10 @@ function Sidebar({
           <SidebarButton
             key={item.id}
             item={item}
-            expanded={openGestionar && item.id === 'gestionar'}
+            expanded={openGestionar && (item.id === 'gestionar' || item.id === 'area-funcionario')}
             onClick={() => {
               // Unificar comportamiento: solo expandir/collapse si tiene subItems
-              if (item.subItems && item.subItems.length > 0 && item.id === 'gestionar') {
+              if (item.subItems && item.subItems.length > 0 && (item.id === 'gestionar' || item.id === 'area-funcionario')) {
                 setOpenGestionar(o => !o);
               } else if (onSelectSection) {
                 onSelectSection(item.id);
