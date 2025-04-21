@@ -176,7 +176,7 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
         // Renderizado específico por sección (asegurarse que solo uno renderice)
         return (
             <Fade in={true} timeout={400} style={{ width: '100%', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
 
                     {/* --- CONSULTAS --- */}
                     {currentSection === SECTIONS.CONSULTAS && (
@@ -187,30 +187,33 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
 
                     {/* --- TIPOS DE SOLICITUD (por Área) --- */}
                     {currentSection.startsWith(SECTIONS.AREA_PREFIX) && !isSmallScreen && (
-                        <TableCard
-                            title={getMainTitle}
-                            columns={[
-                                { id: 'nombre_tipo', label: 'Nombre' },
-                                { id: 'descripcion', label: 'Descripción', cellStyle: descriptionCellStyle },
-                            ]}
-                            rows={filteredTiposForTable.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
-                            loading={loading.content}
-                            error={error.content}
-                            searchTerm={searchTerm}
-                            onSearchChange={handleSearchChange}
-                            renderActions={(tipo) => (
-                                <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
-                            )}
-                            headerCellStyle={headerCellStyle}
-                            bodyCellStyle={bodyCellStyle}
-                            minWidth={650}
-                            noResultsMsg={searchTerm ? "No se encontraron tipos de solicitud con la búsqueda." : "No hay tipos de solicitud disponibles en esta área."}
-                            totalCount={filteredTiposForTable.length}
-                            page={page}
-                            rowsPerPage={rowsPerPage}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                        />
+                        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <TableCard
+                                title={getMainTitle}
+                                columns={[
+                                    { id: 'nombre_tipo', label: 'Nombre' },
+                                    { id: 'descripcion', label: 'Descripción', cellStyle: descriptionCellStyle },
+                                ]}
+                                rows={filteredTiposForTable.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+                                loading={loading.content}
+                                error={error.content}
+                                searchTerm={searchTerm}
+                                onSearchChange={handleSearchChange}
+                                renderActions={(tipo) => (
+                                    <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
+                                )}
+                                headerCellStyle={headerCellStyle}
+                                bodyCellStyle={bodyCellStyle}
+                                minWidth={650}
+                                noResultsMsg={searchTerm ? "No se encontraron tipos de solicitud con la búsqueda." : "No hay tipos de solicitud disponibles en esta área."}
+                                totalCount={filteredTiposForTable.length}
+                                page={page}
+                                rowsPerPage={rowsPerPage}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                sx={{ flexGrow: 1, height: '100%' }}
+                            />
+                        </Box>
                     )}
 
                     {currentSection.startsWith(SECTIONS.AREA_PREFIX) && isSmallScreen && (
@@ -372,9 +375,10 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                 width: DRAWER_WIDTH,
                                 bgcolor: 'background.paper',
                                 borderRight: `1px solid ${theme.palette.divider}`,
-                                top: { xs: 0, md: `${APP_BAR_HEIGHT}px` },
-                                height: { xs: '100vh', md: `calc(100vh - ${APP_BAR_HEIGHT}px)` },
-                                transition: theme.transitions.create('transform', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen })
+                                top: { xs: `${APP_BAR_HEIGHT}px`, md: `${APP_BAR_HEIGHT}px` },
+                                height: { xs: `calc(100vh - ${APP_BAR_HEIGHT}px)`, md: `calc(100vh - ${APP_BAR_HEIGHT}px)` },
+                                transition: theme.transitions.create('transform', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }),
+                                overflowX: 'hidden', // <-- Fix scroll horizontal
                             }
                         }}
                     >
@@ -386,7 +390,7 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                             areas={areas}
                         />
                     </Drawer>
-                    <Drawer variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}>
+                    <Drawer variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }), overflowX: 'hidden' } }}>
                         <Sidebar
                             panelType="vecino"
                             currentSection={currentSection}
@@ -397,18 +401,8 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                     </Drawer>
                 </Box>
                 <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, display: 'flex', flexDirection: 'column', mt: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, overflow: 'hidden', bgcolor: 'background.default', transition: theme.transitions.create('padding', { duration: theme.transitions.duration.short }) }} >
-                    {/* Header (Sin Cambios) */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, flexShrink: 0, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2, mb: 1 }}>
-                        <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} component="h1" sx={{ fontWeight: "bold", color: 'text.primary', order: 1, mr: 'auto', animation: `${fadeInUp} 0.5s ease-out`, animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>{getMainTitle}</Typography>
-                        <Box sx={{ order: 2, display: 'flex', alignItems: 'center' }}>
-                            {currentSection && (currentSection.startsWith(SECTIONS.AREA_PREFIX) || currentSection === SECTIONS.PREGUNTAS_FRECUENTES) && !loading.initial && !loading.content && !error.content && (
-                                <Fade in={true} timeout={400}>
-                                    <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '170px', sm: 200, md: 250 }, transition: theme.transitions.create(['width', 'box-shadow', 'border-color']), '& .MuiOutlinedInput-root': { borderRadius: '50px', '& fieldset': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover fieldset': { borderColor: theme.palette.divider }, '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' } }, '& .MuiInputAdornment-root': { color: theme.palette.text.secondary } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }} />
-                                </Fade>
-                            )}
-                        </Box>
-                    </Box>
-                     {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
+                    {/* Header removido: título, búsqueda y divider */}
+                    {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
                     {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
                     {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
                     {/* Área Principal Scrollable */}

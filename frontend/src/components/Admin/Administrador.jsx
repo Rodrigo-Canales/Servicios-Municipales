@@ -761,7 +761,7 @@ function Administrador({ toggleTheme }) {
                      {/* Mobile Drawer */}
                     <Drawer
                         variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }}
-                        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${currentTheme.palette.divider}`, top: { xs: 0, md: `${APP_BAR_HEIGHT}px` }, height: { xs: '100vh', md: `calc(100vh - ${APP_BAR_HEIGHT}px)` }, transition: currentTheme.transitions.create('transform', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
+                        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${currentTheme.palette.divider}`, top: { xs: `${APP_BAR_HEIGHT}px`, md: `${APP_BAR_HEIGHT}px` }, height: { xs: `calc(100vh - ${APP_BAR_HEIGHT}px)`, md: `calc(100vh - ${APP_BAR_HEIGHT}px)` }, transition: currentTheme.transitions.create('transform', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }), overflowX: 'hidden' } }}
                     >
                         <Sidebar
                             panelType="admin"
@@ -772,7 +772,7 @@ function Administrador({ toggleTheme }) {
                     </Drawer>
                      {/* Desktop Drawer */}
                     <Drawer
-                        variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${currentTheme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: currentTheme.transitions.create('width', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
+                        variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${currentTheme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: currentTheme.transitions.create('width', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }), overflowX: 'hidden' } }}
                     >
                         <Sidebar
                             panelType="admin"

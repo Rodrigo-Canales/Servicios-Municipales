@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ListItemButton, ListItemIcon, ListItemText, Box, Collapse, List } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
@@ -28,8 +28,11 @@ const SidebarButton = ({
   panelType, // <-- NUEVO: para saber si es vecino
 }) => {
   const hasSubItems = item.subItems && item.subItems.length > 0;
+  const [localExpanded, setLocalExpanded] = useState(false);
   // Determinar si este botón o alguno de sus subItems está seleccionado
-  const isSelected = typeof selected === 'string' ? selected === item.id : selected;
+  const isSelected = typeof selected === 'string'
+    ? (selected === item.id || selected.startsWith(item.id))
+    : selected;
   // Estilo visual según nivel y selección
   const getButtonSx = (theme) => {
     // Nivel 0: principal, Nivel 1+: subniveles
@@ -105,7 +108,13 @@ const SidebarButton = ({
   return (
     <>
       <ListItemButton
-        onClick={onClick}
+        onClick={e => {
+          if (hasSubItems) {
+            setLocalExpanded(exp => !exp);
+            return;
+          }
+          if (onClick) onClick(e);
+        }}
         selected={isSelected}
         sx={theme => ({
           ...getButtonSx(theme),
@@ -123,8 +132,9 @@ const SidebarButton = ({
             },
             '& .MuiListItemText-primary': {
               color: theme.palette.primary.main,
-              fontWeight: 800,
-              letterSpacing: 0.5,
+              fontWeight: 500, // menos grueso
+              letterSpacing: 0.2,
+              fontSize: '0.93rem', // más chico
             },
           } : {})
         })}
@@ -134,15 +144,15 @@ const SidebarButton = ({
             {item.icon}
           </ListItemIcon>
         )}
-        <ListItemText primary={<span style={{ fontWeight: 800, letterSpacing: 0.5, fontFamily: 'Montserrat, Arial, sans-serif', fontSize: level === 0 ? '0.97rem' : '0.89rem' }}>{item.label}</span>} />
+        <ListItemText primary={<span style={{ fontWeight: 500, letterSpacing: 0.2, fontFamily: 'Montserrat, Arial, sans-serif', fontSize: level === 0 ? '0.93rem' : '0.89rem' }}>{item.label}</span>} />
         {hasSubItems && (
-          <Box sx={{ transition: 'transform 0.3s', transform: expanded ? 'rotate(180deg)' : 'none' }}>
-            {expanded ? <ExpandLess /> : <ExpandMore />}
+          <Box sx={{ transition: 'transform 0.3s', transform: (expanded || localExpanded) ? 'rotate(180deg)' : 'none' }}>
+            {(expanded || localExpanded) ? <ExpandLess /> : <ExpandMore />}
           </Box>
         )}
       </ListItemButton>
       {hasSubItems && (
-        <Collapse in={expanded} timeout={400} unmountOnExit>
+        <Collapse in={expanded || localExpanded} timeout={400} unmountOnExit>
           <List component="div" disablePadding>
             {item.subItems.map((sub) => (
               <SidebarButton

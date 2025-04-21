@@ -58,6 +58,7 @@ function TableCard({
     <Card sx={{
       width: '100%',
       flexGrow: 1,
+      height: '100%', // Ocupa todo el alto disponible
       borderRadius: 3,
       boxShadow: (theme) => theme.shadows[2],
       display: 'flex',
@@ -75,6 +76,7 @@ function TableCard({
         display: 'flex',
         flexDirection: 'column',
         flexGrow: 1,
+        height: '100%', // Forzar a ocupar todo el alto
         overflow: 'hidden',
         gap: 1.5,
         background: 'transparent',
@@ -125,6 +127,7 @@ function TableCard({
           <Fade in timeout={500} style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <Paper sx={{
               flexGrow: 1,
+              height: '100%', // Forzar a ocupar todo el alto
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -136,7 +139,7 @@ function TableCard({
               m: 0,
               p: 0,
             }}>
-              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', borderRadius: 2.5, background: (theme) => theme.palette.background.paper }}>
+              <TableContainer sx={{ flexGrow: 1, height: '100%', overflow: 'auto', borderRadius: 2.5, background: (theme) => theme.palette.background.paper }}>
                 <Table stickyHeader size="small" sx={{ minWidth, borderCollapse: 'separate', borderSpacing: 0 }}>
                   <TableHead>
                     <TableRow>
