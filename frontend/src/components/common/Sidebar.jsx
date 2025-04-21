@@ -102,16 +102,16 @@ function Sidebar({
           height: '120px',
           objectFit: 'contain',
           display: 'block',
-          margin: '32px auto 16px auto',
+          margin: '40px auto 28px auto', // Más espacio arriba y abajo
         }}
       />
       <Typography variant="subtitle2" sx={{
-        fontWeight: 800,
+        fontWeight: 700, // Más grueso que el rol
         color: (theme) => theme.palette.primary.main,
         letterSpacing: 0.7,
         textAlign: 'center',
-        fontSize: '0.98rem', // más pequeño
-        mb: 0.5,
+        fontSize: '0.98rem',
+        mb: 1.5, // Más espacio abajo
         mt: 0.5,
         textShadow: (theme) => `0 2px 8px ${theme.palette.primary.light}33`,
         textTransform: 'uppercase',
@@ -120,11 +120,11 @@ function Sidebar({
       </Typography>
       <Typography variant="caption" sx={{
         color: (theme) => theme.palette.text.secondary,
-        fontWeight: 500,
-        fontSize: '0.82rem', // más pequeño
+        fontWeight: 400, // Más delgado que el título
+        fontSize: '0.82rem',
         display: 'block',
         textAlign: 'center',
-        mb: 0.5,
+        mb: 2.5, // Más espacio abajo
         mt: 0.5,
         letterSpacing: 0.2,
         opacity: 0.85,
@@ -132,7 +132,7 @@ function Sidebar({
       }}>
         {panelType === 'admin' ? 'Administrador' : panelType === 'funcionario' ? 'Funcionario' : 'Vecino'}
       </Typography>
-      <Divider sx={{ mb: 1.2, mx: 2, borderColor: (theme) => theme.palette.primary.light, opacity: 0.5 }} />
+      <Divider sx={{ mb: 2.5, mx: 2, borderColor: (theme) => theme.palette.primary.light, opacity: 0.5 }} />
       {/* Menú principal */}
       <List sx={{ pt: 0, pb: 0, px: 0 }}>
         {menu.map((item) => (
@@ -143,18 +143,15 @@ function Sidebar({
             onClick={() => {
               // Si el ítem tiene subItems, expandir/collapse (sin cerrar sidebar)
               if (item.subItems && item.subItems.length > 0) {
-                // Si es el principal, usa openGestionar, si no, deja que SidebarButton maneje el expand/collapse
                 if (item.id === 'gestionar' || item.id === 'area-funcionario') {
                   setOpenGestionar(o => !o);
                 }
-                // No cerrar sidebar ni cambiar sección
                 return;
               }
-              // Si no tiene subItems, selecciona y cierra sidebar
               if (onSelectSection) onSelectSection(item.id);
               if (onCloseDrawer) onCloseDrawer();
             }}
-            selected={currentSection}
+            selected={currentSection === item.id}
             onSelect={subId => {
               if (onSelectSection) onSelectSection(subId);
               // Solo cerrar si el subId corresponde a un ítem final (sin subItems), en cualquier nivel
@@ -171,6 +168,7 @@ function Sidebar({
               if (findIsFinal(menu, subId) && onCloseDrawer) onCloseDrawer();
             }}
             onCloseDrawer={onCloseDrawer}
+            currentSection={currentSection}
           />
         ))}
       </List>

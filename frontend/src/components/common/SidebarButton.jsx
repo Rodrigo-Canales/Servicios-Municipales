@@ -24,8 +24,7 @@ const SidebarButton = ({
   sx = {},
   children,
   level = 0,
-  currentSection,
-  panelType, // <-- NUEVO: para saber si es vecino
+  currentSection, // <-- NUEVO: para saber si es vecino
 }) => {
   const hasSubItems = item.subItems && item.subItems.length > 0;
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -33,74 +32,144 @@ const SidebarButton = ({
   const isSelected = typeof selected === 'string'
     ? (selected === item.id || selected.startsWith(item.id))
     : selected;
-  // Estilo visual según nivel y selección
+  // Determinar si el ítem debe estar expandido: si está localmente expandido o si el currentSection está dentro de su árbol
+  const isTreeExpanded = hasSubItems && (localExpanded || (typeof currentSection === 'string' && (currentSection === item.id || currentSection.startsWith(item.id + '-'))));
+  // Solo dos estilos: lista desplegable abierta, o ítem final seleccionado
   const getButtonSx = (theme) => {
-    // Nivel 0: principal, Nivel 1+: subniveles
-    if (level === 0) {
+    const baseTransition = 'background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s';
+    if (hasSubItems && (expanded || localExpanded)) {
+      // Lista desplegable abierta
       return {
         borderRadius: 3.5,
-        fontWeight: expanded || isSelected ? 800 : 500,
-        color: expanded || isSelected ? theme.palette.primary.contrastText : theme.palette.primary.main,
-        px: 1.5, // más compacto
-        py: 0.7, // más compacto
-        mb: 0.3, // menos margen
-        mx: 0.7, // menos margen
-        minHeight: 36, // más compacto
-        fontSize: '0.97rem', // más chiva
-        boxShadow: expanded || isSelected ? theme.shadows[2] : 'none',
-        background: expanded || isSelected ? theme.palette.primary.main : theme.palette.background.paper,
-        transition: 'background 0.18s, color 0.18s, box-shadow 0.18s',
-        '&:hover': {
-          bgcolor: theme.palette.primary.main,
+        fontWeight: 700,
+        color: theme.palette.primary.contrastText,
+        background: theme.palette.primary.main,
+        px: 1.5,
+        py: 0.7,
+        mb: 0.3,
+        mx: 0.7,
+        minHeight: 36,
+        fontSize: '0.97rem',
+        boxShadow: theme.shadows[4], // más notorio
+        transition: baseTransition,
+        transform: 'scale(1.03)', // leve agrandamiento
+        filter: 'brightness(1.01)',
+        '& .MuiListItemIcon-root': {
           color: theme.palette.primary.contrastText,
+          transition: 'color 0.18s',
         },
-        // --- Forzar mismo estilo de selección para cualquier item seleccionado (con o sin subItems) ---
-        ...(isSelected ? {
-          background: theme.palette.primary.main,
+        '& .MuiListItemText-primary': {
           color: theme.palette.primary.contrastText,
-          boxShadow: theme.shadows[2],
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          transition: 'color 0.18s',
+        },
+        '&:hover': {
+          bgcolor: theme.palette.primary.dark,
+          color: theme.palette.primary.contrastText,
+          boxShadow: theme.shadows[8],
+          transform: 'scale(1.045)',
+          filter: 'brightness(1.04)',
           '& .MuiListItemIcon-root': {
             color: theme.palette.primary.contrastText,
           },
           '& .MuiListItemText-primary': {
             color: theme.palette.primary.contrastText,
-            fontWeight: 800,
-            letterSpacing: 0.5,
           },
-        } : {})
+        },
+        '&:active': {
+          boxShadow: theme.shadows[2],
+          transform: 'scale(0.99)',
+        },
       };
-    } else {
-      // Subniveles: gradiente, indicador lateral, etc.
+    } else if (!hasSubItems && isSelected) {
+      // Ítem final seleccionado (igual que principal seleccionado)
       return {
-        pl: 2.5 + (level - 1) * 1.5, // más compacto
-        borderRadius: 2.5,
-        mb: 0.2,
+        borderRadius: '18px 3.5px 3.5px 18px', // Borde izquierdo redondeado
+        borderLeft: `6px solid ${theme.palette.primary.main}`,
+        fontWeight: 700,
+        color: theme.palette.primary.main,
+        background: theme.palette.background.paper,
+        px: 1.5,
+        py: 0.7,
+        mb: 0.3,
         mx: 0.7,
-        minHeight: 30,
-        fontWeight: isSelected ? 800 : 500,
-        fontSize: '0.93rem', // más chiva
-        color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
-        bgcolor: isSelected ? `linear-gradient(90deg, ${theme.palette.primary.light} 80%, ${theme.palette.background.paper} 100%)` : 'transparent',
-        border: 'none',
-        transition: 'background 0.18s, color 0.18s, box-shadow 0.18s',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: isSelected ? '0 4px 24px 0 rgba(0,0,0,0.08), 0 0 0 2px ' + theme.palette.primary.light : 'none',
-        '&:before': {
-          content: '""',
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: isSelected ? 8 : 3,
-          height: '100%',
-          bgcolor: isSelected ? theme.palette.primary.main : 'transparent',
-          borderRadius: '2px',
-          boxShadow: isSelected ? `0 0 8px 2px ${theme.palette.primary.main}33` : 'none',
-          transition: 'background 0.18s, width 0.18s, box-shadow 0.18s',
+        minHeight: 36,
+        fontSize: '0.97rem',
+        boxShadow: `-6px 0 18px -8px ${theme.palette.primary.main}55`, // Sombra azul a la izquierda
+        transition: 'background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, border-left-width 0.25s cubic-bezier(0.4,0,0.2,1)',
+        transform: 'scale(1.06)',
+        filter: 'brightness(1.01)',
+        animation: 'sidebarSelectedFade 0.35s cubic-bezier(0.4,0,0.2,1)',
+        '& .MuiListItemIcon-root': {
+          color: theme.palette.primary.main,
+          transition: 'color 0.18s',
+        },
+        '& .MuiListItemText-primary': {
+          color: theme.palette.primary.main,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          transition: 'color 0.18s',
         },
         '&:hover': {
-          bgcolor: `linear-gradient(90deg, ${theme.palette.primary.light} 80%, ${theme.palette.background.paper} 100%)`,
+          bgcolor: theme.palette.background.paper,
           color: theme.palette.primary.main,
+          boxShadow: `-8px 0 22px -8px ${theme.palette.primary.main}77`,
+          transform: 'scale(1.08)',
+          filter: 'brightness(1.04)',
+          '& .MuiListItemIcon-root': {
+            color: theme.palette.primary.main,
+          },
+          '& .MuiListItemText-primary': {
+            color: theme.palette.primary.main,
+          },
+        },
+        '&:active': {
+          boxShadow: `-4px 0 10px -6px ${theme.palette.primary.main}77`,
+          transform: 'scale(0.99)',
+        },
+      };
+    } else {
+      // No seleccionado
+      return {
+        borderRadius: 3.5,
+        fontWeight: 500,
+        color: theme.palette.primary.main,
+        background: theme.palette.background.paper,
+        px: 1.5,
+        py: 0.7,
+        mb: 0.3,
+        mx: 0.7,
+        minHeight: 36,
+        fontSize: '0.97rem',
+        boxShadow: 'none',
+        transition: baseTransition,
+        '& .MuiListItemIcon-root': {
+          color: theme.palette.primary.main,
+          transition: 'color 0.18s',
+        },
+        '& .MuiListItemText-primary': {
+          color: theme.palette.primary.main,
+          fontWeight: 500,
+          letterSpacing: 0.5,
+          transition: 'color 0.18s',
+        },
+        '&:hover': {
+          bgcolor: theme.palette.primary.main,
+          color: theme.palette.primary.contrastText,
+          boxShadow: theme.shadows[4],
+          transform: 'scale(1.025)',
+          filter: 'brightness(1.04)',
+          '& .MuiListItemIcon-root': {
+            color: theme.palette.primary.contrastText,
+          },
+          '& .MuiListItemText-primary': {
+            color: theme.palette.primary.contrastText,
+          },
+        },
+        '&:active': {
+          boxShadow: theme.shadows[2],
+          transform: 'scale(0.98)',
         },
       };
     }
@@ -117,56 +186,70 @@ const SidebarButton = ({
         }}
         selected={isSelected}
         sx={theme => ({
-          ...getButtonSx(theme),
+          ...getButtonSx(theme, isTreeExpanded),
           ...sx,
-          // Solo aplicar el estilo especial a los ítems de vecino
-          ...(panelType === 'vecino' && isSelected && level === 0 && !hasSubItems ? {
-            border: `2.5px solid ${theme.palette.primary.main}`,
-            boxShadow: `${theme.shadows[2]}, 0 0 0 2px ${theme.palette.primary.main}55`,
-            zIndex: 2,
-            position: 'relative',
-            color: theme.palette.primary.main,
-            background: theme.palette.background.paper,
-            '& .MuiListItemIcon-root': {
-              color: theme.palette.primary.main,
-            },
-            '& .MuiListItemText-primary': {
-              color: theme.palette.primary.main,
-              fontWeight: 500, // menos grueso
-              letterSpacing: 0.2,
-              fontSize: '0.93rem', // más chico
-            },
-          } : {})
+          position: 'relative',
+          overflow: 'hidden',
         })}
+        // Ripple effect manual
+        onMouseDown={e => {
+          const btn = e.currentTarget;
+          const circle = document.createElement('span');
+          const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+          const radius = diameter / 2;
+          circle.style.width = circle.style.height = `${diameter}px`;
+          circle.style.left = `${e.clientX - btn.getBoundingClientRect().left - radius}px`;
+          circle.style.top = `${e.clientY - btn.getBoundingClientRect().top - radius}px`;
+          circle.style.position = 'absolute';
+          circle.style.borderRadius = '50%';
+          circle.style.background = 'rgba(0,0,0,0.08)';
+          circle.style.pointerEvents = 'none';
+          circle.style.transform = 'scale(0)';
+          circle.style.opacity = '0.7';
+          circle.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.7s';
+          circle.classList.add('sidebar-ripple');
+          btn.appendChild(circle);
+          setTimeout(() => {
+            circle.style.transform = 'scale(1)';
+            circle.style.opacity = '0';
+          }, 10);
+          setTimeout(() => {
+            if (circle.parentNode) circle.parentNode.removeChild(circle);
+          }, 600);
+        }}
       >
         {item.icon && (
-          <ListItemIcon sx={{ color: (theme) => (isSelected ? theme.palette.primary.main : theme.palette.primary.main), minWidth: 28, transition: 'none' }}>
+          <ListItemIcon sx={{ color: (hasSubItems && isTreeExpanded) || (!hasSubItems && isSelected) ? theme => theme.palette.primary.contrastText : theme => theme.palette.primary.main, minWidth: 28, transition: 'none' }}>
             {item.icon}
           </ListItemIcon>
         )}
-        <ListItemText primary={<span style={{ fontWeight: 500, letterSpacing: 0.2, fontFamily: 'Montserrat, Arial, sans-serif', fontSize: level === 0 ? '0.93rem' : '0.89rem' }}>{item.label}</span>} />
+        <ListItemText primary={<span style={{ fontWeight: (hasSubItems && isTreeExpanded) || (!hasSubItems && isSelected) ? 700 : 500, letterSpacing: 0.5, fontFamily: 'Montserrat, Arial, sans-serif', fontSize: level === 0 ? '0.97rem' : '0.93rem', color: undefined }}>{item.label}</span>} />
         {hasSubItems && (
-          <Box sx={{ transition: 'transform 0.3s', transform: (expanded || localExpanded) ? 'rotate(180deg)' : 'none' }}>
-            {(expanded || localExpanded) ? <ExpandLess /> : <ExpandMore />}
+          <Box sx={{ transition: 'transform 0.3s', color: theme => theme.palette.primary.contrastText, transform: isTreeExpanded ? 'rotate(180deg)' : 'none' }}>
+            {isTreeExpanded ? <ExpandLess /> : <ExpandMore />}
           </Box>
         )}
       </ListItemButton>
       {hasSubItems && (
-        <Collapse in={expanded || localExpanded} timeout={400} unmountOnExit>
-          <List component="div" disablePadding>
+        <Collapse in={isTreeExpanded} timeout={{ enter: 500, exit: 350 }} unmountOnExit sx={{
+          transition: 'max-height 0.5s cubic-bezier(0.4,0,0.2,1)',
+          maxHeight: isTreeExpanded ? 1000 : 0,
+        }}>
+          <List component="div" disablePadding sx={{
+            pl: 1.5 + level * 1.2,
+            transition: 'padding-left 0.3s',
+          }}>
             {item.subItems.map((sub) => (
               <SidebarButton
                 key={sub.id}
                 item={sub}
-                selected={selected === sub.id}
-                expanded={
-                  typeof selected === 'string' && selected.startsWith(sub.id) || selected === sub.id
-                }
+                selected={currentSection === sub.id} // Corrige: solo true si es exactamente igual
+                expanded={typeof currentSection === 'string' && currentSection.startsWith(sub.id) || currentSection === sub.id}
                 onClick={onSelect ? () => onSelect(sub.id) : undefined}
                 onSelect={onSelect}
                 onCloseDrawer={onCloseDrawer}
                 level={level + 1}
-                currentSection={currentSection}
+                currentSection={currentSection} // Pasa el currentSection a todos los niveles
               />
             ))}
             {children}
@@ -176,5 +259,10 @@ const SidebarButton = ({
     </>
   );
 };
+
+// Animación para selección
+const style = document.createElement('style');
+style.innerHTML = `@keyframes sidebarSelectedFade { from { box-shadow: none; transform: scale(1); opacity: 0.7; } to { box-shadow: var(--mui-shadow-8); transform: scale(1.06); opacity: 1; } }`;
+document.head.appendChild(style);
 
 export default SidebarButton;

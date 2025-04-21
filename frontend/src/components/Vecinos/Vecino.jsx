@@ -147,8 +147,6 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     const bodyCellStyle = useMemo(() => ({ fontSize: '0.875rem', color: theme.palette.text.secondary, verticalAlign: 'middle', padding: '10px 12px', borderBottom: `1px solid ${theme.palette.divider}`, transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.shortest }), }), [theme]);
     const descriptionCellStyle = useMemo(() => ({ ...bodyCellStyle, whiteSpace: 'normal', wordWrap: 'break-word', verticalAlign: 'top', maxWidth: 400, }), [bodyCellStyle]);
     const solicitarButtonStyle = useMemo(() => ({ background: `linear-gradient(45deg, ${theme.palette.success.light || theme.palette.success.main} 30%, ${theme.palette.success.main} 90%)`, boxShadow: theme.shadows[2], borderRadius: '50px', color: theme.palette.success.contrastText, height: '36px', py: 0.8, px: 2.5, textTransform: 'none', fontWeight: 600, fontSize: '0.875rem', transition: theme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: theme.transitions.duration.short }), '&:hover': { transform: 'translateY(-2px)', boxShadow: theme.shadows[4], background: `linear-gradient(45deg, ${theme.palette.success.main} 30%, ${theme.palette.success.dark || theme.palette.success.main} 90%)`, }, '&:active': { transform: 'translateY(0)', boxShadow: theme.shadows[2] } }), [theme]);
-    const mobileCardStyle = useMemo(() => ({ p: 2, mb: 2, borderRadius: 1.5, border: `1px solid ${theme.palette.divider}`, boxShadow: 'none', bgcolor: 'background.paper', animation: `${fadeInUp} 0.3s ease-out forwards`, opacity: 0, '&:last-child': { mb: 0 }, }), [theme]);
-    const mobileCardRowStyle = useMemo(() => ({ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1, color: theme.palette.text.secondary, }), [theme]);
 
     // --- Title (Sin Cambios) ---
     const getMainTitle = useMemo(() => { if (currentSection?.startsWith(SECTIONS.AREA_PREFIX)) return `Tipos de Solicitud - ${selectedAreaInfo.nombre || '...'}`; switch (currentSection) { case SECTIONS.MIS_SOLICITUDES: return "Mis Solicitudes"; case SECTIONS.CONSULTAS: return "Consultas"; case SECTIONS.PREGUNTAS_FRECUENTES: return "Preguntas Frecuentes"; default: return "Portal Vecino"; } }, [currentSection, selectedAreaInfo.nombre]);
@@ -219,63 +217,39 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                     {currentSection.startsWith(SECTIONS.AREA_PREFIX) && isSmallScreen && (
                         <Box sx={{ animation: `${fadeInUp} 0.5s ease-out forwards`, opacity: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                             {Array.isArray(filteredTiposForTable) && filteredTiposForTable.length > 0 ? (
-                                // Si hay datos, elegir entre vista móvil o desktop
-                                <>
-                                    {isSmallScreen ? (
-                                        // VISTA MÓVIL (Tarjetas)
-                                        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: { xs: 0, sm: 1 } , pt: 1 }}>
-                                            {filteredTiposForTable.map((tipo, index) => (
-                                                <Paper key={tipo.id_tipo} sx={{ ...mobileCardStyle, animationDelay: `${index * 0.04}s` }}>
-                                                    <Stack spacing={1.5}>
-                                                        <Box sx={mobileCardRowStyle}>
-                                                            <LabelIcon fontSize="small" sx={{ color: 'primary.main', mt: '2px' }} />
-                                                            <Typography variant="body1" sx={{ fontWeight: 500, color: 'text.primary' }}>{tipo.nombre_tipo}</Typography>
-                                                        </Box>
-                                                        {tipo.descripcion && (
-                                                            <Box sx={mobileCardRowStyle}>
-                                                                <DescriptionIcon fontSize="small" sx={{ mt: '2px' }} />
-                                                                <Typography variant="body2" sx={{ whiteSpace: 'normal' }}>{tipo.descripcion}</Typography>
-                                                            </Box>
-                                                        )}
-                                                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
-                                                            <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
-                                                        </Box>
-                                                    </Stack>
-                                                </Paper>
-                                            ))}
-                                        </Box>
-                                    ) : (
-                                        // VISTA DESKTOP/TABLET (Tabla)
-                                        <Paper sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, width: '100%', bgcolor: 'background.paper', boxShadow: 'none', flexGrow: 1 }}>
-                                            <TableContainer sx={{ flexGrow: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: '8px', height: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400], borderRadius: '4px' } }}>
-                                                <Table stickyHeader size="small">
-                                                    <TableHead>
-                                                        <TableRow>
-                                                            <TableCell sx={headerCellStyle}>Nombre</TableCell>
-                                                            <TableCell sx={headerCellStyle}>Descripción</TableCell>
-                                                            <TableCell sx={{ ...headerCellStyle, textAlign: 'center', width: '130px' }}>Acción</TableCell>
-                                                        </TableRow>
-                                                    </TableHead>
-                                                    <TableBody>
-                                                        {filteredTiposForTable.map((tipo, index) => (
-                                                            <TableRow hover key={tipo.id_tipo} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: theme.palette.action.hover }, transition: theme.transitions.create('background-color', { duration: theme.transitions.duration.shortest }), animation: `${fadeInUp} 0.3s ease-out forwards`, animationDelay: `${index * 0.03}s`, opacity: 0 }}>
-                                                                <TableCell sx={bodyCellStyle}>{tipo.nombre_tipo}</TableCell>
-                                                                <TableCell sx={descriptionCellStyle}>
-                                                                    <Tooltip title={tipo.descripcion || ''} placement="top-start">
-                                                                        <Typography variant="inherit">{tipo.descripcion || '-'}</Typography>
-                                                                    </Tooltip>
-                                                                </TableCell>
-                                                                <TableCell sx={{ ...bodyCellStyle, textAlign: 'center' }}>
-                                                                    <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </TableContainer>
+                                <Box sx={{ flexGrow: 1, overflowY: 'auto', px: { xs: 0, sm: 1 }, pt: 1 }}>
+                                    {filteredTiposForTable.map((tipo, index) => (
+                                        <Paper key={tipo.id_tipo} sx={{
+                                            borderRadius: 2.5,
+                                            border: theme => `1.5px solid ${theme.palette.primary.light}`,
+                                            boxShadow: theme => theme.shadows[2],
+                                            bgcolor: 'background.paper',
+                                            p: 2.2,
+                                            mb: 2.2,
+                                            animation: `${fadeInUp} 0.3s ease-out forwards`,
+                                            animationDelay: `${index * 0.04}s`,
+                                            opacity: 0,
+                                            fontFamily: 'Montserrat, Arial, sans-serif',
+                                            '&:last-child': { mb: 0 },
+                                        }}>
+                                            <Stack spacing={1.5}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                    <LabelIcon fontSize="small" sx={{ color: 'primary.main', mt: '2px' }} />
+                                                    <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '1.01rem', letterSpacing: 0.1 }}>{tipo.nombre_tipo}</Typography>
+                                                </Box>
+                                                {tipo.descripcion && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+                                                        <DescriptionIcon fontSize="small" sx={{ color: 'primary.main', mt: '2px' }} />
+                                                        <Typography variant="body2" sx={{ whiteSpace: 'normal', color: 'text.secondary', fontSize: '0.97rem' }}>{tipo.descripcion}</Typography>
+                                                    </Box>
+                                                )}
+                                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+                                                    <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
+                                                </Box>
+                                            </Stack>
                                         </Paper>
-                                    )}
-                                </>
+                                    ))}
+                                </Box>
                             ) : (
                                 // Mensaje si no hay datos
                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
@@ -297,8 +271,8 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                         <InputLabel id="faq-filter-label" sx={{ color: 'text.secondary' }}>Filtrar por Tipo</InputLabel>
                                         <Select
                                             labelId="faq-filter-label" id="faq-filter-select" value={faqFilterTipoId} label="Filtrar por Tipo" onChange={handleFaqFilterChange}
-                                            sx={{ borderRadius: 1.5, '.MuiOutlinedInput-notchedOutline': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main } }}
-                                            MenuProps={{ PaperProps: { sx: { bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.shadows[3], } } }} >
+                                            sx={{ borderRadius: 2.5, '.MuiOutlinedInput-notchedOutline': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main } }}
+                                            MenuProps={{ PaperProps: { sx: { bgcolor: 'background.paper', border: `1.5px solid ${theme.palette.primary.light}`, boxShadow: theme.shadows[2], borderRadius: 2.5 } } }} >
                                             <MenuItem value=""><em>Todos los Tipos</em></MenuItem>
                                             {Array.from(new Set(faqs.map(f => f.id_tipo))).map(tipoId => {
                                                 const tipoInfo = tiposSolicitudesAll.find(t => t.id_tipo === tipoId);
@@ -310,11 +284,22 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                             {/* Contenedor Scrollable para Acordeones */}
                             <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
                                 {filteredFaqs.length > 0 ? (
-                                    // Si hay FAQs filtradas, mapearlas
                                     filteredFaqs.map((faq, index) => (
-                                        <Accordion key={faq.id_pregunta} sx={{ mb: 1.5, '&:before': { display: 'none' }, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, boxShadow: 'none', bgcolor: 'background.paper', transition: theme.transitions.create(['margin', 'background-color', 'border-color']), '&.Mui-expanded': { mb: 1.5, borderColor: theme.palette.primary.light, }, animation: `${fadeInUp} 0.3s ease-out forwards`, animationDelay: `${index * 0.04}s`, opacity: 0 }} >
-                                            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'text.secondary' }} />} aria-controls={`panel${faq.id_pregunta}-content`} id={`panel${faq.id_pregunta}-header`} sx={{ '&:hover': { bgcolor: theme.palette.action.hover }, '& .MuiAccordionSummary-content': { my: 1.2, display: 'flex', flexWrap: 'wrap', alignItems: 'center' }, transition: theme.transitions.create(['background-color']), }} >
-                                                <Typography sx={{ fontWeight: 500, color: 'text.primary', flexGrow: 1, flexBasis: { xs: '100%', sm: 'auto' }, mr: 1, mb: { xs: 0.5, sm: 0 } }}>
+                                        <Accordion key={faq.id_pregunta} sx={{
+                                            mb: 1.5,
+                                            border: theme => `1.5px solid ${theme.palette.primary.light}`,
+                                            borderRadius: 2.5,
+                                            boxShadow: theme => theme.shadows[2],
+                                            bgcolor: 'background.paper',
+                                            transition: theme.transitions.create(['margin', 'background-color', 'border-color']),
+                                            '&.Mui-expanded': { mb: 1.5, borderColor: theme => theme.palette.primary.main },
+                                            animation: `${fadeInUp} 0.3s ease-out forwards`,
+                                            animationDelay: `${index * 0.04}s`,
+                                            opacity: 0,
+                                            fontFamily: 'Montserrat, Arial, sans-serif',
+                                        }} >
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />} aria-controls={`panel${faq.id_pregunta}-content`} id={`panel${faq.id_pregunta}-header`} sx={{ '&:hover': { bgcolor: theme.palette.action.hover }, '& .MuiAccordionSummary-content': { my: 1.2, display: 'flex', flexWrap: 'wrap', alignItems: 'center' }, transition: theme.transitions.create(['background-color']), }} >
+                                                <Typography sx={{ fontWeight: 600, color: 'primary.main', flexGrow: 1, flexBasis: { xs: '100%', sm: 'auto' }, mr: 1, mb: { xs: 0.5, sm: 0 }, fontSize: '1.01rem', letterSpacing: 0.1 }}>
                                                     {faq.pregunta}
                                                 </Typography>
                                                 {faq.nombre_tipo_solicitud && (
@@ -324,12 +309,11 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                                 )}
                                             </AccordionSummary>
                                             <AccordionDetails sx={{ borderTop: `1px dashed ${theme.palette.divider}`, px: 2.5, py: 2 }}>
-                                                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{faq.respuesta}</Typography>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.97rem' }}>{faq.respuesta}</Typography>
                                             </AccordionDetails>
                                         </Accordion>
                                     ))
                                 ) : (
-                                    // Mensaje si no hay FAQs (después de filtrar o inicialmente si no hay)
                                     <Typography sx={{ textAlign: 'center', py: 5, fontStyle: 'italic', color: 'text.disabled' }}>
                                         {searchTerm || faqFilterTipoId ? "No se encontraron preguntas frecuentes con los filtros aplicados." : "No hay preguntas frecuentes disponibles."}
                                     </Typography>
