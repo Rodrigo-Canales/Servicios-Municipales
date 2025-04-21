@@ -18,10 +18,12 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import AccountBox from '@mui/icons-material/AccountBox';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 // Importa componentes y utilidades
 import Navbar from "../Navbar";
-import SidebarAdmin from "./SidebarAdmin";
+import Sidebar from '../common/Sidebar';
 import { lightTheme, darkTheme } from "../../theme";
 import { mostrarAlertaExito, mostrarAlertaError } from "../../utils/alertUtils";
 import { formatRut } from "../../utils/rutUtils";
@@ -656,16 +658,6 @@ function Administrador({ toggleTheme }) {
         });
     }, [currentConfig, isDeleting, currentTheme, mode, handleDeleteItem]); // Dependencias correctas
 
-    // --- Contenido Sidebar ---
-    const drawerContent = useMemo(() => (
-        <SidebarAdmin
-            currentSection={currentSectionKey}
-            onSelectSection={handleSelectSection}
-            onCloseDrawer={handleDrawerClose}
-            themeMode={mode}
-        />
-    ), [currentSectionKey, handleSelectSection, handleDrawerClose, mode]);
-
     // --- Estilos Celdas ---
     const headerCellStyle = useMemo(() => ({
         fontWeight: 'bold', fontSize: '0.9rem', padding: '10px 12px', whiteSpace: 'nowrap',
@@ -692,6 +684,67 @@ function Administrador({ toggleTheme }) {
             : filteredData;
     }, [filteredData, page, rowsPerPage]);
 
+    // --- Renderizado del Contenido Principal ---
+    const renderMainContent = () => {
+        if (!currentSectionKey) {
+            return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', py: 6 }}>
+                    <InfoOutlinedIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: 'text.secondary', fontStyle: 'italic', textAlign: 'center' }}>
+                        Selecciona una opción en el menú lateral
+                    </Typography>
+                </Box>
+            );
+        }
+        return (
+            <TableCard
+                title={currentConfig?.title || 'Administración'}
+                columns={currentConfig?.columns || []}
+                rows={paginatedData}
+                loading={loading}
+                error={error && `Error al cargar datos: ${error}`}
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+                actionsHeader={currentConfig?.canAdd && (
+                    <Fade in={currentConfig?.canAdd} timeout={400}>
+                        <Tooltip title={`Agregar Nuevo/a ${currentConfig.title.slice(0, -1)}`}>
+                            <span>
+                                <Button
+                                    variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')} disabled={loading || isSubmitting || isDeleting || !currentConfig?.canAdd}
+                                    sx={{ whiteSpace: 'nowrap', height: '40px', borderRadius: '50px', boxShadow: currentTheme.shadows[2], transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: currentTheme.transitions.duration.short }), '&:hover': { transform: 'translateY(-2px)', boxShadow: currentTheme.shadows[4], backgroundColor: currentTheme.palette.primary.dark }, '&:active': { transform: 'translateY(0)', boxShadow: currentTheme.shadows[2] } }}
+                                > Agregar </Button>
+                            </span>
+                        </Tooltip>
+                    </Fade>
+                )}
+                renderActions={(item) => {
+                    const canEditItem = currentConfig?.canEdit;
+                    const canDeleteItem = currentConfig?.canDelete;
+                    const actionsCellStyle = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
+                    return (
+                        <Box sx={actionsCellStyle}>
+                            {canEditItem && (
+                                <Tooltip title={`Editar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenModal('edit', item)} color="primary" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><EditIcon fontSize="inherit"/></IconButton></span></Tooltip>
+                            )}
+                            {canDeleteItem && (
+                                <Tooltip title={`Eliminar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenDeleteConfirmation(item)} color="error" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><DeleteIcon fontSize="inherit"/></IconButton></span></Tooltip>
+                            )}
+                        </Box>
+                    );
+                }}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                totalCount={filteredData.length}
+                headerCellStyle={headerCellStyle}
+                bodyCellStyle={bodyCellStyle}
+                minWidth={650}
+                noResultsMsg={searchTerm ? 'No se encontraron resultados que coincidan con la búsqueda.' : `No hay ${(currentConfig?.title || '').toLowerCase()} para mostrar.`}
+                context={contextForRender}
+            />
+        );
+    };
 
     // --- Renderizado ---
     // (El JSX de renderizado no necesita cambios funcionales, solo los ajustes ya hechos
@@ -709,11 +762,25 @@ function Administrador({ toggleTheme }) {
                     <Drawer
                         variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }}
                         sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${currentTheme.palette.divider}`, top: { xs: 0, md: `${APP_BAR_HEIGHT}px` }, height: { xs: '100vh', md: `calc(100vh - ${APP_BAR_HEIGHT}px)` }, transition: currentTheme.transitions.create('transform', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
-                    > {drawerContent} </Drawer>
+                    >
+                        <Sidebar
+                            panelType="admin"
+                            currentSection={currentSectionKey}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerToggle}
+                        />
+                    </Drawer>
                      {/* Desktop Drawer */}
                     <Drawer
                         variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${currentTheme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: currentTheme.transitions.create('width', { easing: currentTheme.transitions.easing.sharp, duration: currentTheme.transitions.duration.enteringScreen }) } }}
-                    > {drawerContent} </Drawer>
+                    >
+                        <Sidebar
+                            panelType="admin"
+                            currentSection={currentSectionKey}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerToggle}
+                        />
+                    </Drawer>
                 </Box>
 
                 {/* Contenido Principal */}
@@ -722,52 +789,7 @@ function Administrador({ toggleTheme }) {
                     sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, display: 'flex', flexDirection: 'column', mt: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, overflow: 'hidden', bgcolor: 'background.default', transition: currentTheme.transitions.create('padding', { duration: currentTheme.transitions.duration.short }) }}
                 >
                     {/* Main Content Card (reemplazado por TableCard) */}
-                    <TableCard
-                        title={currentConfig?.title || 'Administración'}
-                        columns={currentConfig?.columns || []}
-                        rows={paginatedData}
-                        loading={loading}
-                        error={error && `Error al cargar datos: ${error}`}
-                        searchTerm={searchTerm}
-                        onSearchChange={handleSearchChange}
-                        actionsHeader={currentConfig?.canAdd && (
-                          <Fade in={currentConfig?.canAdd} timeout={400}>
-                            <Tooltip title={`Agregar Nuevo/a ${currentConfig.title.slice(0, -1)}`}>
-                              <span>
-                                <Button
-                                  variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')} disabled={loading || isSubmitting || isDeleting || !currentConfig?.canAdd}
-                                  sx={{ whiteSpace: 'nowrap', height: '40px', borderRadius: '50px', boxShadow: currentTheme.shadows[2], transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: currentTheme.transitions.duration.short }), '&:hover': { transform: 'translateY(-2px)', boxShadow: currentTheme.shadows[4], backgroundColor: currentTheme.palette.primary.dark }, '&:active': { transform: 'translateY(0)', boxShadow: currentTheme.shadows[2] } }}
-                                > Agregar </Button>
-                              </span>
-                            </Tooltip>
-                          </Fade>
-                        )}
-                        renderActions={(item) => {
-                          const canEditItem = currentConfig?.canEdit;
-                          const canDeleteItem = currentConfig?.canDelete;
-                          const actionsCellStyle = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
-                          return (
-                            <Box sx={actionsCellStyle}>
-                              {canEditItem && (
-                                <Tooltip title={`Editar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenModal('edit', item)} color="primary" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><EditIcon fontSize="inherit"/></IconButton></span></Tooltip>
-                              )}
-                              {canDeleteItem && (
-                                <Tooltip title={`Eliminar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenDeleteConfirmation(item)} color="error" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><DeleteIcon fontSize="inherit"/></IconButton></span></Tooltip>
-                              )}
-                            </Box>
-                          );
-                        }}
-                        page={page}
-                        rowsPerPage={rowsPerPage}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        totalCount={filteredData.length}
-                        headerCellStyle={headerCellStyle}
-                        bodyCellStyle={bodyCellStyle}
-                        minWidth={650}
-                        noResultsMsg={searchTerm ? 'No se encontraron resultados que coincidan con la búsqueda.' : `No hay ${(currentConfig?.title || '').toLowerCase()} para mostrar.`}
-                        context={contextForRender}
-                    />
+                    {renderMainContent()}
 
                 </Box> {/* Fin Main */}
 

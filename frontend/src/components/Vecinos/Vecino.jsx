@@ -14,16 +14,17 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LabelIcon from '@mui/icons-material/Label';
+import AccountBox from '@mui/icons-material/AccountBox';
 
 // Componentes y utilidades locales
 import Navbar from "../Navbar";
-import SidebarVecino from "./SidebarVecino";
 import { lightTheme, darkTheme } from "../../theme";
 // import { mostrarAlertaError, mostrarAlertaExito } from "../../utils/alertUtils"; // Descomentar para alertas
 import api from '../../services/api';
 // *** 1. IMPORTAR EL MODAL ***
 import SolicitudModalForm from './SolicitudModalForm'; // Asume que SolicitudModalForm.jsx está en la misma carpeta
 import TableCard from '../common/TableCard';
+import Sidebar from '../common/Sidebar';
 
 // --- Constants (Solo una vez) ---
 const APP_BAR_HEIGHT = 64;
@@ -142,7 +143,6 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     const filteredFaqs = useMemo(() => { if (currentSection !== SECTIONS.PREGUNTAS_FRECUENTES || !Array.isArray(faqs)) return []; let results = faqs; if (faqFilterTipoId) results = results.filter(f => f.id_tipo === faqFilterTipoId); if (searchTerm.trim()) { const lowerSearch = searchTerm.toLowerCase(); results = results.filter(f => f.pregunta?.toLowerCase().includes(lowerSearch) || f.respuesta?.toLowerCase().includes(lowerSearch) || f.nombre_tipo_solicitud?.toLowerCase().includes(lowerSearch)); } return results; }, [faqs, searchTerm, currentSection, faqFilterTipoId]);
 
     // --- Memoized Values & Styles (Sin Cambios) ---
-    const drawerContent = useMemo(() => (<SidebarVecino areas={areas} currentSection={currentSection} onSelectSection={handleSelectSection} onCloseDrawer={handleDrawerClose}/>), [areas, currentSection, handleSelectSection, handleDrawerClose]);
     const headerCellStyle = useMemo(() => ({ fontWeight: 'bold', fontSize: '0.9rem', padding: '10px 12px', whiteSpace: 'nowrap', backgroundColor: theme.palette.primary.main, color: theme.palette.primary.contrastText, borderBottom: `2px solid ${theme.palette.divider}`, position: 'sticky', top: 0, zIndex: 1, transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.short }), }), [theme]);
     const bodyCellStyle = useMemo(() => ({ fontSize: '0.875rem', color: theme.palette.text.secondary, verticalAlign: 'middle', padding: '10px 12px', borderBottom: `1px solid ${theme.palette.divider}`, transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.shortest }), }), [theme]);
     const descriptionCellStyle = useMemo(() => ({ ...bodyCellStyle, whiteSpace: 'normal', wordWrap: 'break-word', verticalAlign: 'top', maxWidth: 400, }), [bodyCellStyle]);
@@ -378,9 +378,23 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                             }
                         }}
                     >
-                        {drawerContent}
+                        <Sidebar
+                            panelType="vecino"
+                            currentSection={currentSection}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerClose}
+                            areas={areas}
+                        />
                     </Drawer>
-                    <Drawer variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}>{drawerContent}</Drawer>
+                    <Drawer variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}>
+                        <Sidebar
+                            panelType="vecino"
+                            currentSection={currentSection}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerClose}
+                            areas={areas}
+                        />
+                    </Drawer>
                 </Box>
                 <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, display: 'flex', flexDirection: 'column', mt: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, overflow: 'hidden', bgcolor: 'background.default', transition: theme.transitions.create('padding', { duration: theme.transitions.duration.short }) }} >
                     {/* Header (Sin Cambios) */}

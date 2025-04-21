@@ -17,11 +17,11 @@ import {
     ThemeProvider, CssBaseline
 } from '@mui/material';
 // --- Icon Imports ---
-import { Visibility as VisibilityIcon, Reply as ReplyIcon, Search as SearchIcon } from '@mui/icons-material';
+import { Visibility as VisibilityIcon, Reply as ReplyIcon, Search as SearchIcon, AccountBox, InfoOutlined as InfoOutlinedIcon } from '@mui/icons-material';
 
 // --- Local Components, Context, Services, Utils ---
 import Navbar from '../Navbar';
-import SidebarFuncionario from './SidebarFuncionario';
+import Sidebar from '../common/Sidebar';
 import RespuestaModalForm from './RespuestasModalForm'; // ¡VERIFICA ESTE NOMBRE DE ARCHIVO Y RUTA!
 import VerRespuestaModal from './VerRespuestaModal';
 import api from '../../services/api';
@@ -154,7 +154,8 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
 
     // --- Hooks ---
     const theme = useMemo(() => (mode === 'light' ? lightTheme : darkTheme), [mode]);
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const loadingTipos = false; // Si no tienes loading real, ponlo en false
 
     // --- Estilos Tabla ---
     const headerCellStyle = useMemo(() => ({
@@ -390,8 +391,6 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
      }, [fetchAllSolicitudes, handleCloseRespuestaModal]); // Dependencias ok
 
     // --- Valores Memoizados ---
-    const drawerContent = useMemo(() => ( <SidebarFuncionario currentSection={currentSection} onSelectSection={handleSelectSection} onCloseDrawer={handleDrawerClose} /> ), [currentSection, handleSelectSection, handleDrawerClose]);
-
     // --- Obtener el nombre del tipo de solicitud activo ---
     const getTipoNombre = useMemo(() => {
         if (currentSection.startsWith('tipo-')) {
@@ -404,7 +403,16 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
 
     // --- Renderizado del Contenido Principal ---
     const renderMainContent = () => {
-        if (currentSection === 'dashboard') return <DashboardFuncionario />;
+        if (currentSection === 'dashboard' || !currentSection) {
+            return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', py: 6 }}>
+                    <InfoOutlinedIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: 'text.secondary', fontStyle: 'italic', textAlign: 'center' }}>
+                        Selecciona una opción en el menú lateral
+                    </Typography>
+                </Box>
+            );
+        }
         if (currentSection.startsWith('tipo-')) {
             return (
                 <TableCard
@@ -462,40 +470,35 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
                         open={mobileOpen}
                         onClose={handleDrawerClose}
                         ModalProps={{ keepMounted: true }}
-                        sx={{
-                            display: { xs: 'block', md: 'none' },
-                            '& .MuiDrawer-paper': {
-                                boxSizing: 'border-box',
-                                width: DRAWER_WIDTH,
-                                bgcolor: 'background.paper',
-                                borderRight: `1px solid ${theme.palette.divider}`,
-                                top: { xs: 0, md: `${APP_BAR_HEIGHT}px` },
-                                height: { xs: '100vh', md: `calc(100vh - ${APP_BAR_HEIGHT}px)` },
-                                transition: theme.transitions.create('transform', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen })
-                            }
-                        }}
+                        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: 'background.paper', borderRight: `1px solid ${theme.palette.divider}`, top: { xs: 0, md: `${APP_BAR_HEIGHT}px` }, height: { xs: '100vh', md: `calc(100vh - ${APP_BAR_HEIGHT}px)` }, transition: theme.transitions.create('transform', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}
                     >
-                        {drawerContent}
+                        <Sidebar
+                            panelType="funcionario"
+                            currentSection={currentSection}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerClose}
+                            tiposDelArea={tiposDelAreaActual}
+                            loadingTipos={loadingTipos}
+                            user={user}
+                            onLogout={logout}
+                        />
                     </Drawer>
                     {/* Drawer desktop fijo igual que Vecino.jsx */}
                     <Drawer
                         variant="permanent"
                         open
-                        sx={{
-                            display: { xs: 'none', md: 'block' },
-                            '& .MuiDrawer-paper': {
-                                boxSizing: 'border-box',
-                                width: DRAWER_WIDTH,
-                                top: `${APP_BAR_HEIGHT}px`,
-                                height: `calc(100vh - ${APP_BAR_HEIGHT}px)` ,
-                                borderRight: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
-                                overflowY: 'auto',
-                                transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen })
-                            }
-                        }}
+                        sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}
                     >
-                        {drawerContent}
+                        <Sidebar
+                            panelType="funcionario"
+                            currentSection={currentSection}
+                            onSelectSection={handleSelectSection}
+                            onCloseDrawer={handleDrawerClose}
+                            tiposDelArea={tiposDelAreaActual}
+                            loadingTipos={loadingTipos}
+                            user={user}
+                            onLogout={logout}
+                        />
                     </Drawer>
                 </Box>
                 {/* Contenido Principal */}
