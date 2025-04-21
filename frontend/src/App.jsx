@@ -45,13 +45,11 @@ function App() {
 
                         {/* --- Rutas Protegidas --- */}
 
-                        {/* Ruta para Vecinos (CON ACCESO TEMPORAL PARA ADMIN) */}
+                        {/* Ruta para Vecinos (ahora sin restricción de rol) */}
                         <Route
                             path="/vecinos"
                             element={
-                                <ProtectedRoute allowedRoles={['Vecino', 'Administrador']}>
-                                    <Vecinos toggleTheme={toggleTheme} />
-                                </ProtectedRoute>
+                                <Vecinos toggleTheme={toggleTheme} />
                             }
                         />
                         {/* Ruta para Funcionarios */}

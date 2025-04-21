@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    AppBar, Toolbar, Typography, Box, IconButton, Tooltip, alpha,
+    AppBar, Toolbar, Typography, Box, IconButton, Tooltip,
     Avatar,
     Stack
 } from "@mui/material";
@@ -31,19 +31,24 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
     return (
         <AppBar
             position="fixed"
-            elevation={2}
+            elevation={0}
             sx={{
                 zIndex: (theme) => theme.zIndex.drawer + 1,
-                bgcolor: 'primary.main',
-                transition: (theme) => theme.transitions.create(['background-color'], {
+                background: (theme) => theme.palette.primary.main,
+                boxShadow: (theme) => theme.shadows[4],
+                borderBottom: (theme) => `1.5px solid ${theme.palette.primary.dark}`,
+                color: (theme) => theme.palette.primary.contrastText,
+                backdropFilter: 'blur(7px)',
+                WebkitBackdropFilter: 'blur(7px)',
+                transition: (theme) => theme.transitions.create(['background-color', 'box-shadow'], {
                     duration: theme.transitions.duration.standard,
                 }),
             }}
         >
-            <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: { xs: 56, sm: 64 } }}>
+            <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: { xs: 56, sm: 64 }, px: { xs: 1, sm: 2 } }}>
 
                 {/* Left Side: Menu Button (Mobile), Logo, and Title */}
-                <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" sx={{ flexShrink: 0 }}> {/* Added flexShrink */}
+                <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" sx={{ flexShrink: 0 }}>
                     {/* Mobile Menu Button */}
                     {typeof toggleSidebar === 'function' && (
                         <IconButton
@@ -54,20 +59,32 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                             sx={{
                                 display: { md: 'none' },
                                 padding: '8px',
-                                transition: (theme) => theme.transitions.create(['background-color', 'transform'], { duration: theme.transitions.duration.short }),
-                                '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.1), transform: 'scale(1.1)' }
+                                borderRadius: 2.5,
+                                background: (theme) => theme.palette.primary.dark,
+                                boxShadow: (theme) => theme.shadows[1],
+                                transition: (theme) => theme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
+                                '&:hover': {
+                                    bgcolor: (theme) => theme.palette.secondary.main,
+                                    color: (theme) => theme.palette.secondary.contrastText,
+                                    transform: 'scale(1.1)',
+                                    boxShadow: (theme) => theme.shadows[4],
+                                }
                             }}>
                             <MenuIcon />
                         </IconButton>
                     )}
 
-                    {/* Logo with Link */}
+                    {/* Logo con Link, solo imagen grande sin Box ni borde ni fondo */}
                     <Link to={logoLink} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                        <Box component="img" src="/LOGO PITRUFQUEN.png" alt="Logo Municipalidad"
-                            sx={{
-                                width: { xs: 38, sm: 45 }, height: { xs: 38, sm: 45 }, display: 'block',
-                                transition: (theme) => theme.transitions.create('transform', { duration: theme.transitions.duration.short }),
-                                "&:hover": { transform: "scale(1.12)" },
+                        <img
+                            src="/LOGO PITRUFQUEN.png"
+                            alt="Logo Municipalidad"
+                            style={{
+                                width: '60px',
+                                height: '60px',
+                                objectFit: 'contain',
+                                display: 'block',
+                                marginRight: 12,
                             }}
                         />
                     </Link>
@@ -77,13 +94,14 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                         variant="h6"
                         component="div"
                         sx={{
-                            // Removed flexGrow: 1
-                            fontWeight: "bold",
-                            color: 'primary.contrastText',
+                            fontWeight: 800,
+                            color: (theme) => theme.palette.primary.contrastText,
                             fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
                             userSelect: 'none',
                             whiteSpace: 'nowrap',
-                            // Hide on mobile if too cramped, show from sm upwards
+                            letterSpacing: 0.7,
+                            textShadow: (theme) => `0 2px 8px ${theme.palette.primary.dark}22`,
+                            textTransform: 'uppercase',
                             display: { xs: 'none', sm: 'block' }
                         }}>
                         {title}
@@ -96,7 +114,7 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
 
 
                 {/* Right Side: Controls */}
-                <Stack direction="row" spacing={1} alignItems="center" ml={1} sx={{ flexShrink: 0 }}> {/* Added flexShrink */}
+                <Stack direction="row" spacing={1} alignItems="center" ml={1} sx={{ flexShrink: 0 }}>
                     {/* Theme Toggle */}
                     {typeof toggleTheme === 'function' && <ThemeToggle toggleTheme={toggleTheme} />}
 
@@ -105,11 +123,19 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                         <Stack direction="row" spacing={1} alignItems="center" >
                             <Tooltip title={userFullName}>
                                 <Avatar sx={{
-                                    width: {xs: 30, sm: 34 }, height: {xs: 30, sm: 34 },
-                                    fontSize: {xs: '0.8rem', sm: '0.875rem'},
-                                    bgcolor: 'secondary.main', color: 'secondary.contrastText',
-                                    cursor: 'default'
-                                    }}>
+                                    width: { xs: 30, sm: 34 }, height: { xs: 30, sm: 34 },
+                                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                                    bgcolor: (theme) => theme.palette.secondary.main, color: (theme) => theme.palette.secondary.contrastText,
+                                    fontWeight: 700,
+                                    border: (theme) => `2px solid ${theme.palette.primary.light}`,
+                                    boxShadow: (theme) => theme.shadows[1],
+                                    transition: 'box-shadow 0.18s, border 0.18s',
+                                    cursor: 'default',
+                                    '&:hover': {
+                                        boxShadow: (theme) => theme.shadows[4],
+                                        border: (theme) => `2px solid ${theme.palette.secondary.main}`,
+                                    },
+                                }}>
                                     {userInitials}
                                 </Avatar>
                             </Tooltip>
@@ -118,8 +144,16 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                                 <IconButton color="inherit" aria-label="cerrar sesión" onClick={handleLogout}
                                     sx={{
                                         padding: '8px',
-                                        transition: (theme) => theme.transitions.create(['background-color', 'transform'], { duration: theme.transitions.duration.short }),
-                                        '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.1), transform: 'scale(1.1)' }
+                                        borderRadius: 2.5,
+                                        background: (theme) => theme.palette.primary.dark,
+                                        boxShadow: (theme) => theme.shadows[1],
+                                        transition: (theme) => theme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: theme.transitions.duration.short }),
+                                        '&:hover': {
+                                            bgcolor: (theme) => theme.palette.secondary.main,
+                                            color: (theme) => theme.palette.secondary.contrastText,
+                                            transform: 'scale(1.1)',
+                                            boxShadow: (theme) => theme.shadows[4],
+                                        }
                                     }}>
                                     <LogoutIcon />
                                 </IconButton>

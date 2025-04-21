@@ -59,25 +59,25 @@ function TableCard({
       width: '100%',
       flexGrow: 1,
       borderRadius: 3,
-      boxShadow: 4,
+      boxShadow: (theme) => theme.shadows[2],
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      bgcolor: 'background.paper',
-      border: 'none',
+      background: (theme) => theme.palette.background.paper,
+      border: (theme) => `1.5px solid ${theme.palette.primary.light}`,
       p: 0,
       m: 0,
-      transition: theme => theme.transitions.create(['box-shadow', 'background-color'], { duration: 300 }),
-      // Elimina la línea azul superior
+      color: (theme) => theme.palette.text.primary,
+      minHeight: 320,
     }}>
       <CardContent sx={{
-        p: { xs: 2, sm: 3, md: 4 },
+        p: { xs: 1.5, sm: 2, md: 2.5 },
         display: 'flex',
         flexDirection: 'column',
         flexGrow: 1,
         overflow: 'hidden',
-        gap: 2,
-        bgcolor: 'background.paper',
+        gap: 1.5,
+        background: 'transparent',
         m: 0,
       }}>
         {/* Header */}
@@ -86,14 +86,14 @@ function TableCard({
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 2,
+          gap: 1.2,
           flexShrink: 0,
-          borderBottom: theme => `1px solid ${theme.palette.divider}`,
-          pb: 2,
-          mb: 1,
+          borderBottom: (theme) => `1.5px solid ${theme.palette.primary.light}`,
+          pb: 1.2,
+          mb: 0.7,
         }}>
-          <Typography variant="h6" component="h1" sx={{ fontWeight: 600, color: 'primary.main', mr: 'auto', letterSpacing: 0.2, fontSize: { xs: '1.05rem', sm: '1.2rem', md: '1.3rem' } }}>{title}</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'nowrap', ml: { xs: 0, sm: 2 } }}>
+          <Typography variant="h6" component="h1" sx={{ fontWeight: 800, color: (theme) => theme.palette.primary.main, mr: 'auto', letterSpacing: 0.2, fontSize: { xs: '0.99rem', sm: '1.09rem', md: '1.13rem' }, textTransform: 'uppercase', fontFamily: 'Montserrat, Arial, sans-serif' }}>{title}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', ml: { xs: 0, sm: 1 } }}>
             {onSearchChange && (
               <TextField
                 size="small"
@@ -101,8 +101,8 @@ function TableCard({
                 placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={onSearchChange}
-                sx={{ width: { xs: '140px', sm: 180, md: 220 }, '& .MuiOutlinedInput-root': { borderRadius: '24px', background: 'rgba(0,0,0,0.01)', boxShadow: 'none', fontWeight: 400 }, fontSize: '1rem' }}
-                InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }}
+                sx={{ width: { xs: '110px', sm: 150, md: 180 }, '& .MuiOutlinedInput-root': { borderRadius: '18px', background: (theme) => theme.palette.action.selected, boxShadow: 'none', fontWeight: 400, color: (theme) => theme.palette.text.primary }, fontSize: '0.97rem', input: { color: (theme) => theme.palette.text.primary } }}
+                InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" sx={{ color: (theme) => theme.palette.primary.main }} /></InputAdornment>) }}
               />
             )}
             {actionsHeader}
@@ -129,14 +129,14 @@ function TableCard({
               display: 'flex',
               flexDirection: 'column',
               border: 'none',
-              borderRadius: 2,
+              borderRadius: 2.5,
               width: '100%',
-              bgcolor: 'background.paper',
-              boxShadow: 'none',
+              background: (theme) => theme.palette.background.paper,
+              boxShadow: (theme) => theme.shadows[1],
               m: 0,
               p: 0,
             }}>
-              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', borderRadius: 2 }}>
+              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', borderRadius: 2.5, background: (theme) => theme.palette.background.paper }}>
                 <Table stickyHeader size="small" sx={{ minWidth, borderCollapse: 'separate', borderSpacing: 0 }}>
                   <TableHead>
                     <TableRow>
@@ -147,35 +147,36 @@ function TableCard({
                             ...headerCellStyle,
                             ...(col.headerStyle || {}),
                             textAlign: col.id === 'actions' ? 'right' : 'left',
-                            fontWeight: 600,
-                            fontSize: '0.97rem',
+                            fontWeight: 800,
+                            fontSize: '0.93rem',
                             border: 'none',
-                            borderBottom: theme => `2px solid ${theme.palette.primary.main}`,
-                            background: theme => theme.palette.primary.main,
-                            color: theme => theme.palette.primary.contrastText,
+                            borderBottom: (theme) => `2px solid ${theme.palette.primary.light}`,
+                            background: (theme) => theme.palette.primary.main,
+                            color: (theme) => theme.palette.primary.contrastText,
                             textTransform: 'uppercase',
-                            px: 2,
-                            py: 1.1,
-                            letterSpacing: 0.1,
+                            px: 1.5,
+                            py: 0.7,
+                            letterSpacing: 0.11,
+                            fontFamily: 'Montserrat, Arial, sans-serif',
                           }}
                         >
                           {col.label}
                         </TableCell>
                       ))}
-                      {renderActions && <TableCell sx={{ ...headerCellStyle, textAlign: 'right', width: '110px', border: 'none', borderBottom: theme => `2px solid ${theme.palette.primary.main}`, background: theme => theme.palette.primary.main, color: theme => theme.palette.primary.contrastText, fontWeight: 600, fontSize: '0.97rem', textTransform: 'uppercase', px: 2, py: 1.1, letterSpacing: 0.1 }}>Acciones</TableCell>}
+                      {renderActions && <TableCell sx={{ ...headerCellStyle, textAlign: 'right', width: '90px', border: 'none', borderBottom: (theme) => `2px solid ${theme.palette.primary.light}`, background: (theme) => theme.palette.primary.main, color: (theme) => theme.palette.primary.contrastText, fontWeight: 800, fontSize: '0.93rem', textTransform: 'uppercase', px: 1.5, py: 0.7, letterSpacing: 0.11, fontFamily: 'Montserrat, Arial, sans-serif' }}>Acciones</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {rows.length > 0 ? rows.map((row, idx) => (
-                      <TableRow hover key={row.id || idx} sx={{ transition: 'background 0.2s', borderRadius: 2, '&:hover': { background: theme => theme.palette.action.hover } }}>
+                      <TableRow hover key={row.id || idx} sx={{ transition: 'background 0.2s', borderRadius: 2, '&:hover': { background: (theme) => theme.palette.action.hover } }}>
                         {columns.map(col => (
-                          <TableCell key={col.id} sx={{ ...bodyCellStyle, ...(col.cellStyle || {}), border: 'none', borderBottom: theme => `1px solid ${theme.palette.divider}`, fontSize: '0.97rem', py: 1.1, px: 2, background: 'transparent' }}>{col.render ? col.render(row, context) : (row[col.id] ?? '-')}</TableCell>
+                          <TableCell key={col.id} sx={{ ...bodyCellStyle, ...(col.cellStyle || {}), border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, fontSize: '0.91rem', py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{col.render ? col.render(row, context) : (row[col.id] ?? '-')}</TableCell>
                         ))}
-                        {renderActions && <TableCell sx={{ ...bodyCellStyle, textAlign: 'right', whiteSpace: 'nowrap', border: 'none', borderBottom: theme => `1px solid ${theme.palette.divider}`, py: 1.1, px: 2, background: 'transparent' }}>{renderActions(row)}</TableCell>}
+                        {renderActions && <TableCell sx={{ ...bodyCellStyle, textAlign: 'right', whiteSpace: 'nowrap', border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{renderActions(row)}</TableCell>}
                       </TableRow>
                     )) : (
                       <TableRow>
-                        <TableCell colSpan={columns.length + (renderActions ? 1 : 0)} align="center" sx={{ py: 4, fontStyle: 'italic', color: 'text.disabled', borderBottom: 'none', fontWeight: 400, fontSize: '1rem', background: 'transparent' }}>{noResultsMsg}</TableCell>
+                        <TableCell colSpan={columns.length + (renderActions ? 1 : 0)} align="center" sx={{ py: 3, fontStyle: 'italic', color: (theme) => theme.palette.text.secondary, borderBottom: 'none', fontWeight: 400, fontSize: '0.93rem', background: 'transparent', fontFamily: 'Montserrat, Arial, sans-serif' }}>{noResultsMsg}</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -192,7 +193,7 @@ function TableCard({
                   onRowsPerPageChange={onRowsPerPageChange}
                   labelRowsPerPage="Filas por página:"
                   labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`}
-                  sx={{ borderTop: theme => `1px solid ${theme.palette.divider}`, flexShrink: 0, color: 'text.secondary', bgcolor: 'background.default', borderRadius: 0, fontWeight: 400, fontSize: '0.98rem' }}
+                  sx={{ borderTop: (theme) => `1.5px solid ${theme.palette.divider}`, flexShrink: 0, color: (theme) => theme.palette.text.secondary, bgcolor: 'transparent', borderRadius: 0, fontWeight: 400, fontSize: '0.98rem' }}
                 />
               )}
             </Paper>
