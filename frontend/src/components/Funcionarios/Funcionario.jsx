@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
     Box, Typography, CircularProgress, Fade, Alert,
-    Card, CardContent, Drawer, useMediaQuery,
+    Card, CardContent, Drawer,
     keyframes,
     // MUI Table Components
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, IconButton, Tooltip, Chip,
@@ -29,6 +29,7 @@ import { useAuth } from '../../contexts/useAuth';
 import { formatRut } from '../../utils/rutUtils'; // Usado en solicitudColumns
 import { mostrarAlertaExito, mostrarAlertaError } from '../../utils/alertUtils'; // Usado en handleEnviarRespuesta
 import { lightTheme, darkTheme } from '../../theme';
+import TableCard from '../common/TableCard';
 
 // --- Constantes ---
 const APP_BAR_HEIGHT = 64;
@@ -153,7 +154,6 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
 
     // --- Hooks ---
     const theme = useMemo(() => (mode === 'light' ? lightTheme : darkTheme), [mode]);
-    const isLargeScreen = useMediaQuery(theme.breakpoints.up('md'));
     const { user } = useAuth();
 
     // --- Estilos Tabla ---
@@ -407,73 +407,42 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
         if (currentSection === 'dashboard') return <DashboardFuncionario />;
         if (currentSection.startsWith('tipo-')) {
             return (
-                <>
-                    <Paper sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, width: '100%', bgcolor: 'background.paper', boxShadow: 'none', flexGrow: 1 }}>
-                        <TableContainer
-                            sx={{
-                                flexGrow: 1,
-                                overflow: 'auto',
-                                maxHeight: 'calc(100vh - 200px)', // Ajuste dinámico para evitar cortes
-                                '&::-webkit-scrollbar': {
-                                    width: '8px',
-                                    height: '8px',
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400],
-                                    borderRadius: '4px',
-                                },
-                            }}
-                        >
-                            <Table stickyHeader size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        {solicitudColumns.map((col) => (
-                                            <TableCell key={col.id} sx={headerCellStyle}>{col.label}</TableCell>
-                                        ))}
-                                        <TableCell sx={{ ...headerCellStyle, textAlign: 'center', width: '130px' }}>Acción</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {paginatedData.map((item) => (
-                                        <TableRow hover key={item.id_solicitud} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: theme.palette.action.hover }, transition: theme.transitions.create('background-color', { duration: theme.transitions.duration.shortest }) }}>
-                                            {solicitudColumns.map((col) => (
-                                                <TableCell key={`${item.id_solicitud}-${col.id}`} sx={bodyCellStyle}>{col.render ? col.render(item) : (item[col.id] ?? '-')}</TableCell>
-                                            ))}
-                                            <TableCell sx={{ ...bodyCellStyle, textAlign: 'center' }}>
-                                                <Tooltip title="Ver Detalles" placement="top">
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        onClick={() => {
-                                                            if (item.estado === 'Pendiente') {
-                                                                handleOpenRespuestaModal(item);
-                                                            } else {
-                                                                handleVerDetalleResuelta(item);
-                                                            }
-                                                        }}
-                                                    >
-                                                        Ver
-                                                    </Button>
-                                                </Tooltip>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Paper>
-                    {/* Paginación */}
-                    {filteredAndSortedData.length > 0 && (
-                        <TablePagination
-                            rowsPerPageOptions={[5, 10, 25, { label: 'Todo', value: -1 }]}
-                            component="div" count={filteredAndSortedData.length} rowsPerPage={rowsPerPage} page={page}
-                            onPageChange={handleChangePage} // <-- USADO
-                            onRowsPerPageChange={handleChangeRowsPerPage} // <-- USADO
-                            labelRowsPerPage="Filas p/pág:" labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-                            sx={{ borderTop: `1px solid ${theme.palette.divider}`, flexShrink: 0, mt: 'auto', overflowX: 'auto' }}
-                        />
+                <TableCard
+                    title={getTipoNombre}
+                    columns={solicitudColumns}
+                    rows={paginatedData}
+                    loading={false}
+                    error={null}
+                    searchTerm={searchTerm}
+                    onSearchChange={handleSearchChange}
+                    renderActions={(item) => (
+                        <Tooltip title="Ver Detalles" placement="top">
+                            <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => {
+                                    if (item.estado === 'Pendiente') {
+                                        handleOpenRespuestaModal(item);
+                                    } else {
+                                        handleVerDetalleResuelta(item);
+                                    }
+                                }}
+                            >
+                                Ver
+                            </Button>
+                        </Tooltip>
                     )}
-                </>
+                    headerCellStyle={headerCellStyle}
+                    bodyCellStyle={bodyCellStyle}
+                    minWidth={650}
+                    noResultsMsg={searchTerm ? "No se encontraron solicitudes con la búsqueda." : "No hay solicitudes que mostrar."}
+                    totalCount={filteredAndSortedData.length}
+                    page={page}
+                    rowsPerPage={rowsPerPage}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    context={{}}
+                />
             );
         }
         return ( <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary', mt: 4 }}><Typography>Contenido no disponible.</Typography></Box> );
@@ -542,21 +511,7 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
                     bgcolor: 'background.default',
                     transition: theme.transitions.create('padding', { duration: theme.transitions.duration.short })
                 }}>
-                    <Card sx={{ width: '100%', flexGrow: 1, borderRadius: 2, boxShadow: theme.shadows[2], display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.paper' }}>
-                        <CardContent sx={{ p: { xs: 1.5, sm: 2 }, display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
-                            {/* Header */}
-                            {currentSection.startsWith('tipo-') && (
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1, flexShrink: 0, borderBottom: `1px solid ${theme.palette.divider}`, pb: 1.5, mb: 1.5 }}>
-                                    <Typography variant={isLargeScreen ? 'h5' : 'h6'} component="h1" sx={{ fontWeight: "bold", color: 'text.primary' }}>{getTipoNombre}</Typography>
-                                    <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '150px', sm: 200 }, '& .MuiOutlinedInput-root': { borderRadius: '50px' } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }} />
-                                </Box>
-                            )}
-                            {/* Área Scrollable */}
-                            <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                                {renderMainContent()}
-                            </Box>
-                        </CardContent>
-                    </Card>
+                    {renderMainContent()}
                 </Box>
                 {/* --- Modal --- */}
                 {modalRespuestaOpen && user?.rut && solicitudParaResponder && ( <RespuestaModalForm open={modalRespuestaOpen} onClose={handleCloseRespuestaModal} solicitudOriginal={solicitudParaResponder} onSubmit={handleEnviarRespuesta} isSubmitting={isSubmittingRespuesta} submitError={submitRespuestaError} currentUserRut={user.rut} /> )}

@@ -9,7 +9,7 @@ import {
     TextField, InputAdornment, Tooltip, Alert, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem, FormControl, InputLabel,
     Checkbox, FormControlLabel, Stack,
-    TablePagination, keyframes
+    TablePagination
 } from "@mui/material";
 // import { useTheme } from '@mui/material/styles'; // <--- Eliminado: No es necesario aquí
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,6 +25,7 @@ import SidebarAdmin from "./SidebarAdmin";
 import { lightTheme, darkTheme } from "../../theme";
 import { mostrarAlertaExito, mostrarAlertaError } from "../../utils/alertUtils";
 import { formatRut } from "../../utils/rutUtils";
+import TableCard from '../common/TableCard';
 
 // --- Constantes ---
 const APP_BAR_HEIGHT = 64;
@@ -40,18 +41,6 @@ const ENTITY_TYPES = {
 const ROLES_PERMITIDOS = ['Administrador', 'Funcionario', 'Vecino'];
 const ESTADOS_SOLICITUD = ['Pendiente', 'Aprobada', 'Rechazada'];
 const DEFAULT_ROWS_PER_PAGE = 10;
-
-// --- Animaciones Sutiles ---
-const fadeInUp = keyframes`
-  from {
-    opacity: 0;
-    transform: translate3d(0, 20px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-`;
 
 // --- Componente Principal ---
 function Administrador({ toggleTheme }) {
@@ -85,7 +74,6 @@ function Administrador({ toggleTheme }) {
     // const themeHook = useTheme(); // <--- ELIMINADO: Redundante y no usado
     const currentTheme = useMemo(() => (mode === "light" ? lightTheme : darkTheme), [mode]);
     const isLargeScreen = useMediaQuery(currentTheme.breakpoints.up('md'));
-    const isSmallScreen = useMediaQuery(currentTheme.breakpoints.down('sm'));
 
     // --- Handlers Layout ---
     const handleToggleTheme = useCallback(() => {
@@ -125,13 +113,12 @@ function Administrador({ toggleTheme }) {
             } else if (endpoint === '/respuestas' && data && Array.isArray(data.respuestas)) {
                 data = data.respuestas;
             }
-            // Final check if data is now an array (Logic unchanged)
+            // --- FORZAR ARRAY PARA EVITAR ERRORES EN LAS TABLAS ---
             if (!Array.isArray(data)) {
-                console.warn(`[fetchGenericData] Unexpected final data format for ${dataKey}. Expected array, got:`, data);
-                if (Array.isArray(response.data)) {
-                    data = response.data;
+                if (data && typeof data === 'object') {
+                    data = Object.values(data);
                 } else {
-                    throw new Error(`Respuesta inesperada del servidor para ${dataKey}.`);
+                    data = [];
                 }
             }
 
@@ -693,12 +680,6 @@ function Administrador({ toggleTheme }) {
         borderBottom: `1px solid ${currentTheme.palette.divider}`,
     }), [currentTheme]);
 
-    // --- ColSpan Dinámico ---
-    const getCurrentColSpan = useMemo(() => {
-        if (!currentConfig) return 1;
-        return currentConfig.columns.length + (currentConfig.canEdit || currentConfig.canDelete ? 1 : 0);
-    }, [currentConfig]);
-
      // --- Handlers Paginación ---
     const handleChangePage = useCallback((event, newPage) => { setPage(newPage); }, []);
     const handleChangeRowsPerPage = useCallback((event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); }, []);
@@ -740,86 +721,54 @@ function Administrador({ toggleTheme }) {
                     component="main"
                     sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, display: 'flex', flexDirection: 'column', mt: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, overflow: 'hidden', bgcolor: 'background.default', transition: currentTheme.transitions.create('padding', { duration: currentTheme.transitions.duration.short }) }}
                 >
-                    {/* Main Content Card */}
-                    <Card sx={{ width: '100%', flexGrow: 1, borderRadius: 2, boxShadow: { xs: 2, sm: 3, md: 4 }, display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.paper', transition: currentTheme.transitions.create(['box-shadow', 'background-color'], { duration: currentTheme.transitions.duration.short }) }}>
-                        <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 }, display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', gap: 2.5 }}>
-                            {/* Cabecera */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, flexShrink: 0, borderBottom: `1px solid ${currentTheme.palette.divider}`, pb: 2 }}>
-                                <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} component="h1" sx={{ fontWeight: "bold", color: 'text.primary', order: 1, mr: 'auto', animation: `${fadeInUp} 0.5s ease-out`, animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>
-                                    {currentConfig?.title || 'Administración'}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'nowrap', order: 2, ml: { xs: 0, sm: 2 } }}>
-                                    {/* Search Bar */}
-                                    {!loading && !error && currentConfig && (
-                                        <Fade in={!loading && !error && currentConfig} timeout={400}>
-                                            <TextField
-                                                size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange}
-                                                sx={{ width: { xs: '150px', sm: 200, md: 250 }, transition: currentTheme.transitions.create(['width', 'box-shadow', 'border-color'], { duration: currentTheme.transitions.duration.short }), '& .MuiOutlinedInput-root': { borderRadius: '50px', backgroundColor: currentTheme.palette.action.focus, '& fieldset': { borderColor: 'transparent' }, '&:hover fieldset': { borderColor: currentTheme.palette.action.disabled }, '&.Mui-focused fieldset': { borderColor: currentTheme.palette.primary.main, borderWidth: '1px' } }, '& .MuiInputAdornment-root': { color: currentTheme.palette.text.secondary } }}
-                                                InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }}
-                                            />
-                                        </Fade>
-                                    )}
-                                     {/* Add Button */}
-                                    {currentConfig?.canAdd && (
-                                        <Fade in={currentConfig?.canAdd} timeout={400}>
-                                            <Tooltip title={`Agregar Nuevo/a ${currentConfig.title.slice(0, -1)}`}>
-                                                <span>
-                                                    <Button
-                                                        variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')} disabled={loading || isSubmitting || isDeleting || !currentConfig?.canAdd}
-                                                        sx={{ whiteSpace: 'nowrap', height: '40px', borderRadius: '50px', boxShadow: currentTheme.shadows[2], transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: currentTheme.transitions.duration.short }), '&:hover': { transform: 'translateY(-2px)', boxShadow: currentTheme.shadows[4], backgroundColor: currentTheme.palette.primary.dark }, '&:active': { transform: 'translateY(0)', boxShadow: currentTheme.shadows[2] } }}
-                                                    > Agregar </Button>
-                                                </span>
-                                            </Tooltip>
-                                        </Fade>
-                                    )}
-                                </Box>
+                    {/* Main Content Card (reemplazado por TableCard) */}
+                    <TableCard
+                        title={currentConfig?.title || 'Administración'}
+                        columns={currentConfig?.columns || []}
+                        rows={paginatedData}
+                        loading={loading}
+                        error={error && `Error al cargar datos: ${error}`}
+                        searchTerm={searchTerm}
+                        onSearchChange={handleSearchChange}
+                        actionsHeader={currentConfig?.canAdd && (
+                          <Fade in={currentConfig?.canAdd} timeout={400}>
+                            <Tooltip title={`Agregar Nuevo/a ${currentConfig.title.slice(0, -1)}`}>
+                              <span>
+                                <Button
+                                  variant="contained" color="primary" size="medium" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')} disabled={loading || isSubmitting || isDeleting || !currentConfig?.canAdd}
+                                  sx={{ whiteSpace: 'nowrap', height: '40px', borderRadius: '50px', boxShadow: currentTheme.shadows[2], transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow'], { duration: currentTheme.transitions.duration.short }), '&:hover': { transform: 'translateY(-2px)', boxShadow: currentTheme.shadows[4], backgroundColor: currentTheme.palette.primary.dark }, '&:active': { transform: 'translateY(0)', boxShadow: currentTheme.shadows[2] } }}
+                                > Agregar </Button>
+                              </span>
+                            </Tooltip>
+                          </Fade>
+                        )}
+                        renderActions={(item) => {
+                          const canEditItem = currentConfig?.canEdit;
+                          const canDeleteItem = currentConfig?.canDelete;
+                          const actionsCellStyle = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
+                          return (
+                            <Box sx={actionsCellStyle}>
+                              {canEditItem && (
+                                <Tooltip title={`Editar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenModal('edit', item)} color="primary" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><EditIcon fontSize="inherit"/></IconButton></span></Tooltip>
+                              )}
+                              {canDeleteItem && (
+                                <Tooltip title={`Eliminar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenDeleteConfirmation(item)} color="error" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><DeleteIcon fontSize="inherit"/></IconButton></span></Tooltip>
+                              )}
                             </Box>
-                            {/* Indicadores */}
-                            {loading && ( <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', my: 5, flexGrow: 1, gap: 2 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic' }}>Cargando {currentConfig?.title.toLowerCase()}...</Typography> </Box> )}
-                            {!loading && error && ( <Fade in={!loading && !!error} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: currentTheme.shadows[1], border: `1px solid ${currentTheme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}> {`Error al cargar datos: ${error}`} </Alert> </Fade> )}
-                            {!loading && !error && !currentConfig && ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, textAlign: 'center', color: 'text.secondary', p: 3 }}> <Typography variant="h6" component="p" sx={{ fontStyle: 'italic' }}> Selecciona una sección del menú lateral.</Typography> </Box> )}
+                          );
+                        }}
+                        page={page}
+                        rowsPerPage={rowsPerPage}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        totalCount={filteredData.length}
+                        headerCellStyle={headerCellStyle}
+                        bodyCellStyle={bodyCellStyle}
+                        minWidth={650}
+                        noResultsMsg={searchTerm ? 'No se encontraron resultados que coincidan con la búsqueda.' : `No hay ${(currentConfig?.title || '').toLowerCase()} para mostrar.`}
+                        context={contextForRender}
+                    />
 
-                             {/* Contenedor Tabla y Paginación */}
-                            {!loading && !error && currentConfig && (
-                                <Fade in={!loading && !error && currentConfig} timeout={500} style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                                    <Paper sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: `1px solid ${currentTheme.palette.divider}`, borderRadius: 1.5, width: '100%', bgcolor: 'background.paper', boxShadow: 'none', transition: currentTheme.transitions.create(['border-color', 'background-color']) }}>
-                                        <TableContainer sx={{ flexGrow: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: '8px', height: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: currentTheme.palette.mode === 'dark' ? currentTheme.palette.grey[700] : currentTheme.palette.grey[400], borderRadius: '4px' } }}>
-                                            <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
-                                                <TableHead>
-                                                    <TableRow>
-                                                        {currentConfig.columns.map(col => ( <TableCell key={col.id} sx={{ ...headerCellStyle, ...(col.headerStyle || {}), textAlign: col.id === 'actions' ? 'right' : 'left' }}> {col.label} </TableCell> ))}
-                                                        {(currentConfig.canEdit || currentConfig.canDelete) && ( <TableCell sx={{ ...headerCellStyle, textAlign: 'right', width: '110px' }}> Acciones </TableCell> )}
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {paginatedData.map((item, index) => {
-                                                        const rowKey = `${currentSectionKey}-${item[currentConfig.idKey] || index}`;
-                                                        const actionsCellStyle = { ...bodyCellStyle, padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
-                                                        const canEditItem = currentConfig.canEdit;
-                                                        const canDeleteItem = currentConfig.canDelete;
-                                                        return (
-                                                            <TableRow hover key={rowKey} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: currentTheme.palette.action.hover }, transition: currentTheme.transitions.create('background-color', { duration: currentTheme.transitions.duration.shortest }), animation: `${fadeInUp} 0.3s ease-out forwards`, animationDelay: `${index * 0.03}s`, opacity: 0 }}>
-                                                                {currentConfig.columns.map(col => ( <TableCell key={`${rowKey}-${col.id}`} sx={{...bodyCellStyle, ...(col.cellStyle || {})}}> {col.render ? col.render(item, contextForRender) : (item[col.id] ?? '-')} </TableCell> ))}
-                                                                {(canEditItem || canDeleteItem) && (
-                                                                    <TableCell sx={actionsCellStyle}>
-                                                                        {canEditItem && ( <Tooltip title={`Editar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenModal('edit', item)} color="primary" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><EditIcon fontSize="inherit"/></IconButton></span></Tooltip> )}
-                                                                        {canDeleteItem && ( <Tooltip title={`Eliminar ${currentConfig.title.slice(0,-1)}`}><span><IconButton size="small" onClick={() => handleOpenDeleteConfirmation(item)} color="error" disabled={isSubmitting || isDeleting} sx={{ transition: currentTheme.transitions.create(['transform', 'background-color']), '&:hover': { transform: 'scale(1.15)', bgcolor: 'action.hover' } }}><DeleteIcon fontSize="inherit"/></IconButton></span></Tooltip> )}
-                                                                    </TableCell>
-                                                                )}
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                                    {!loading && filteredData.length === 0 && ( <TableRow> <TableCell colSpan={getCurrentColSpan} align="center" sx={{ py: 5, fontStyle: 'italic', color: 'text.disabled', borderBottom: 'none' }}> {searchTerm ? 'No se encontraron resultados que coincidan con la búsqueda.' : `No hay ${currentConfig.title.toLowerCase()} para mostrar.`} </TableCell> </TableRow> )}
-                                                    {!loading && paginatedData.length > 0 && rowsPerPage > 0 && ( (() => { const emptyRows = rowsPerPage - paginatedData.length; return emptyRows > 0 ? ( <TableRow style={{ height: 49 * emptyRows }}><TableCell colSpan={getCurrentColSpan} style={{ padding: 0, borderBottom: 'none' }} /></TableRow> ) : null; })() )}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                        {filteredData.length > 0 && ( <TablePagination rowsPerPageOptions={[5, 10, 25, { label: 'Todo', value: -1 }]} component="div" count={filteredData.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} labelRowsPerPage="Filas por página:" labelDisplayedRows={({ from, to, count }) => `${from, to} de ${count !== -1 ? count : `más de ${to}`}`} sx={{ borderTop: `1px solid ${currentTheme.palette.divider}`, flexShrink: 0, color: 'text.secondary', bgcolor: currentTheme.palette.background.default, transition: currentTheme.transitions.create(['background-color', 'color']), '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': { color: 'text.secondary', fontSize: '0.85rem' }, '& .MuiTablePagination-actions button': { transition: currentTheme.transitions.create(['background-color', 'transform']), '&:hover': { backgroundColor: currentTheme.palette.action.hover, transform: 'scale(1.1)' } }, '& .MuiSelect-select': { paddingTop: '8px', paddingBottom: '8px' } }} /> )}
-                                    </Paper>
-                                </Fade>
-                            )}
-                        </CardContent>
-                    </Card>
                 </Box> {/* Fin Main */}
 
                 {/* --- Modal Genérico (Add/Edit) --- */}

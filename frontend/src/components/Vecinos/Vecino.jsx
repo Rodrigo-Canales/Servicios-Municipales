@@ -23,6 +23,7 @@ import { lightTheme, darkTheme } from "../../theme";
 import api from '../../services/api';
 // *** 1. IMPORTAR EL MODAL ***
 import SolicitudModalForm from './SolicitudModalForm'; // Asume que SolicitudModalForm.jsx está en la misma carpeta
+import TableCard from '../common/TableCard';
 
 // --- Constants (Solo una vez) ---
 const APP_BAR_HEIGHT = 64;
@@ -59,6 +60,9 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     // Estados para el modal
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTipoForModal, setSelectedTipoForModal] = useState(null);
+    // Estados para la paginación
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
 
     // Hooks de Tema y Media Query
     const theme = useMemo(() => (mode === "light" ? lightTheme : darkTheme), [mode]);
@@ -96,6 +100,14 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
             setLoading(prev => ({ ...prev, form: false }));
         }
     }, []); // Dependencias si refrescas
+    // Handlers para la paginación
+    const handleChangePage = useCallback((event, newPage) => {
+        setPage(newPage);
+    }, []);
+    const handleChangeRowsPerPage = useCallback((event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    }, []);
 
     // --- Data Fetching (Sin Cambios) ---
     const fetchContent = useCallback(async (sectionId, currentAreas) => {
@@ -174,7 +186,34 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                     )}
 
                     {/* --- TIPOS DE SOLICITUD (por Área) --- */}
-                    {currentSection.startsWith(SECTIONS.AREA_PREFIX) && (
+                    {currentSection.startsWith(SECTIONS.AREA_PREFIX) && !isSmallScreen && (
+                        <TableCard
+                            title={getMainTitle}
+                            columns={[
+                                { id: 'nombre_tipo', label: 'Nombre' },
+                                { id: 'descripcion', label: 'Descripción', cellStyle: descriptionCellStyle },
+                            ]}
+                            rows={filteredTiposForTable.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+                            loading={loading.content}
+                            error={error.content}
+                            searchTerm={searchTerm}
+                            onSearchChange={handleSearchChange}
+                            renderActions={(tipo) => (
+                                <Button variant="contained" size="small" endIcon={<SendIcon fontSize="inherit" />} sx={solicitarButtonStyle} onClick={() => handleOpenSolicitudModal(tipo)} >Solicitar</Button>
+                            )}
+                            headerCellStyle={headerCellStyle}
+                            bodyCellStyle={bodyCellStyle}
+                            minWidth={650}
+                            noResultsMsg={searchTerm ? "No se encontraron tipos de solicitud con la búsqueda." : "No hay tipos de solicitud disponibles en esta área."}
+                            totalCount={filteredTiposForTable.length}
+                            page={page}
+                            rowsPerPage={rowsPerPage}
+                            onPageChange={handleChangePage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                        />
+                    )}
+
+                    {currentSection.startsWith(SECTIONS.AREA_PREFIX) && isSmallScreen && (
                         <Box sx={{ animation: `${fadeInUp} 0.5s ease-out forwards`, opacity: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                             {Array.isArray(filteredTiposForTable) && filteredTiposForTable.length > 0 ? (
                                 // Si hay datos, elegir entre vista móvil o desktop
@@ -344,29 +383,25 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                     <Drawer variant="permanent" open sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, top: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', overflowY: 'auto', transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) } }}>{drawerContent}</Drawer>
                 </Box>
                 <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, display: 'flex', flexDirection: 'column', mt: `${APP_BAR_HEIGHT}px`, height: `calc(100vh - ${APP_BAR_HEIGHT}px)`, overflow: 'hidden', bgcolor: 'background.default', transition: theme.transitions.create('padding', { duration: theme.transitions.duration.short }) }} >
-                    <Card sx={{ width: '100%', flexGrow: 1, borderRadius: 2, boxShadow: theme.shadows[2], display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.paper', transition: theme.transitions.create(['box-shadow', 'background-color'], { duration: theme.transitions.duration.short }) }}>
-                        <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 }, display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', gap: 2 }}>
-                            {/* Header (Sin Cambios) */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, flexShrink: 0, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2, mb: 1 }}>
-                                <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} component="h1" sx={{ fontWeight: "bold", color: 'text.primary', order: 1, mr: 'auto', animation: `${fadeInUp} 0.5s ease-out`, animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>{getMainTitle}</Typography>
-                                <Box sx={{ order: 2, display: 'flex', alignItems: 'center' }}>
-                                    {currentSection && (currentSection.startsWith(SECTIONS.AREA_PREFIX) || currentSection === SECTIONS.PREGUNTAS_FRECUENTES) && !loading.initial && !loading.content && !error.content && (
-                                        <Fade in={true} timeout={400}>
-                                            <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '170px', sm: 200, md: 250 }, transition: theme.transitions.create(['width', 'box-shadow', 'border-color']), '& .MuiOutlinedInput-root': { borderRadius: '50px', '& fieldset': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover fieldset': { borderColor: theme.palette.divider }, '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' } }, '& .MuiInputAdornment-root': { color: theme.palette.text.secondary } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }} />
-                                        </Fade>
-                                    )}
-                                </Box>
-                            </Box>
-                             {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
-                            {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
-                            {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
-                            {/* Área Principal Scrollable */}
-                            <Box sx={{ flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400], borderRadius: '4px' }, pr: 0.5 }}>
-                                {/* Solo renderizar contenido si la carga inicial terminó sin errores */}
-                                {!loading.initial && !error.initial && renderMainContent()}
-                            </Box>
-                        </CardContent>
-                    </Card>
+                    {/* Header (Sin Cambios) */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, flexShrink: 0, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2, mb: 1 }}>
+                        <Typography variant={isSmallScreen ? 'h6' : (isLargeScreen ? 'h4' : 'h5')} component="h1" sx={{ fontWeight: "bold", color: 'text.primary', order: 1, mr: 'auto', animation: `${fadeInUp} 0.5s ease-out`, animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>{getMainTitle}</Typography>
+                        <Box sx={{ order: 2, display: 'flex', alignItems: 'center' }}>
+                            {currentSection && (currentSection.startsWith(SECTIONS.AREA_PREFIX) || currentSection === SECTIONS.PREGUNTAS_FRECUENTES) && !loading.initial && !loading.content && !error.content && (
+                                <Fade in={true} timeout={400}>
+                                    <TextField size="small" variant="outlined" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} sx={{ width: { xs: '170px', sm: 200, md: 250 }, transition: theme.transitions.create(['width', 'box-shadow', 'border-color']), '& .MuiOutlinedInput-root': { borderRadius: '50px', '& fieldset': { borderColor: alpha(theme.palette.divider, 0.5) }, '&:hover fieldset': { borderColor: theme.palette.divider }, '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' } }, '& .MuiInputAdornment-root': { color: theme.palette.text.secondary } }} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }} />
+                                </Fade>
+                            )}
+                        </Box>
+                    </Box>
+                     {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
+                    {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
+                    {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
+                    {/* Área Principal Scrollable */}
+                    <Box sx={{ flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400], borderRadius: '4px' }, pr: 0.5 }}>
+                        {/* Solo renderizar contenido si la carga inicial terminó sin errores */}
+                        {!loading.initial && !error.initial && renderMainContent()}
+                    </Box>
                 </Box>
             </Box>
 
