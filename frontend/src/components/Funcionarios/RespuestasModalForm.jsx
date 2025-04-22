@@ -5,10 +5,11 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
     CircularProgress, Alert, Box, Select, MenuItem, InputLabel, FormControl,
     Typography, Input, FormHelperText, List, ListItem, ListItemText, IconButton,
-    FormLabel // Asegúrate que FormLabel esté importado
+    FormLabel, Fade // Asegúrate que FormLabel esté importado
 } from '@mui/material';
 import { FileUpload as FileUploadIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { formatRut } from '../../utils/rutUtils'; // Asegúrate que la ruta sea correcta
+import { useTheme } from '@mui/material/styles';
 
 // --- Importar la definición Específica del formulario de respuesta ---
 import { title as formDefinitionTitle, fields as formDefinitionFields } from '../formDefinitions/respuestaSolicitud.js';
@@ -85,6 +86,7 @@ const RespuestaModalForm = ({
     const [fileInputs, setFileInputs] = useState({}); // { campoNombre: [File, File, ...] }
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+    const theme = useTheme();
 
     // Usar título y campos importados
     const formTitle = useMemo(() => formDefinitionTitle || 'Responder Solicitud', []);
@@ -407,13 +409,89 @@ const RespuestaModalForm = ({
         fontSize: '0.98rem',
     };
 
+    const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
+        color: '#fff',
+        '& .MuiInputBase-root, & .MuiInputBase-input, & .MuiInputLabel-root, & .MuiFormLabel-root, & .MuiTypography-root, & .MuiSelect-root, & .MuiOutlinedInput-notchedOutline, & .MuiFormHelperText-root': {
+            color: '#fff',
+            borderColor: '#fff',
+        },
+        '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#fff',
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+            color: '#fff',
+        },
+        '& .MuiSelect-icon': {
+            color: '#fff',
+        },
+        '& .MuiCheckbox-root, & .MuiRadio-root': {
+            color: '#fff',
+        },
+    } : {};
+
     return (
-        <Dialog open={open} onClose={handleDialogClose} maxWidth="md" fullWidth scroll="paper" PaperProps={{ component: 'form', onSubmit: handleSubmit, noValidate: true }} disableEscapeKeyDown={isSubmitting} aria-labelledby="responder-dialog-title">
-            <DialogTitle id="responder-dialog-title" sx={{ m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+        <Dialog
+            open={open}
+            onClose={handleDialogClose}
+            maxWidth="md"
+            fullWidth
+            scroll="paper"
+            disableEscapeKeyDown={isSubmitting}
+            TransitionComponent={Fade}
+            transitionDuration={300}
+            PaperProps={{
+                component: 'form',
+                onSubmit: handleSubmit,
+                noValidate: true,
+                sx: {
+                    borderRadius: 4,
+                    boxShadow: 8,
+                    bgcolor: 'background.paper',
+                    border: theme => `2.5px solid ${theme.palette.primary.main}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:before': {
+                        content: '""',
+                        display: 'block',
+                        width: '100%',
+                        height: 8,
+                        bgcolor: 'primary.main',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 2,
+                    },
+                }
+            }}
+            aria-labelledby="responder-dialog-title"
+        >
+            <DialogTitle id="responder-dialog-title" sx={{
+                m: 0,
+                p: '18px 32px 10px 32px',
+                bgcolor: 'primary.main',
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.primary.contrastText,
+                fontWeight: 700,
+                fontSize: '1.08rem', // Más pequeño
+                letterSpacing: 0.5,
+                borderBottom: theme => `1.5px solid ${theme.palette.divider}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textTransform: 'uppercase',
+                boxShadow: 'none',
+            }}>
                 {formTitle} #{solicitudOriginal.id_formateado || solicitudOriginal.id_solicitud}
+                {isSubmitting && <CircularProgress size={24} color="inherit" sx={{ ml: 2 }} />}
             </DialogTitle>
 
-            <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+            <DialogContent dividers sx={{
+                p: { xs: 2.5, sm: 3, md: 4 },
+                bgcolor: 'background.default',
+                border: 'none',
+                minHeight: 180,
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                ...darkModalTextSx(theme),
+            }}>
                 {/* Mostrar Error General del Envío API */}
                 {submitError && <Alert severity="error" sx={{ mb: 2 }}>{submitError}</Alert>}
                 {/* Mostrar Error Interno (Falta RUT/ID) */}
@@ -463,9 +541,37 @@ const RespuestaModalForm = ({
                 </Grid>
             </DialogContent>
 
-            <DialogActions sx={{ px: { xs: 1.5, sm: 2, md: 3 }, py: 1.5, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={handleDialogClose} color="secondary" variant="outlined" disabled={isSubmitting}>Cancelar</Button>
-                <Button type="submit" variant="contained" color="primary" disabled={isSubmitting} sx={{ minWidth: '180px' }} startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}>
+            <DialogActions sx={{
+                px: { xs: 2.5, sm: 3, md: 4 },
+                py: 2,
+                bgcolor: 'background.paper',
+                borderTop: theme => `1.5px solid ${theme.palette.divider}`,
+                boxShadow: 'none',
+                justifyContent: 'space-between',
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                ...darkModalTextSx(theme),
+            }}>
+                <Button onClick={handleDialogClose} variant="outlined" color="secondary" sx={{
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    boxShadow: 1,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    transition: 'all 0.2s',
+                }} disabled={isSubmitting}>Cancelar</Button>
+                <Button type="submit" variant="contained" color="primary" sx={{
+                    borderRadius: 3,
+                    fontWeight: 700,
+                    px: 3,
+                    py: 1,
+                    minWidth: '150px',
+                    boxShadow: 3,
+                    textTransform: 'none',
+                    fontSize: '1.08rem',
+                    transition: 'all 0.2s',
+                }} disabled={isSubmitting} startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}>
                     {isSubmitting ? 'Enviando...' : 'Enviar Respuesta'}
                 </Button>
             </DialogActions>

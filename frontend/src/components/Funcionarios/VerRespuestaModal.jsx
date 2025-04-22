@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Box, List, ListItem, ListItemText, Divider, CircularProgress, TextField, Alert
+    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Box, List, ListItem, ListItemText, Divider, CircularProgress, TextField, Alert, Fade
 } from '@mui/material';
 import { formatRut } from '../../utils/rutUtils';
+import { useTheme } from '@mui/material/styles';
 
 // Obtén la URL base del backend desde la variable de entorno
 const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
@@ -41,31 +42,160 @@ const pdfLinkStyle = {
     fontSize: '0.98rem',
 };
 
+const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
+    color: '#fff',
+    '& .MuiInputBase-root, & .MuiInputBase-input, & .MuiInputLabel-root, & .MuiFormLabel-root, & .MuiTypography-root, & .MuiSelect-root, & .MuiOutlinedInput-notchedOutline, & .MuiFormHelperText-root': {
+        color: '#fff',
+        borderColor: '#fff',
+    },
+    '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#fff',
+    },
+    '& .MuiInputLabel-root.Mui-focused': {
+        color: '#fff',
+    },
+    '& .MuiSelect-icon': {
+        color: '#fff',
+    },
+    '& .MuiCheckbox-root, & .MuiRadio-root': {
+        color: '#fff',
+    },
+} : {};
+
 const VerRespuestaModal = ({ open, onClose, solicitudOriginal, respuesta }) => {
+    const theme = useTheme();
     if (!open || !solicitudOriginal) return null;
     // Manejo robusto: si respuesta es null o undefined, mostrar mensaje claro
     if (!respuesta) {
         return (
-            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title">
-                <DialogTitle id="ver-respuesta-dialog-title" sx={{ m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title"
+                TransitionComponent={Fade}
+                transitionDuration={300}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 4,
+                        boxShadow: 8,
+                        bgcolor: 'background.paper',
+                        border: theme => `2.5px solid ${theme.palette.primary.main}`,
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&:before': {
+                            content: '""',
+                            display: 'block',
+                            width: '100%',
+                            height: 8,
+                            bgcolor: 'primary.main',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            zIndex: 2,
+                        },
+                    }
+                }}
+            >
+                <DialogTitle id="ver-respuesta-dialog-title" sx={{
+                    m: 0,
+                    p: '18px 32px 10px 32px',
+                    bgcolor: 'primary.main',
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : 'primary.contrastText',
+                    fontWeight: 700,
+                    fontSize: '1.08rem', // Más pequeño
+                    letterSpacing: 0.5,
+                    borderBottom: theme => `1.5px solid ${theme.palette.divider}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textTransform: 'uppercase',
+                    boxShadow: 'none',
+                }}>
                     Detalle de Solicitud Resuelta #{solicitudOriginal.id_formateado || solicitudOriginal.id_solicitud}
                 </DialogTitle>
-                <DialogContent dividers>
+                <DialogContent dividers sx={{
+                    p: { xs: 2.5, sm: 3, md: 4 },
+                    bgcolor: 'background.default',
+                    border: 'none',
+                    minHeight: 180,
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                    ...darkModalTextSx(theme),
+                }}>
                     <Alert severity="error">No se pudo cargar la respuesta del funcionario. Intente nuevamente.</Alert>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={onClose} color="secondary" variant="outlined">Cerrar</Button>
+                <DialogActions sx={{
+                    px: { xs: 2.5, sm: 3, md: 4 },
+                    py: 2,
+                    bgcolor: 'background.paper',
+                    borderTop: theme => `1.5px solid ${theme.palette.divider}`,
+                    boxShadow: 'none',
+                    justifyContent: 'flex-end',
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                    ...darkModalTextSx(theme),
+                }}>
+                    <Button onClick={onClose} variant="outlined" color="secondary" sx={{
+                        borderRadius: 3,
+                        fontWeight: 600,
+                        px: 3,
+                        py: 1,
+                        boxShadow: 1,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        transition: 'all 0.2s',
+                    }}>Cerrar</Button>
                 </DialogActions>
             </Dialog>
         );
     }
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title">
-            <DialogTitle id="ver-respuesta-dialog-title" sx={{ m: 0, p: '16px 28px', bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 700, fontSize: '1.25rem', letterSpacing: 0.5 }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title"
+            TransitionComponent={Fade}
+            transitionDuration={300}
+            PaperProps={{
+                sx: {
+                    borderRadius: 4,
+                    boxShadow: 8,
+                    bgcolor: 'background.paper',
+                    border: theme => `2.5px solid ${theme.palette.primary.main}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:before': {
+                        content: '""',
+                        display: 'block',
+                        width: '100%',
+                        height: 8,
+                        bgcolor: 'primary.main',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 2,
+                    },
+                }
+            }}
+        >
+            <DialogTitle id="ver-respuesta-dialog-title" sx={{
+                m: 0,
+                p: '18px 32px 10px 32px',
+                bgcolor: 'primary.main',
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : 'primary.contrastText',
+                fontWeight: 700,
+                fontSize: '1.08rem', // Más pequeño
+                letterSpacing: 0.5,
+                borderBottom: theme => `1.5px solid ${theme.palette.divider}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textTransform: 'uppercase',
+                boxShadow: 'none',
+            }}>
                 Detalle de Solicitud Resuelta #{solicitudOriginal.id_formateado || solicitudOriginal.id_solicitud}
             </DialogTitle>
-            <DialogContent dividers sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default' }}>
+            <DialogContent dividers sx={{
+                p: { xs: 2.5, sm: 3, md: 4 },
+                bgcolor: 'background.default',
+                border: 'none',
+                minHeight: 180,
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                ...darkModalTextSx(theme),
+            }}>
                 <Grid container spacing={3} alignItems="flex-start">
                     {/* Columna Izquierda: Info del Solicitante y archivos de la solicitud */}
                     <Grid item xs={12} md={6}>
@@ -145,8 +275,26 @@ const VerRespuestaModal = ({ open, onClose, solicitudOriginal, respuesta }) => {
                     </Grid>
                 </Grid>
             </DialogContent>
-            <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={onClose} color="secondary" variant="outlined">Cerrar</Button>
+            <DialogActions sx={{
+                px: { xs: 2.5, sm: 3, md: 4 },
+                py: 2,
+                bgcolor: 'background.paper',
+                borderTop: theme => `1.5px solid ${theme.palette.divider}`,
+                boxShadow: 'none',
+                justifyContent: 'flex-end',
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                ...darkModalTextSx(theme),
+            }}>
+                <Button onClick={onClose} variant="outlined" color="secondary" sx={{
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    boxShadow: 1,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    transition: 'all 0.2s',
+                }}>Cerrar</Button>
             </DialogActions>
         </Dialog>
     );

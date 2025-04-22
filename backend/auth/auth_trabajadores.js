@@ -66,11 +66,9 @@ router.post('/login', async (req, res) => {
         // directamente del token en el futuro (rut y rol son comunes).
         const payload = {
             rut: usuario.RUT,
-            rol: usuario.rol
-            // Podrías añadir area_id aquí si fuera estrictamente necesario decodificarlo
-            // directamente del token en el frontend, pero generalmente es mejor
-            // enviarlo en el objeto 'user' de la respuesta.
-            // area_id: usuario.area_id
+            rol: usuario.rol,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido
         };
 
         // Obtener Secreto y Tiempo de Expiración desde variables de entorno

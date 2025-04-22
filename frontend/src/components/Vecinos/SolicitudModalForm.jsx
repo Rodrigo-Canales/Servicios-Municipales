@@ -773,6 +773,27 @@ const SolicitudModalForm = ({
     };
 
 
+// Aplica color blanco a todos los textos y labels en modo oscuro
+const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
+  color: '#fff',
+  '& .MuiInputBase-root, & .MuiInputBase-input, & .MuiInputLabel-root, & .MuiFormLabel-root, & .MuiTypography-root, & .MuiSelect-root, & .MuiOutlinedInput-notchedOutline, & .MuiFormHelperText-root': {
+    color: '#fff',
+    borderColor: '#fff',
+  },
+  '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#fff',
+  },
+  '& .MuiInputLabel-root.Mui-focused': {
+    color: '#fff',
+  },
+  '& .MuiSelect-icon': {
+    color: '#fff',
+  },
+  '& .MuiCheckbox-root, & .MuiRadio-root': {
+    color: '#fff',
+  },
+} : {};
+
     // --- Field Rendering Logic (MAJOR CHANGES HERE) ---
     const renderField = (field) => {
         if (!field || !field.name || !field.type) {
@@ -1234,26 +1255,63 @@ const SolicitudModalForm = ({
         <Dialog
             open={open}
             onClose={handleDialogClose}
-            maxWidth="md" // Or "sm", "lg" depending on form complexity
+            maxWidth="md"
             fullWidth
-            scroll="paper" // Allows content to scroll independently
-            disableEscapeKeyDown={isSubmitting || loadingDefinition} // Prevent closing via Esc when busy
+            scroll="paper"
+            disableEscapeKeyDown={isSubmitting || loadingDefinition}
             PaperProps={{
-                 component: 'form', // Render the Paper component (dialog container) as a form
+                component: 'form',
                 onSubmit: handleSubmit,
-                 noValidate: true, // Disable browser validation, rely on ours
+                noValidate: true,
+                sx: {
+                    borderRadius: 4,
+                    boxShadow: 8,
+                    bgcolor: 'background.paper',
+                    border: `2.5px solid ${theme.palette.primary.main}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    // Borde superior colorido como Card
+                    '&:before': {
+                        content: '""',
+                        display: 'block',
+                        width: '100%',
+                        height: 8,
+                        bgcolor: 'primary.main',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 2,
+                    },
+                }
             }}
         >
-            <DialogTitle sx={{ 
-                m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            <DialogTitle sx={{
+                m: 0,
+                p: '18px 32px 10px 32px',
+                bgcolor: theme.palette.primary.main, // Fondo azul del theme
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.primary.contrastText, // Letras blancas en dark
+                fontWeight: 700,
+                fontSize: '1.08rem', // Más pequeño
+                letterSpacing: 0.5,
+                borderBottom: `1.5px solid ${theme.palette.divider}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textTransform: 'uppercase',
+                boxShadow: 'none',
             }}>
                 {formTitle || 'Nueva Solicitud'}
-                {loadingDefinition && <CircularProgress size={24} color="inherit" sx={{ ml: 2 }} />}
+                {loadingDefinition && <CircularProgress size={24} color="primary" sx={{ ml: 2 }} />}
             </DialogTitle>
 
-            {/* No need for extra <Box component="form"> if PaperProps uses component='form' */}
-            <DialogContent dividers sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}> {/* Responsive padding */}
+            <DialogContent dividers sx={{
+                p: { xs: 2.5, sm: 3, md: 4 },
+                bgcolor: 'background.default',
+                border: 'none',
+                minHeight: 180,
+                color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                ...darkModalTextSx(theme),
+            }}>
                 {/* Loading / Error States */}
                 {loadingDefinition && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
@@ -1294,55 +1352,94 @@ const SolicitudModalForm = ({
             {/* Actions Area */}
             {!loadingDefinition && !definitionError && formFields.length > 0 && (
                 <DialogActions sx={{
-                    px: { xs: 1.5, sm: 2, md: 3 }, py: 1.5, // Responsive padding
+                    px: { xs: 2.5, sm: 3, md: 4 },
+                    py: 2,
+                    bgcolor: 'background.paper',
+                    borderTop: `1.5px solid ${theme.palette.divider}`,
+                    boxShadow: 'none',
                     justifyContent: 'space-between',
-                    borderTop: `1px solid ${theme.palette.divider}`
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                    ...darkModalTextSx(theme),
                 }}>
-                    {/* Left: Cancel Button */}
                     <Box>
                         <Button
                             onClick={handleDialogClose}
-                            variant="contained" // Use outlined for secondary action
+                            variant="outlined"
                             color="secondary"
-                            disabled={isSubmitting} // Disable only when submitting
+                            sx={{
+                                borderRadius: 3,
+                                fontWeight: 600,
+                                px: 3,
+                                py: 1,
+                                boxShadow: 1,
+                                textTransform: 'none',
+                                fontSize: '1rem',
+                                transition: 'all 0.2s',
+                            }}
+                            disabled={isSubmitting}
                         >
                             Cancelar
                         </Button>
                     </Box>
-
-                     {/* Right: Navigation/Submit Buttons */}
-                    <Box sx={{ display: 'flex', gap: 1.5 }}>
-                        {/* Back Button */}
+                    <Box sx={{ display: 'flex', gap: 2 }}>
                         {currentStep > 0 && (
                             <Button
                                 onClick={handleBack}
                                 variant="contained"
                                 color="primary"
+                                sx={{
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                    px: 3,
+                                    py: 1,
+                                    boxShadow: 2,
+                                    textTransform: 'none',
+                                    fontSize: '1rem',
+                                    transition: 'all 0.2s',
+                                }}
                                 disabled={isSubmitting}
                             >
                                 Anterior
                             </Button>
                         )}
-                        {/* Next Button */}
                         {currentStep < totalSteps - 1 && totalSteps > 1 && (
                             <Button
                                 onClick={handleNext}
                                 variant="contained"
-                                color="primary" // Changed Next to primary
+                                color="primary"
+                                sx={{
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                    px: 3,
+                                    py: 1,
+                                    boxShadow: 2,
+                                    textTransform: 'none',
+                                    fontSize: '1rem',
+                                    transition: 'all 0.2s',
+                                }}
                                 disabled={isSubmitting}
                             >
                                 Siguiente
                             </Button>
                         )}
-                         {/* Submit Button */}
                         {currentStep === totalSteps - 1 && totalSteps > 0 && (
                             <Button
-                                type="submit" // Ensures form submission on click
+                                type="submit"
                                 variant="contained"
-                                color="success" // Use success color for final action
-                                disabled={isSubmitting || !formFields.length} // Also disable if no fields somehow
-                                sx={{ minWidth: '150px' }}
+                                color="success"
+                                sx={{
+                                    borderRadius: 3,
+                                    fontWeight: 700,
+                                    px: 3,
+                                    py: 1,
+                                    minWidth: '150px',
+                                    boxShadow: 3,
+                                    textTransform: 'none',
+                                    fontSize: '1.08rem',
+                                    transition: 'all 0.2s',
+                                }}
                                 startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+                                disabled={isSubmitting || !formFields.length}
                             >
                                 {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
                             </Button>

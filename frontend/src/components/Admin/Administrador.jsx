@@ -743,7 +743,7 @@ function Administrador({ toggleTheme }) {
                         </Tooltip>
                     </Fade>
                 )}
-                renderActions={(item) => {
+                renderActions={currentSectionKey === 'respuestas' ? undefined : (item) => {
                     const canEditItem = currentConfig?.canEdit;
                     const canDeleteItem = currentConfig?.canDelete;
                     const actionsCellStyle = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
@@ -775,6 +775,26 @@ function Administrador({ toggleTheme }) {
     // --- Renderizado ---
     // (El JSX de renderizado no necesita cambios funcionales, solo los ajustes ya hechos
     // en los handlers y la eliminación de themeHook)
+    const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
+        color: '#fff',
+        '& .MuiInputBase-root, & .MuiInputBase-input, & .MuiInputLabel-root, & .MuiFormLabel-root, & .MuiTypography-root, & .MuiSelect-root, & .MuiOutlinedInput-notchedOutline, & .MuiFormHelperText-root': {
+            color: '#fff',
+            borderColor: '#fff',
+        },
+        '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#fff',
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+            color: '#fff',
+        },
+        '& .MuiSelect-icon': {
+            color: '#fff',
+        },
+        '& .MuiCheckbox-root, & .MuiRadio-root': {
+            color: '#fff',
+        },
+    } : {};
+
     return (
         <ThemeProvider theme={currentTheme}>
             <CssBaseline />
@@ -823,67 +843,131 @@ function Administrador({ toggleTheme }) {
                 {currentConfig && (
                     <Dialog
                         open={isModalOpen}
-                        onClose={handleCloseModal} // Usa el handler corregido
-                        maxWidth="sm" fullWidth
-                        TransitionComponent={Fade} transitionDuration={300}
-                        PaperProps={{ sx: { borderRadius: 2, boxShadow: currentTheme.shadows[6] } }}
-                        disableEscapeKeyDown={isSubmitting} // Prevenir cierre con ESC durante submit
+                        onClose={handleCloseModal}
+                        maxWidth="sm"
+                        fullWidth
+                        TransitionComponent={Fade}
+                        transitionDuration={300}
+                        disableEscapeKeyDown={isSubmitting}
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4,
+                                boxShadow: currentTheme.shadows[8],
+                                bgcolor: 'background.paper',
+                                border: `2.5px solid ${currentTheme.palette.primary.main}`,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&:before': {
+                                    content: '""',
+                                    display: 'block',
+                                    width: '100%',
+                                    height: 8,
+                                    bgcolor: 'primary.main',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    zIndex: 2,
+                                },
+                            }
+                        }}
                     >
                         <DialogTitle sx={{
-                            fontWeight: 'bold',
-                            // borderBottom: `1px solid ${currentTheme.palette.divider}`, // Puedes quitar o ajustar el borde si quieres
-                            backgroundColor: currentTheme.palette.primary.main,       // <-- AÑADE ESTO para el fondo azul
-                            color: currentTheme.palette.primary.contrastText,         // <-- CAMBIA ESTO para el texto blanco
-                            px: 3, // Añade padding horizontal (24px) para que se vea mejor
-                            py: 1.5, // Ajusta el padding vertical si es necesario
+                            m: 0,
+                            p: '18px 32px 10px 32px',
+                            bgcolor: currentTheme.palette.primary.main,
+                            color: theme => theme.palette.mode === 'dark' ? '#fff' : currentTheme.palette.primary.contrastText,
+                            fontWeight: 700,
+                            fontSize: '1.08rem', // Más pequeño
+                            letterSpacing: 0.5,
+                            borderBottom: `1.5px solid ${currentTheme.palette.divider}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            textTransform: 'uppercase',
+                            boxShadow: 'none',
                         }}>
                             {modalMode === 'add' ? 'Agregar' : 'Editar'} {currentConfig.title.slice(0,-1)}
                             {modalMode === 'edit' && editingItem && ` (ID: ${editingItem[currentConfig.idKey]})`}
+                            {isSubmitting && <CircularProgress size={24} color="inherit" sx={{ ml: 2 }} />}
                         </DialogTitle>
-                        {/* Solo renderiza el contenido si hay configuración, previene errores */}
                         {currentConfig.formFields && (
-                            <DialogContent dividers sx={{ pt: 2.5 }}>
+                            <DialogContent dividers sx={{
+                                p: { xs: 2.5, sm: 3, md: 4 },
+                                bgcolor: 'background.default',
+                                border: 'none',
+                                minHeight: 180,
+                                color: theme => theme.palette.mode === 'dark' ? '#fff' : currentTheme.palette.text.primary,
+                                ...darkModalTextSx(currentTheme),
+                            }}>
                                 <Stack spacing={2.5}>
                                     {currentConfig.formFields
                                         .filter(field => !((modalMode === 'edit' && field.addOnly) || (modalMode === 'add' && field.editOnly)))
                                         .map(field => {
-                                        const commonProps = {
-                                            key: field.name, name: field.name, label: field.label,
-                                            value: formData[field.name] ?? '', onChange: handleFormChange, fullWidth: true,
-                                            required: field.required && (modalMode === 'add' || (modalMode === 'edit' && !field.optionalOnEdit)),
-                                            disabled: isSubmitting || (modalMode === 'edit' && field.disabledOnEdit) || (field.name === 'password' && !!formData.deletePassword),
-                                            autoFocus: field.autoFocus && modalMode === 'add',
-                                            variant: 'outlined', size: 'medium'
-                                        };
-                                        const helperText = modalMode === 'edit' ? (field.helperTextEdit ?? field.helperText) : (field.helperTextAdd ?? field.helperText);
+                                            const commonProps = {
+                                                key: field.name, name: field.name, label: field.label,
+                                                value: formData[field.name] ?? '', onChange: handleFormChange, fullWidth: true,
+                                                required: field.required && (modalMode === 'add' || (modalMode === 'edit' && !field.optionalOnEdit)),
+                                                disabled: isSubmitting || (modalMode === 'edit' && field.disabledOnEdit) || (field.name === 'password' && !!formData.deletePassword),
+                                                autoFocus: field.autoFocus && modalMode === 'add',
+                                                variant: 'outlined', size: 'medium'
+                                            };
+                                            const helperText = modalMode === 'edit' ? (field.helperTextEdit ?? field.helperText) : (field.helperTextAdd ?? field.helperText);
 
-                                        if (field.type === 'select') {
-                                            const options = typeof field.options === 'function' ? field.options({ areas, tiposSolicitudesAdmin }) : field.options;
-                                            return (
-                                                <FormControl fullWidth key={field.name} required={commonProps.required} disabled={commonProps.disabled} variant="outlined" size={commonProps.size}>
-                                                    <InputLabel id={`${modalMode}-${field.name}-label`}>{field.label}</InputLabel>
-                                                    <Select labelId={`${modalMode}-${field.name}-label`} label={field.label} {...commonProps} value={formData[field.name] ?? ''}>
-                                                        {field.placeholder && <MenuItem value=""><em>{field.placeholder}</em></MenuItem>}
-                                                        {(options || []).map((opt, idx) => { const value = field.getOptionValue(opt); const label = field.getOptionLabel(opt); return <MenuItem key={value ?? idx} value={value}>{label}</MenuItem>; })}
-                                                    </Select>
-                                                    {helperText && <Typography variant="caption" sx={{ pl: 1.5, pt: 0.5, color: 'text.secondary' }}>{helperText}</Typography>}
-                                                </FormControl>
-                                            );
-                                        } else if (field.type === 'textarea') {
-                                            return <TextField {...commonProps} multiline rows={field.rows || 3} helperText={helperText} />;
-                                        } else if (field.type === 'checkbox') {
-                                            return ( <FormControlLabel control={ <Checkbox name={field.name} checked={!!formData[field.name]} onChange={handleFormChange} disabled={commonProps.disabled} color={field.name === 'deletePassword' ? 'warning' : 'primary'} sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} /> } label={field.label} key={field.name} /> );
-                                        } else if (field.type === 'password') {
-                                            return ( <TextField {...commonProps} type={showPassword ? 'text' : 'password'} helperText={helperText} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleToggleShowPassword} onMouseDown={handleMouseDownPassword} edge="end" disabled={commonProps.disabled} sx={{ transition: currentTheme.transitions.create('background-color'), '&:hover': { bgcolor: 'action.hover' } }}> {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} /> );
-                                        } else { return <TextField {...commonProps} type={field.type || 'text'} helperText={helperText} />; }
-                                    })}
+                                            if (field.type === 'select') {
+                                                const options = typeof field.options === 'function' ? field.options({ areas, tiposSolicitudesAdmin }) : field.options;
+                                                return (
+                                                    <FormControl fullWidth key={field.name} required={commonProps.required} disabled={commonProps.disabled} variant="outlined" size={commonProps.size}>
+                                                        <InputLabel id={`${modalMode}-${field.name}-label`}>{field.label}</InputLabel>
+                                                        <Select labelId={`${modalMode}-${field.name}-label`} label={field.label} {...commonProps} value={formData[field.name] ?? ''}>
+                                                            {field.placeholder && <MenuItem value=""><em>{field.placeholder}</em></MenuItem>}
+                                                            {(options || []).map((opt, idx) => { const value = field.getOptionValue(opt); const label = field.getOptionLabel(opt); return <MenuItem key={value ?? idx} value={value}>{label}</MenuItem>; })}
+                                                        </Select>
+                                                        {helperText && <Typography variant="caption" sx={{ pl: 1.5, pt: 0.5, color: 'text.secondary' }}>{helperText}</Typography>}
+                                                    </FormControl>
+                                                );
+                                            } else if (field.type === 'textarea') {
+                                                return <TextField {...commonProps} multiline rows={field.rows || 3} helperText={helperText} />;
+                                            } else if (field.type === 'checkbox') {
+                                                return ( <FormControlLabel control={ <Checkbox name={field.name} checked={!!formData[field.name]} onChange={handleFormChange} disabled={commonProps.disabled} color={field.name === 'deletePassword' ? 'warning' : 'primary'} sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} /> } label={field.label} key={field.name} /> );
+                                            } else if (field.type === 'password') {
+                                                return ( <TextField {...commonProps} type={showPassword ? 'text' : 'password'} helperText={helperText} InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleToggleShowPassword} onMouseDown={handleMouseDownPassword} edge="end" disabled={commonProps.disabled} sx={{ transition: currentTheme.transitions.create('background-color'), '&:hover': { bgcolor: 'action.hover' } }}> {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ), }} /> );
+                                            } else { return <TextField {...commonProps} type={field.type || 'text'} helperText={helperText} />; }
+                                        })}
                                 </Stack>
                             </DialogContent>
                         )}
-                        <DialogActions sx={{ p: '16px 24px', borderTop: `1px solid ${currentTheme.palette.divider}`, bgcolor: currentTheme.palette.background.default }}>
-                            <Button onClick={handleCloseModal} color="secondary" disabled={isSubmitting} sx={{ transition: currentTheme.transitions.create(['background-color', 'transform']), '&:hover': { transform: 'scale(1.02)', bgcolor: 'action.hover' } }}> Cancelar </Button>
-                            <Button onClick={handleSubmit} variant="contained" color="primary" disabled={isSubmitting} sx={{ minWidth: 120, transition: currentTheme.transitions.create(['background-color', 'transform', 'box-shadow']), '&:hover': { transform: 'translateY(-1px)', boxShadow: currentTheme.shadows[3], backgroundColor: currentTheme.palette.primary.dark } }}>
-                                {isSubmitting ? <CircularProgress size={24} color="inherit" /> : (modalMode === 'add' ? 'Agregar' : 'Guardar Cambios')}
+                        <DialogActions sx={{
+                            px: { xs: 2.5, sm: 3, md: 4 },
+                            py: 2,
+                            bgcolor: 'background.paper',
+                            borderTop: `1.5px solid ${currentTheme.palette.divider}`,
+                            boxShadow: 'none',
+                            justifyContent: 'space-between',
+                            color: theme => theme.palette.mode === 'dark' ? '#fff' : currentTheme.palette.text.primary,
+                            ...darkModalTextSx(currentTheme),
+                        }}>
+                            <Button onClick={handleCloseModal} variant="outlined" color="secondary" sx={{
+                                borderRadius: 3,
+                                fontWeight: 600,
+                                px: 3,
+                                py: 1,
+                                boxShadow: 1,
+                                textTransform: 'none',
+                                fontSize: '1rem',
+                                transition: 'all 0.2s',
+                            }} disabled={isSubmitting}>Cancelar</Button>
+                            <Button onClick={handleSubmit} variant="contained" color="primary" sx={{
+                                borderRadius: 3,
+                                fontWeight: 700,
+                                px: 3,
+                                py: 1,
+                                minWidth: '150px',
+                                boxShadow: 3,
+                                textTransform: 'none',
+                                fontSize: '1.08rem',
+                                transition: 'all 0.2s',
+                            }} disabled={isSubmitting} startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}>
+                                {isSubmitting ? 'Guardando...' : (modalMode === 'add' ? 'Agregar' : 'Guardar Cambios')}
                             </Button>
                         </DialogActions>
                     </Dialog>
