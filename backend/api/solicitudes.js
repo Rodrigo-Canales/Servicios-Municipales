@@ -316,6 +316,14 @@ router.post('/', upload.any(), async (req, res) => {
     return res.status(400).json({ message: 'El formato del correo de notificación es inválido.' });
   }
 
+  // Validación específica y amigable para cada campo obligatorio
+  if (!rut_ciudadano) {
+      return res.status(400).json({ message: "El campo 'rut_ciudadano' es obligatorio." });
+  }
+  if (!id_tipo) {
+      return res.status(400).json({ message: "El campo 'id_tipo' es obligatorio." });
+  }
+
   let connection;
   let pdfPath = '';
   let rutaSolicitud = ''; // Ruta relativa para guardar en BD

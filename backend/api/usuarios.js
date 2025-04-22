@@ -39,16 +39,20 @@ router.post('/', async (req, res) => {
 
     const { rut, nombre, apellido, correo_electronico, password, rol, area_id } = req.body;
 
-    // Validación básica de campos obligatorios
-    if (!rut || !nombre || !apellido) {
-        console.error('[POST /api/usuarios] Error de Validación: Faltan RUT, Nombre o Apellido.');
-        return res.status(400).json({ message: 'RUT, Nombre y Apellido son obligatorios.' });
+    // Validación específica y amigable para cada campo obligatorio
+    if (!rut) {
+        return res.status(400).json({ message: "El campo 'rut' es obligatorio." });
     }
-    // Validar rol
+    if (!nombre) {
+        return res.status(400).json({ message: "El campo 'nombre' es obligatorio." });
+    }
+    if (!apellido) {
+        return res.status(400).json({ message: "El campo 'apellido' es obligatorio." });
+    }
+    // Validación de rol
     const rolesPermitidos = ['Vecino', 'Funcionario', 'Administrador'];
     if (rol && !rolesPermitidos.includes(rol)) {
-        console.error(`[POST /api/usuarios] Error de Validación: Rol inválido "${rol}".`);
-        return res.status(400).json({ message: `Rol inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
+        return res.status(400).json({ message: `El campo 'rol' es inválido. Roles permitidos: ${rolesPermitidos.join(', ')}.` });
     }
 
 

@@ -127,11 +127,21 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
     const { id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud } = req.body;
     const estadosValidos = ['Aprobada', 'Rechazada'];
 
-    if (!id_solicitud || !RUT_trabajador || !respuesta_texto || !estado_solicitud) {
-        return res.status(400).json({ message: 'Faltan campos obligatorios: id_solicitud, RUT_trabajador, respuesta_texto, estado_solicitud' });
+    // Validación específica y amigable para cada campo
+    if (!id_solicitud) {
+        return res.status(400).json({ message: "El campo 'id_solicitud' es obligatorio." });
+    }
+    if (!RUT_trabajador) {
+        return res.status(400).json({ message: "El campo 'RUT_trabajador' es obligatorio." });
+    }
+    if (!respuesta_texto) {
+        return res.status(400).json({ message: "El campo 'respuesta_texto' es obligatorio." });
+    }
+    if (!estado_solicitud) {
+        return res.status(400).json({ message: "El campo 'estado_solicitud' es obligatorio." });
     }
     if (!estadosValidos.includes(estado_solicitud)) {
-        return res.status(400).json({ message: `Estado de solicitud inválido. Debe ser '${estadosValidos.join("' o '")}'.` });
+        return res.status(400).json({ message: `El campo 'estado_solicitud' debe ser 'Aprobada' o 'Rechazada'.` });
     }
 
     let connection;

@@ -43,6 +43,16 @@ router.get('/:id', protect, async (req, res) => {
 // Crear un nuevo tipo de solicitud
 router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     const { nombre_tipo, descripcion, area_id } = req.body;
+    // Validación específica y amigable para cada campo obligatorio
+    if (!nombre_tipo) {
+        return res.status(400).json({ message: "El campo 'nombre_tipo' es obligatorio." });
+    }
+    if (!descripcion) {
+        return res.status(400).json({ message: "El campo 'descripcion' es obligatorio." });
+    }
+    if (!area_id) {
+        return res.status(400).json({ message: "El campo 'area_id' es obligatorio." });
+    }
     try {
         const [result] = await db.query(
             'INSERT INTO Tipos_Solicitudes (nombre_tipo, descripcion, area_id) VALUES (?, ?, ?)',
@@ -59,6 +69,16 @@ router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
 router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     const id = req.params.id;
     const { nombre_tipo, descripcion, area_id } = req.body;
+    // Validación específica y amigable para cada campo obligatorio
+    if (!nombre_tipo) {
+        return res.status(400).json({ message: "El campo 'nombre_tipo' es obligatorio." });
+    }
+    if (!descripcion) {
+        return res.status(400).json({ message: "El campo 'descripcion' es obligatorio." });
+    }
+    if (!area_id) {
+        return res.status(400).json({ message: "El campo 'area_id' es obligatorio." });
+    }
     try {
         const [result] = await db.query(
             'UPDATE Tipos_Solicitudes SET nombre_tipo = ?, descripcion = ?, area_id = ? WHERE id_tipo = ?',

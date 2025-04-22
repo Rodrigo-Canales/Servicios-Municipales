@@ -39,9 +39,9 @@ router.get('/:id', protect, async (req, res) => {
 router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     // Middlewares 'protect' y 'restrictTo' ya verificaron token y rol Admin
     const { nombre_area } = req.body;
-    // Validación simple
+    // Validación específica y amigable para cada campo obligatorio
     if (!nombre_area || nombre_area.trim() === '') {
-        return res.status(400).json({ message: 'El nombre del área es requerido.' });
+        return res.status(400).json({ message: "El campo 'nombre_area' es obligatorio." });
     }
     try {
         const [result] = await db.query(
@@ -64,9 +64,9 @@ router.put('/:id', protect, restrictTo('Administrador'), async (req, res) => {
     // Middlewares 'protect' y 'restrictTo' ya verificaron token y rol Admin
     const id = req.params.id;
     const { nombre_area } = req.body;
-    // Validación simple
+    // Validación específica y amigable para cada campo obligatorio
     if (!nombre_area || nombre_area.trim() === '') {
-        return res.status(400).json({ message: 'El nombre del área es requerido.' });
+        return res.status(400).json({ message: "El campo 'nombre_area' es obligatorio." });
     }
     try {
         const [result] = await db.query(

@@ -96,12 +96,18 @@ router.get('/tipo/:id_tipo', protect, async (req, res) => {
 
 router.post('/', protect, restrictTo('Administrador'), async (req, res) => {
     const { pregunta, respuesta, id_tipo } = req.body;
-    // Validaciones
-    if (!pregunta || !respuesta || !id_tipo) {
-        return res.status(400).json({ message: 'Faltan campos obligatorios: pregunta, respuesta, id_tipo' });
+    // Validación específica y amigable para cada campo obligatorio
+    if (!pregunta) {
+        return res.status(400).json({ message: "El campo 'pregunta' es obligatorio." });
+    }
+    if (!respuesta) {
+        return res.status(400).json({ message: "El campo 'respuesta' es obligatorio." });
+    }
+    if (!id_tipo) {
+        return res.status(400).json({ message: "El campo 'id_tipo' es obligatorio." });
     }
     if (isNaN(parseInt(id_tipo))) {
-        return res.status(400).json({ message: 'El campo id_tipo debe ser un número.' });
+        return res.status(400).json({ message: "El campo 'id_tipo' debe ser un número." });
     }
     try {
         // Verificar si el id_tipo existe antes de insertar
