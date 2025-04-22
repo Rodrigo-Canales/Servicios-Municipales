@@ -228,7 +228,12 @@ function Administrador({ toggleTheme }) {
                     addOnly: true,
                     onInput: (e) => {
                         // No permitir puntos
+                        if (e.nativeEvent && e.nativeEvent.inputType === 'insertText' && e.nativeEvent.data === '.') {
+                            e.preventDefault();
+                            return;
+                        }
                         if (e.target.value.includes('.')) {
+                            e.target.value = e.target.value.replace(/\./g, '');
                             e.target.setCustomValidity('El RUT no debe contener puntos.');
                         } else {
                             e.target.setCustomValidity('');

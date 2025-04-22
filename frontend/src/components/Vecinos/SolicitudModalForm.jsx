@@ -362,13 +362,20 @@ const SolicitudModalForm = ({
             value = target.value;
             type = target.type || fieldType; // Use fieldType as fallback
             checked = target.checked;
-            // --- Validación y normalización especial para RUT ---
-            if (name === 'rut_ciudadano') {
-                // No permitir puntos
-                if (value.includes('.')) {
+            // --- Validación y normalización especial para campos RUT ---
+            if (name.startsWith('rut_')) {
+                // Bloquear puntos al escribir
+                if (target && target.value && target.value.includes('.')) {
+                    target.value = target.value.replace(/\./g, '');
+                    value = target.value;
                     target.setCustomValidity('El RUT no debe contener puntos.');
                 } else {
                     target.setCustomValidity('');
+                }
+                // Bloquear el ingreso directo de punto
+                if (target && target.nativeEvent && target.nativeEvent.inputType === 'insertText' && target.nativeEvent.data === '.') {
+                    target.preventDefault && target.preventDefault();
+                    return;
                 }
                 // Convertir k a mayúscula automáticamente
                 if (value.match(/k$/)) {
@@ -1237,7 +1244,7 @@ const SolicitudModalForm = ({
                  noValidate: true, // Disable browser validation, rely on ours
             }}
         >
-            <DialogTitle sx={{ /* ... your styles ... */
+            <DialogTitle sx={{ 
                 m: 0, p: '12px 24px', bgcolor: 'primary.main', color: 'primary.contrastText',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>

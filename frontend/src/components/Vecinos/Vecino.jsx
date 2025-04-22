@@ -94,7 +94,11 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
             setSelectedTipoForModal(null);
         } catch (err) {
             console.error("Error submitting solicitud:", err);
-            const message = err.response?.data?.message || "Error al enviar la solicitud.";
+            let message = err.response?.data?.message || "Error al enviar la solicitud.";
+            // Si el error es por RUT con puntos, mostrar mensaje específico
+            if (message.includes('RUT') && message.includes('puntos')) {
+                message = 'El RUT no debe contener puntos. Por favor, ingréselo sin puntos.';
+            }
             mostrarAlertaError('Error', message);
             setError(prev => ({...prev, form: message}));
             setSuccessMessage(null);
