@@ -454,11 +454,18 @@ router.post('/', upload.any(), async (req, res) => {
         console.error("Error obteniendo fecha_hora_envio:", fechaErr);
       }
       pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Solicitud:', { underline: true }).moveDown(0.75);
-      pdfDoc.font('Helvetica').fontSize(11)
-            .text(`ID de solicitud: ${id_solicitud_str}`)
-            .text(`Tipo de Solicitud: ${nombre_tipo}`)
-            .text(`Fecha y Hora de envío: ${fechaEnvio}`)
-            .moveDown(1.5);
+      pdfDoc.font('Helvetica-Bold').fontSize(11).text('ID de solicitud:', { continued: true });
+      pdfDoc.font('Helvetica').text(` ${id_solicitud_str}`);
+      pdfDoc.moveDown(0.2);
+      pdfDoc.font('Helvetica-Bold').text('Tipo de Solicitud:', { continued: true });
+      pdfDoc.font('Helvetica').text(` ${nombre_tipo}`);
+      pdfDoc.moveDown(0.2);
+      pdfDoc.font('Helvetica-Bold').text('Fecha y Hora de envío:', { continued: true });
+      pdfDoc.font('Helvetica').text(` ${fechaEnvio}`);
+      pdfDoc.moveDown(1.5);
+      pdfDoc.moveDown(0.2);
+      pdfDoc.strokeColor('#e0e0e0').lineWidth(0.5).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke();
+      pdfDoc.moveDown(0.8);
     }
 
     // 7.3 Información del Solicitante
@@ -580,25 +587,104 @@ router.post('/', upload.any(), async (req, res) => {
     // Opcional: Resetear X por si acaso
     pdfDoc.x = pdfDoc.page.margins.left;
     
-    // 7.4 Datos Adicionales Proporcionados
-    {
-      const datosAdicionales = { ...otrosDatos };
-      ['rut_ciudadano','id_tipo','estado','correo_notificacion'].forEach(k => delete datosAdicionales[k]);
-      if (Object.keys(datosAdicionales).length > 0) {
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Proporcionados:', { underline: true }).moveDown(0.75);
-        pdfDoc.font('Helvetica').fontSize(10);
-        for (const key in datosAdicionales) {
-          if (Object.hasOwnProperty.call(datosAdicionales, key)) {
-            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            const value = datosAdicionales[key] != null ? String(datosAdicionales[key]) : 'No proporcionado';
-            pdfDoc.font('Helvetica-Bold').text(`${label}: `, { continued: true });
-            pdfDoc.font('Helvetica').text(value);
-            pdfDoc.moveDown(0.5);
+    // --- MEJORAS DE FORMATO PARA DATOS ADICIONALES EN PDF (v4, visual extra) ---
+      function formatDatoAdicionalPDF_v4(valor) {
+        if (valor === null || valor === undefined || valor === '') return 'No proporcionado';
+        // Intentar parsear string que parezca array o booleano
+        if (typeof valor === 'string') {
+          // Booleano string
+          if (valor === 'true') return 'Sí';
+          if (valor === 'false') return 'No';
+          // Array string
+          if (/^\[.*\]$/.test(valor)) {
+            try {
+              const arr = JSON.parse(valor);
+              if (Array.isArray(arr)) {
+                if (arr.length === 0) return 'No proporcionado';
+                return arr.map(v => `• ${formatDatoAdicionalPDF_v4(v)}`).join('\n');
+              }
+            } catch {}
           }
+          // Intentar parsear objeto ubicación
+          try {
+            const obj = JSON.parse(valor);
+            if (obj && typeof obj === 'object' && obj.lat !== undefined && obj.lng !== undefined) {
+              const url = `https://www.google.com/maps/search/?api=1&query=${obj.lat},${obj.lng}`;
+              return `Ver en Google Maps: ${url}`;
+            }
+          } catch {}
         }
-        pdfDoc.moveDown(1);
+        // Booleanos reales
+        if (valor === true) return 'Sí';
+        if (valor === false) return 'No';
+        // Fechas ISO o tipo fecha
+        if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valor)) {
+          try {
+            const fechaObj = new Date(valor);
+            if (!isNaN(fechaObj.getTime())) {
+              return format(fechaObj, "dd 'de' MMMM 'de' yyyy", { locale: es });
+            }
+          } catch {}
+        }
+        // Arrays reales
+        if (Array.isArray(valor)) {
+          if (valor.length === 0) return 'No proporcionado';
+          return valor.map(v => `• ${formatDatoAdicionalPDF_v4(v)}`).join('\n');
+        }
+        // Objetos tipo ubicación {lat, lng}
+        if (typeof valor === 'object' && valor !== null && valor.lat !== undefined && valor.lng !== undefined) {
+          const url = `https://www.google.com/maps/search/?api=1&query=${valor.lat},${valor.lng}`;
+          return `Ver en Google Maps: ${url}`;
+        }
+        // Otros objetos (mostrar como JSON legible)
+        if (typeof valor === 'object' && valor !== null) {
+          return JSON.stringify(valor);
+        }
+        // Por defecto, mostrar como string
+        return String(valor);
       }
-    }
+      // 7.4 Datos Adicionales Proporcionados
+      {
+        const datosAdicionales = { ...otrosDatos };
+        ['rut_ciudadano','id_tipo','estado','correo_notificacion'].forEach(k => delete datosAdicionales[k]);
+        if (Object.keys(datosAdicionales).length > 0) {
+          pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos Adicionales Proporcionados:', { underline: true }).moveDown(0.75);
+          pdfDoc.font('Helvetica').fontSize(10);
+          for (const key in datosAdicionales) {
+            if (Object.hasOwnProperty.call(datosAdicionales, key)) {
+              // Separar palabras en el label (ej: "fechaEstimadaEvento" -> "Fecha Estimada Evento")
+              const label = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s+/g, ' ').trim();
+              pdfDoc.font('Helvetica-Bold').text(`${label}:`, { continued: false });
+              const value = formatDatoAdicionalPDF_v4(datosAdicionales[key]);
+              // Si es link de Google Maps, mostrar como link clickeable
+              if (typeof value === 'string' && value.startsWith('Ver en Google Maps:')) {
+                const url = value.replace('Ver en Google Maps: ', '').trim();
+                pdfDoc.fillColor('blue').text('Ver en Google Maps', { link: url, underline: true, continued: false });
+                pdfDoc.fillColor('black');
+                pdfDoc.moveDown(0.8);
+                pdfDoc.strokeColor('#e0e0e0').lineWidth(0.5).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke();
+                pdfDoc.moveDown(0.8);
+                continue;
+              }
+              // Si es lista con viñetas
+              if (typeof value === 'string' && value.startsWith('• ')) {
+                value.split('\n').forEach(linea => {
+                  pdfDoc.font('Helvetica').text(linea, { indent: 15 });
+                });
+                pdfDoc.moveDown(0.8);
+                pdfDoc.strokeColor('#e0e0e0').lineWidth(0.5).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke();
+                pdfDoc.moveDown(0.8);
+                continue;
+              }
+              pdfDoc.font('Helvetica').text(value);
+              pdfDoc.moveDown(0.8);
+              pdfDoc.strokeColor('#e0e0e0').lineWidth(0.5).moveTo(pdfDoc.page.margins.left, pdfDoc.y).lineTo(pdfDoc.page.width - pdfDoc.page.margins.right, pdfDoc.y).stroke();
+              pdfDoc.moveDown(0.8);
+            }
+          }
+          pdfDoc.moveDown(1);
+        }
+      }
 
     // 7.5 Archivos Adjuntos
     {

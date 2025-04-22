@@ -19,7 +19,7 @@ import AccountBox from '@mui/icons-material/AccountBox';
 // Componentes y utilidades locales
 import Navbar from "../Navbar";
 import { lightTheme, darkTheme } from "../../theme";
-// import { mostrarAlertaError, mostrarAlertaExito } from "../../utils/alertUtils"; // Descomentar para alertas
+import { mostrarAlertaExito, mostrarAlertaError } from '../../utils/alertUtils'; // Descomentar para alertas
 import api from '../../services/api';
 // *** 1. IMPORTAR EL MODAL ***
 import SolicitudModalForm from './SolicitudModalForm'; // Asume que SolicitudModalForm.jsx está en la misma carpeta
@@ -64,6 +64,7 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     // Estados para la paginación
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [successMessage, setSuccessMessage] = useState(null);
 
     // Hooks de Tema y Media Query
     const theme = useMemo(() => (mode === "light" ? lightTheme : darkTheme), [mode]);
@@ -85,18 +86,18 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     const handleFormSubmit = useCallback(async (formData) => {
         setLoading(prev => ({ ...prev, form: true }));
         setError(prev => ({ ...prev, form: null }));
+        setSuccessMessage(null);
         try {
-            const response = await api.post('/solicitudes', formData, { /* headers opcionales */ });
-            console.log("API Response:", response.data);
-            // mostrarAlertaExito('Solicitud Enviada', '...');
+            await api.post('/solicitudes', formData, { /* headers opcionales */ });
+            mostrarAlertaExito('¡Solicitud enviada correctamente!');
             setModalOpen(false);
             setSelectedTipoForModal(null);
-            // if (currentSection === SECTIONS.MIS_SOLICITUDES) fetchContent(currentSection, areas); // Opcional: refrescar
         } catch (err) {
             console.error("Error submitting solicitud:", err);
             const message = err.response?.data?.message || "Error al enviar la solicitud.";
-            // mostrarAlertaError('Error de Envío', message);
+            mostrarAlertaError('Error', message);
             setError(prev => ({...prev, form: message}));
+            setSuccessMessage(null);
         } finally {
             setLoading(prev => ({ ...prev, form: false }));
         }
@@ -389,6 +390,12 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                     {/* Indicadores Carga/Error Inicial (Sin Cambios) */}
                     {loading.initial && (<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 5, flexGrow: 1, gap: 1 }}> <CircularProgress /> <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', mt: 1 }}>Cargando datos iniciales...</Typography> </Box> )}
                     {error.initial && !loading.initial && ( <Fade in={true} timeout={500}> <Alert severity="error" sx={{ mb: 2, flexShrink: 0, boxShadow: theme.shadows[1], border: `1px solid ${theme.palette.error.dark}`, animation: `${fadeInUp} 0.4s ease-out`, opacity: 0, animationFillMode: 'forwards' }}>{error.initial}</Alert> </Fade> )}
+                    {successMessage && (
+                        <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>
+                    )}
+                    {error.form && (
+                        <Alert severity="error" sx={{ mb: 2 }}>{error.form}</Alert>
+                    )}
                     {/* Área Principal Scrollable */}
                     <Box sx={{ flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[400], borderRadius: '4px' }, pr: 0.5 }}>
                         {/* Solo renderizar contenido si la carga inicial terminó sin errores */}

@@ -259,23 +259,35 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
       // --- 8) Detalles de la Respuesta ---
       {
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Respuesta:', { underline: true }).moveDown(0.75);
-        pdfDoc.font('Helvetica').fontSize(11)
-              .text(`ID Respuesta: ${id_respuesta_formateado}`)
-              .text(`Respondido por: ${nombreCompletoTrabajador}`)
-              .text(`Fecha y hora de respuesta: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
-              .moveDown(1.5);
+        pdfDoc.font('Helvetica-Bold').fontSize(11).text('ID Respuesta:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${id_respuesta_formateado}`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Respondido por:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${nombreCompletoTrabajador}`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Fecha y hora de respuesta:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
+        pdfDoc.moveDown(1.5);
       }
   
       // --- 9) Datos de la Solicitud Original ---
       {
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Solicitud:', { underline: true }).moveDown(0.75);
-        pdfDoc.font('Helvetica').fontSize(11)
-              .text(`ID Solicitud: ${solicitud.id_solicitud.toString().padStart(10, '0')}`)
-              .text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${formatRut(solicitud.RUT_ciudadano)})`)
-              .text(`Tipo de Solicitud: ${solicitud.nombre_tipo}`)
-              .text(`Fecha y hora de solicitud: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
-              .text(`Correo de Notificación: ${correoDestino || 'No proporcionado'}`)
-              .moveDown(1.5);
+        pdfDoc.font('Helvetica-Bold').fontSize(11).text('ID Solicitud:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${solicitud.id_solicitud.toString().padStart(10, '0')}`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Solicitante:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${nombreCompletoCiudadano} (RUT: ${formatRut(solicitud.RUT_ciudadano)})`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Tipo de Solicitud:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${solicitud.nombre_tipo}`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Fecha y hora de solicitud:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
+        pdfDoc.moveDown(0.2);
+        pdfDoc.font('Helvetica-Bold').text('Correo de Notificación:', { continued: true });
+        pdfDoc.font('Helvetica').text(` ${correoDestino || 'No proporcionado'}`);
+        pdfDoc.moveDown(1.5);
       }
   
       // --- 10) Contenido de la Respuesta ---
