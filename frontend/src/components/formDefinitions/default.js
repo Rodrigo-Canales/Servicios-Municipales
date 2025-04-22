@@ -15,10 +15,22 @@ export const fields = [
         step: 1
     },
     {
+        name: 'rut_ciudadano',
+        label: 'RUT',
+        type: 'text',
+        required: true,
+        requiredMessage: 'Por favor, ingrese su RUT sin puntos y con guión. (si tiene una "k" en mínuscula, por favor cámbiela a mayúscula)',
+        minLength: 8,
+        maxLength: 12,
+        placeholder: 'Ej: 12345678-9',
+        gridProps: { xs: 12, sm: 6 },
+        step: 1
+    },
+    {
         name: 'nombreCompleto',
         label: 'Nombre Completo',
         type: 'text',
-        required: true,
+        required: false,
         requiredMessage: 'Por favor, ingrese su nombre completo.',
         minLength: 3,
         minLengthMessage: 'El nombre parece demasiado corto.',
@@ -29,10 +41,10 @@ export const fields = [
         step: 1
     },
     {
-        name: 'correoElectronico',
+        name: 'correo_notificacion',
         label: 'Correo Electrónico',
         type: 'email',
-        required: true,
+        required: false,
         requiredMessage: 'El correo electrónico es obligatorio.',
         emailMessage: 'El formato del correo electrónico no es válido.',
         placeholder: 'usuario@ejemplo.com',
@@ -82,7 +94,7 @@ export const fields = [
         name: 'fechaIncidente', // Se mantiene siempre visible y requerido
         label: 'Fecha del Incidente',
         type: 'date',
-        required: true,
+        required: false,
         requiredMessage: 'Debes seleccionar la fecha del incidente.',
         helperText: 'Selecciona la fecha en que ocurrió.',
         defaultValue: new Date().toISOString().split('T')[0],
@@ -116,7 +128,7 @@ export const fields = [
         name: 'prioridadSolicitud', // ** TRIGGER FIELD 1 **
         label: 'Prioridad',
         type: 'radio-group',
-        required: true,
+        required: false,
         requiredMessage: 'Debes seleccionar una prioridad.',
         row: true,
         options: [
@@ -132,7 +144,7 @@ export const fields = [
         name: 'justificacionPrioridadAlta', // ** TARGET FIELD 1.1 ** (Depende de prioridadSolicitud)
         label: 'Justificación de Prioridad Alta',
         type: 'textarea',
-        required: true, // Requerido solo cuando es visible
+        required: false, // Requerido solo cuando es visible
         requiredMessage: 'Debe justificar por qué la prioridad es alta.',
         minLength: 20,
         minLengthMessage: 'La justificación debe tener al menos 20 caracteres.',
@@ -147,7 +159,7 @@ export const fields = [
         name: 'categoria', // ** TRIGGER FIELD 2 **
         label: 'Categoría de la Solicitud',
         type: 'select',
-        required: true,
+        required: false,
         requiredMessage: 'Debes seleccionar una categoría.',
         options: [
             { value: 'alumbrado', label: 'Alumbrado Público' },
@@ -166,7 +178,7 @@ export const fields = [
         name: 'detalleOtroCategoria', // ** TARGET FIELD 2.1 ** (Depende de categoria)
         label: 'Especifique la categoría "Otro"',
         type: 'text',
-        required: true, // Requerido solo cuando es visible
+        required: false, // Requerido solo cuando es visible
         requiredMessage: 'Debe especificar qué tipo de solicitud es.',
         placeholder: 'Ej: Permiso de evento, consulta específica, etc.',
         // Condición: Solo visible si 'categoria' es 'otro'
@@ -178,7 +190,7 @@ export const fields = [
         name: 'ubicacionEspecificaCategoria', // ** TARGET FIELD 2.2 ** (Depende de categoria)
         label: 'Ubicación Específica (Requerido para Alumbrado/Tránsito/Infraestructura)',
         type: 'location',
-        required: true, // Requerido solo cuando es visible
+        required: false, // Requerido solo cuando es visible
         requiredMessage: 'Debe indicar la ubicación para esta categoría.',
         initialCenter: [-38.9854, -72.6397],
         initialZoom: 15,
@@ -236,7 +248,7 @@ export const fields = [
         name: 'fechaEstimadaEvento', // ** TARGET FIELD 4.1 ** (Depende de requierePermisoEvento)
         label: 'Fecha Estimada del Evento',
         type: 'date',
-        required: true, // Requerido si se va a pedir permiso
+        required: false, // Requerido si se va a pedir permiso
         requiredMessage: 'Indique la fecha estimada del evento.',
         // Condición: Visible si 'requierePermisoEvento' está marcado (es true)
         visibleWhen: { field: 'requierePermisoEvento', is: true },
@@ -247,7 +259,7 @@ export const fields = [
         name: 'tipoEvento', // ** TARGET FIELD 4.2 ** (Depende de requierePermisoEvento)
         label: 'Tipo de Evento',
         type: 'select',
-        required: true, // Requerido si se va a pedir permiso
+        required: false, // Requerido si se va a pedir permiso
         requiredMessage: 'Seleccione el tipo de evento.',
         options: [
             { value: 'deportivo', label: 'Deportivo' },
@@ -280,7 +292,7 @@ export const fields = [
         name: 'documentoTransitoObligatorio', // ** TARGET FIELD 2.3 ** (Depende de categoria - PASO 3)
         label: 'Adjuntar Documento de Tránsito (Obligatorio)',
         type: 'file',
-        required: true, // Requerido si es visible
+        required: false, // Requerido si es visible
         requiredMessage: 'Debe adjuntar el documento relacionado con tránsito.',
         accept: ".pdf,.jpg,.png",
         maxSizeMB: 5,
@@ -315,7 +327,7 @@ export const fields = [
         name: 'aceptaTerminos', // Se mantiene siempre visible y requerido
         label: 'Acepto los términos y la declaración de veracidad',
         type: 'checkbox',
-        required: true,
+        required: false,
         requiredMessage: 'Debes aceptar los términos para poder enviar la solicitud.',
         defaultValue: false,
         gridProps: { xs: 12 },

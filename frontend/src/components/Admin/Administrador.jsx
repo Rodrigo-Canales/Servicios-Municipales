@@ -218,7 +218,28 @@ function Administrador({ toggleTheme }) {
                 { id: 'area_id', label: 'Área', render: (item, context) => context.areaMap.get(item.area_id) || '-' },
             ],
             formFields: [
-                { name: 'rut', label: 'RUT (sin puntos, con guión)', type: 'text', required: true, disabledOnEdit: true, autoFocus: true, addOnly: true },
+                {
+                    name: 'rut',
+                    label: 'RUT (sin puntos, con guión)',
+                    type: 'text',
+                    required: true,
+                    disabledOnEdit: true,
+                    autoFocus: true,
+                    addOnly: true,
+                    onInput: (e) => {
+                        // No permitir puntos
+                        if (e.target.value.includes('.')) {
+                            e.target.setCustomValidity('El RUT no debe contener puntos.');
+                        } else {
+                            e.target.setCustomValidity('');
+                        }
+                        // Convertir k a mayúscula automáticamente
+                        const val = e.target.value;
+                        if (val.match(/k$/)) {
+                            e.target.value = val.replace(/k$/, 'K');
+                        }
+                    },
+                },
                 { name: 'nombre', label: 'Nombre', type: 'text', required: true },
                 { name: 'apellido', label: 'Apellido', type: 'text', required: true },
                 { name: 'correo_electronico', label: 'Correo Electrónico', type: 'email', required: false },

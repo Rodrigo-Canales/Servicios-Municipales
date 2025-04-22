@@ -362,6 +362,20 @@ const SolicitudModalForm = ({
             value = target.value;
             type = target.type || fieldType; // Use fieldType as fallback
             checked = target.checked;
+            // --- Validación y normalización especial para RUT ---
+            if (name === 'rut_ciudadano') {
+                // No permitir puntos
+                if (value.includes('.')) {
+                    target.setCustomValidity('El RUT no debe contener puntos.');
+                } else {
+                    target.setCustomValidity('');
+                }
+                // Convertir k a mayúscula automáticamente
+                if (value.match(/k$/)) {
+                    value = value.replace(/k$/, 'K');
+                    target.value = value;
+                }
+            }
         } else { // Direct value
             if (!fieldName || !fieldType) {
                 console.error("[Modal] handleInputChange: Missing fieldName or fieldType for direct value.", { value: eventOrValue });
@@ -703,14 +717,18 @@ const SolicitudModalForm = ({
             }
             // If the file field is not visible, its corresponding file (if any) is ignored
         });
+        // Normalizar RUT antes de enviar
+        if (formData.rut_ciudadano) {
+            submissionData.set('rut_ciudadano', formData.rut_ciudadano);
+        }
         // --- MODIFIED SECTION END ---
 
 
         // Append solicitud type ID (This logic remains the same)
         if (tipoSeleccionado?.id_tipo) {
-            submissionData.append('id_tipo_solicitud', tipoSeleccionado.id_tipo);
+            submissionData.append('id_tipo', tipoSeleccionado.id_tipo);
         } else {
-            console.warn("[Modal] No 'id_tipo_solicitud' available to send.");
+            console.warn("[Modal] No 'id_tipo' available to send.");
         }
 
         // Use await if onSubmit is async, otherwise remove async/await
@@ -976,7 +994,7 @@ const SolicitudModalForm = ({
                             label={inputProps.label}
                             onChange={(e) => handleInputChange(e, fieldName, field.type)}
                             onBlur={() => handleBlur(fieldName)}
-                            renderValue={(selected) => ( /* Custom display for selected items */
+                            renderValue={(selected) => (
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                     {selected.map((val) => {
                                         const option = field.options?.find(opt => opt.value === val);
@@ -985,8 +1003,7 @@ const SolicitudModalForm = ({
                                                 border: `1px solid ${theme.palette.divider}`,
                                                 borderRadius: '4px', p: '2px 6px',
                                                 bgcolor: 'action.selected',
-                                                }}
-                                            >
+                                            }}>
                                                 {option ? option.label : val}
                                             </Typography>
                                         );
@@ -995,7 +1012,6 @@ const SolicitudModalForm = ({
                             )}
                             MenuProps={{ PaperProps: { style: { maxHeight: 250 } } }}
                         >
-                             {/* Placeholder/Instructions */}
                             {multiSelectValue.length === 0 && !field.required && (
                                 <MenuItem value="" disabled style={{ display: 'none' }}>
                                     <em>{field.placeholder || 'Seleccione uno o más...'}</em>
