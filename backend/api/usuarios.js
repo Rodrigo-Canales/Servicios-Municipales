@@ -108,7 +108,7 @@ router.post('/', async (req, res) => {
 router.put('/:rut', protect, restrictTo('Administrador'), async (req, res) => {
     // El middleware ya verificó rol Admin
     const rut = req.params.rut;
-    const { correo_electronico, password, rol, area_id, deletePassword } = req.body;
+    const { correo_electronico, password, rol, area_id, deletePassword, nombre, apellido } = req.body;
 
     // Validación de Rol si se proporciona
     const rolesPermitidos = ['Vecino', 'Funcionario', 'Administrador'];
@@ -139,6 +139,14 @@ router.put('/:rut', protect, restrictTo('Administrador'), async (req, res) => {
         if ('area_id' in req.body) {
             updates.push('area_id = ?');
             values.push(area_id || null); // Permite NULL
+        }
+        if ('nombre' in req.body) {
+            updates.push('nombre = ?');
+            values.push(nombre);
+        }
+        if ('apellido' in req.body) {
+            updates.push('apellido = ?');
+            values.push(apellido);
         }
 
         // Lógica de Contraseña (como en tu original)

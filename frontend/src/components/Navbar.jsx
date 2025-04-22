@@ -95,7 +95,7 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
                         component="div"
                         sx={{
                             fontWeight: 800,
-                            color: (theme) => theme.palette.primary.contrastText,
+                            color: (theme) => theme.palette.text.textWhite,
                             fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
                             userSelect: 'none',
                             whiteSpace: 'nowrap',

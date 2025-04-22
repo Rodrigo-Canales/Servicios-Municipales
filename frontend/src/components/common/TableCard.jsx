@@ -94,7 +94,7 @@ function TableCard({
           pb: 1.2,
           mb: 0.7,
         }}>
-          <Typography variant="h6" component="h1" sx={{ fontWeight: 800, color: (theme) => theme.palette.primary.main, mr: 'auto', letterSpacing: 0.2, fontSize: { xs: '0.99rem', sm: '1.09rem', md: '1.13rem' }, textTransform: 'uppercase', fontFamily: 'Montserrat, Arial, sans-serif' }}>{title}</Typography>
+          <Typography variant="h6" component="h1" sx={{ fontWeight: 800, color: (theme) => theme.palette.text.primary, mr: 'auto', letterSpacing: 0.2, fontSize: { xs: '0.99rem', sm: '1.09rem', md: '1.13rem' }, textTransform: 'uppercase', fontFamily: 'Montserrat, Arial, sans-serif' }}>{title}</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', ml: { xs: 0, sm: 1 } }}>
             {onSearchChange && (
               <TextField
@@ -114,12 +114,12 @@ function TableCard({
         {loading && (
           <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', my: 5, flexGrow: 1, gap: 2 }}>
             <CircularProgress size={30} thickness={4} />
-            <Typography sx={{ color: 'text.secondary', fontStyle: 'italic', fontWeight: 400 }}>Cargando...</Typography>
+            <Typography sx={{ color: (theme) => theme.palette.text.secondary, fontStyle: 'italic', fontWeight: 400 }}>Cargando...</Typography>
           </Box>
         )}
         {!loading && error && (
           <Fade in={!loading && !!error} timeout={500}>
-            <Alert severity="error" sx={{ mb: 2, flexShrink: 0, fontWeight: 400 }}>{error}</Alert>
+            <Alert severity="error" sx={{ mb: 2, flexShrink: 0, fontWeight: 400, color: (theme) => theme.palette.text.primary }}>{error}</Alert>
           </Fade>
         )}
         {/* Tabla y paginación */}

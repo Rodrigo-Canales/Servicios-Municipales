@@ -235,12 +235,12 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                             <Stack spacing={1.5}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                                     <LabelIcon fontSize="small" sx={{ color: 'primary.main', mt: '2px' }} />
-                                                    <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '1.01rem', letterSpacing: 0.1 }}>{tipo.nombre_tipo}</Typography>
+                                                    <Typography variant="body1" sx={{ fontWeight: 600, color: theme.palette.text.primary, fontSize: '1.01rem', letterSpacing: 0.1 }}>{tipo.nombre_tipo}</Typography>
                                                 </Box>
                                                 {tipo.descripcion && (
                                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                                                         <DescriptionIcon fontSize="small" sx={{ color: 'primary.main', mt: '2px' }} />
-                                                        <Typography variant="body2" sx={{ whiteSpace: 'normal', color: 'text.secondary', fontSize: '0.97rem' }}>{tipo.descripcion}</Typography>
+                                                        <Typography variant="body2" sx={{ whiteSpace: 'normal', color: theme.palette.text.secondary, fontSize: '0.97rem' }}>{tipo.descripcion}</Typography>
                                                     </Box>
                                                 )}
                                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
@@ -253,7 +253,7 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                             ) : (
                                 // Mensaje si no hay datos
                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
-                                    <Typography sx={{ textAlign: 'center', fontStyle: 'italic', color: 'text.disabled' }}>
+                                    <Typography sx={{ textAlign: 'center', fontStyle: 'italic', color: theme.palette.text.disabled }}>
                                         {searchTerm ? "No se encontraron tipos de solicitud con la búsqueda." : "No hay tipos de solicitud disponibles en esta área."}
                                     </Typography>
                                 </Box>
@@ -299,22 +299,22 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
                                             fontFamily: 'Montserrat, Arial, sans-serif',
                                         }} >
                                             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />} aria-controls={`panel${faq.id_pregunta}-content`} id={`panel${faq.id_pregunta}-header`} sx={{ '&:hover': { bgcolor: theme.palette.action.hover }, '& .MuiAccordionSummary-content': { my: 1.2, display: 'flex', flexWrap: 'wrap', alignItems: 'center' }, transition: theme.transitions.create(['background-color']), }} >
-                                                <Typography sx={{ fontWeight: 600, color: 'primary.main', flexGrow: 1, flexBasis: { xs: '100%', sm: 'auto' }, mr: 1, mb: { xs: 0.5, sm: 0 }, fontSize: '1.01rem', letterSpacing: 0.1 }}>
+                                                <Typography sx={{ fontWeight: 600, color: theme.palette.text.primary, flexGrow: 1, flexBasis: { xs: '100%', sm: 'auto' }, mr: 1, mb: { xs: 0.5, sm: 0 }, fontSize: '1.01rem', letterSpacing: 0.1 }}>
                                                     {faq.pregunta}
                                                 </Typography>
                                                 {faq.nombre_tipo_solicitud && (
-                                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic', pl: { xs: 0, sm: 1 }, flexBasis: { xs: '100%', sm: 'auto' }, textAlign: { xs: 'left', sm: 'right' } }} >
+                                                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic', pl: { xs: 0, sm: 1 }, flexBasis: { xs: '100%', sm: 'auto' }, textAlign: { xs: 'left', sm: 'right' } }} >
                                                         ({faq.nombre_tipo_solicitud})
                                                     </Typography>
                                                 )}
                                             </AccordionSummary>
                                             <AccordionDetails sx={{ borderTop: `1px dashed ${theme.palette.divider}`, px: 2.5, py: 2 }}>
-                                                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.97rem' }}>{faq.respuesta}</Typography>
+                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.97rem' }}>{faq.respuesta}</Typography>
                                             </AccordionDetails>
                                         </Accordion>
                                     ))
                                 ) : (
-                                    <Typography sx={{ textAlign: 'center', py: 5, fontStyle: 'italic', color: 'text.disabled' }}>
+                                    <Typography sx={{ textAlign: 'center', py: 5, fontStyle: 'italic', color: theme.palette.text.disabled }}>
                                         {searchTerm || faqFilterTipoId ? "No se encontraron preguntas frecuentes con los filtros aplicados." : "No hay preguntas frecuentes disponibles."}
                                     </Typography>
                                 )}

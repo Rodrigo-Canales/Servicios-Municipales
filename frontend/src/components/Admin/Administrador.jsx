@@ -219,8 +219,8 @@ function Administrador({ toggleTheme }) {
             ],
             formFields: [
                 { name: 'rut', label: 'RUT (sin puntos, con guión)', type: 'text', required: true, disabledOnEdit: true, autoFocus: true, addOnly: true },
-                { name: 'nombre', label: 'Nombre', type: 'text', required: true, disabledOnEdit: true, addOnly: true },
-                { name: 'apellido', label: 'Apellido', type: 'text', required: true, disabledOnEdit: true, addOnly: true },
+                { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+                { name: 'apellido', label: 'Apellido', type: 'text', required: true },
                 { name: 'correo_electronico', label: 'Correo Electrónico', type: 'email', required: false },
                 { name: 'rol', label: 'Rol', type: 'select', required: false, options: ROLES_PERMITIDOS, getOptionValue: opt => opt, getOptionLabel: opt => opt, placeholder: 'Seleccione Rol (def: Vecino)' },
                 { name: 'area_id', label: 'Área', type: 'select', required: false, options: (ctx) => ctx.areas || [], getOptionValue: opt => opt.id_area, getOptionLabel: opt => opt.nombre_area, placeholder: 'Ninguna' },

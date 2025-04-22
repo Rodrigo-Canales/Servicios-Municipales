@@ -9,6 +9,7 @@ const path = require('path');
 const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { formatRut } = require('../utils/rutUtils');
 
 // Función para crear carpetas si no existen (Sin Cambios)
 function crearCarpeta(ruta) {
@@ -495,7 +496,7 @@ router.post('/', upload.any(), async (req, res) => {
 
         // --- Preparar contenido de texto ---
         const logoPath = path.join(__dirname, '../img/claveunica.png');
-        const rutTexto = `RUT: ${rut_ciudadano || 'No disponible'}`;
+        const rutTexto = `RUT: ${formatRut(rut_ciudadano) || 'No disponible'}`;
         const nombreTexto = `Nombre y Apellido: ${nombreCompleto || 'No disponible'}`;
         const correoTexto = `Correo Electrónico de Notificación: ${correo_para_insert || 'No especificado'}`;
 

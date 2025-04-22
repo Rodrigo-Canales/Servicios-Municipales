@@ -11,6 +11,9 @@ const { es } = require('date-fns/locale');
 const nodemailer = require('nodemailer'); 
 require('dotenv').config(); // Carga variables de entorno
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { formatRut } = require('../utils/rutUtils');
+
+
 
 // --- Configuración del Transporter de Nodemailer ---
 const transporter = nodemailer.createTransport({
@@ -258,26 +261,26 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Respuesta:', { underline: true }).moveDown(0.75);
         pdfDoc.font('Helvetica').fontSize(11)
               .text(`ID Respuesta: ${id_respuesta_formateado}`)
-              .text(`Fecha y Hora: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
               .text(`Respondido por: ${nombreCompletoTrabajador}`)
+              .text(`Fecha y hora de respuesta: ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
               .moveDown(1.5);
       }
   
       // --- 9) Datos de la Solicitud Original ---
       {
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Datos de la Solicitud Original:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalles de la Solicitud:', { underline: true }).moveDown(0.75);
         pdfDoc.font('Helvetica').fontSize(11)
               .text(`ID Solicitud: ${solicitud.id_solicitud.toString().padStart(10, '0')}`)
+              .text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${formatRut(solicitud.RUT_ciudadano)})`)
               .text(`Tipo de Solicitud: ${solicitud.nombre_tipo}`)
-              .text(`Fecha de Envío: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
-              .text(`Solicitante: ${nombreCompletoCiudadano} (RUT: ${solicitud.RUT_ciudadano})`)
+              .text(`Fecha y hora de solicitud: ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`)
               .text(`Correo de Notificación: ${correoDestino || 'No proporcionado'}`)
               .moveDown(1.5);
       }
   
       // --- 10) Contenido de la Respuesta ---
       {
-        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Detalle de la Respuesta:', { underline: true }).moveDown(0.75);
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Respuesta:', { underline: true }).moveDown(0.75);
         pdfDoc.font('Helvetica').fontSize(11)
               .text(respuesta_texto || 'Sin texto de respuesta proporcionado.', { align: 'justify' })
               .moveDown(1.5);
@@ -340,7 +343,6 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
                    <p>Su solicitud de '${solicitud.nombre_tipo}' ha sido respondida y marcada como '<b>${estado_solicitud}</b>'.</p>
                    <p><b>Respuesta:</b></p>
                    <p>${respuesta_texto.replace(/\n/g, '<br/>')}</p>
-                   <p>Se adjuntan los detalles y archivos correspondientes.</p>
                    <p>Atentamente,<br/>Municipalidad de Pitrufquén</p>`,
             attachments: finalAttachments
           };

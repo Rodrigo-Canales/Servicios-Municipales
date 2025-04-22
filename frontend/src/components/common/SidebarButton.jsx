@@ -190,6 +190,20 @@ const SidebarButton = ({
           ...sx,
           position: 'relative',
           overflow: 'hidden',
+          // Asegura que texto e ícono sean blancos al hacer hover sobre el recuadro
+          '&:hover .MuiListItemIcon-root, &:hover .MuiListItemText-primary': {
+            color: theme.palette.mode === 'dark'
+              ? theme.palette.text.textWhite
+              : (!hasSubItems && isSelected)
+                ? theme.palette.text.textBlue // Ítem seleccionado en claro: azul en hover
+                : theme.palette.text.textWhite, // Resto: blanco en hover
+          },
+          // Si el ítem está seleccionado y no tiene subItems, nunca cambia el color en hover
+          ...(theme.palette.mode === 'light' && !hasSubItems && isSelected ? {
+            '&:hover .MuiListItemIcon-root, &:hover .MuiListItemText-primary': {
+              color: theme.palette.text.textBlue,
+            },
+          } : {}),
         })}
         // Ripple effect manual
         onMouseDown={e => {
@@ -219,11 +233,27 @@ const SidebarButton = ({
         }}
       >
         {item.icon && (
-          <ListItemIcon sx={{ color: (hasSubItems && isTreeExpanded) || (!hasSubItems && isSelected) ? theme => theme.palette.primary.contrastText : theme => theme.palette.primary.main, minWidth: 28, transition: 'none' }}>
+          <ListItemIcon>
             {item.icon}
           </ListItemIcon>
         )}
-        <ListItemText primary={<span style={{ fontWeight: (hasSubItems && isTreeExpanded) || (!hasSubItems && isSelected) ? 700 : 500, letterSpacing: 0.5, fontFamily: 'Montserrat, Arial, sans-serif', fontSize: level === 0 ? '0.97rem' : '0.93rem', color: undefined }}>{item.label}</span>} />
+        <ListItemText
+          primary={
+            <Box
+              component="span"
+              sx={theme => ({
+                fontWeight: (hasSubItems && isTreeExpanded) || (!hasSubItems && isSelected) ? 700 : 500,
+                letterSpacing: 0.5,
+                fontFamily: 'Montserrat, Arial, sans-serif',
+                fontSize: level === 0 ? '0.97rem' : '0.93rem',
+                color: theme.palette.mode === 'dark' ? theme.palette.text.textWhite : undefined,
+                transition: 'color 0.18s',
+              })}
+            >
+              {item.label}
+            </Box>
+          }
+        />
         {hasSubItems && (
           <Box sx={{ transition: 'transform 0.3s', color: theme => theme.palette.primary.contrastText, transform: isTreeExpanded ? 'rotate(180deg)' : 'none' }}>
             {isTreeExpanded ? <ExpandLess /> : <ExpandMore />}

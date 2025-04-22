@@ -107,7 +107,7 @@ function Sidebar({
       />
       <Typography variant="subtitle2" sx={{
         fontWeight: 700, // Más grueso que el rol
-        color: (theme) => theme.palette.primary.main,
+        color: (theme) => theme.palette.text.primary,
         letterSpacing: 0.7,
         textAlign: 'center',
         fontSize: '0.98rem',
@@ -119,7 +119,7 @@ function Sidebar({
         Municipalidad de Pitrufquén
       </Typography>
       <Typography variant="caption" sx={{
-        color: (theme) => theme.palette.text.secondary,
+        color: (theme) => theme.palette.text.textBlue,
         fontWeight: 400, // Más delgado que el título
         fontSize: '0.82rem',
         display: 'block',

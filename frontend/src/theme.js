@@ -18,7 +18,10 @@ export const lightTheme = createTheme({
         },
         text: {
             primary: 'rgb(33, 37, 41)',   
-            secondary: 'rgb(108, 117, 125)' 
+            secondary: 'rgb(108, 117, 125)', 
+            textWhite: 'rgb(255,255,255)', // blanco en claro, blanco en oscuro
+            textBlue: 'rgb(29, 60, 143)',  // azul en claro, blanco en oscuro
+            textBlack: 'rgb(0,0,0)'        // negro en claro, blanco en oscuro
         },
         divider: 'rgb(222, 226, 230)',   
         action: {
@@ -53,7 +56,10 @@ export const darkTheme = createTheme({
         },
         text: {
             primary: 'rgb(245, 245, 245)',   
-            secondary: 'rgb(189, 189, 189)' 
+            secondary: 'rgb(189, 189, 189)',
+            textWhite: 'rgb(255,255,255)', // blanco en claro, blanco en oscuro
+            textBlue: 'rgb(255,255,255)',  // azul en claro, blanco en oscuro
+            textBlack: 'rgb(255,255,255)'  // negro en claro, blanco en oscuro
         },
         divider: 'rgb(81, 81, 81)',    
         action: {
