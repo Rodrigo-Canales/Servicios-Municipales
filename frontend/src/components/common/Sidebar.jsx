@@ -33,7 +33,6 @@ function Sidebar({
           })),
         },
         { id: 'mis-solicitudes', label: 'Mis Solicitudes', icon: <ListAlt fontSize="small" />, subItems: [] },
-        { id: 'consultas', label: 'Consultas', icon: <HelpOutline fontSize="small" />, subItems: [] },
         { id: 'preguntas-frecuentes', label: 'Preguntas Frecuentes', icon: <QuestionAnswer fontSize="small" />, subItems: [] },
       ];
     }

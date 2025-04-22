@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 // Importa el contexto desde el archivo separado
 import { AuthContext } from './AuthContextValue.jsx'; // O .js si así se llama el archivo
+import * as jwt_decode from 'jwt-decode';
 
 // --- Funciones Auxiliares (Simuladas/Placeholders) ---
 const validateToken = async (token) => {
@@ -9,22 +10,20 @@ const validateToken = async (token) => {
 };
 
 const getUserDataFromToken = (token) => {
-    console.log("[AuthContext] Simulando obtención de datos desde token/localStorage:", token);
-    // Lógica futura: Decodificar el payload del token JWT (si no contiene info sensible)
-    // O usar el token para llamar a un endpoint '/api/users/me' que devuelva los datos.
-    // Por ahora, recuperamos de localStorage.
-    const storedUser = localStorage.getItem('userData');
-    if (storedUser) {
-        try {
-            return JSON.parse(storedUser);
-        } catch (e) {
-            console.error("[AuthContext] Error parsing stored user data:", e);
-            localStorage.removeItem('authToken'); // Limpia si los datos están corruptos
-            localStorage.removeItem('userData');
-            return null;
-        }
+    try {
+        if (!token) return null;
+        const decoded = jwt_decode.default(token);
+        // Extrae rut, rol, nombre y apellido si están en el payload
+        return {
+            rut: decoded.rut,
+            rol: decoded.rol,
+            nombre: decoded.nombre,
+            apellido: decoded.apellido,
+        };
+    } catch (e) {
+        console.error('[AuthContext] Error decodificando el token JWT:', e);
+        return null;
     }
-    return null;
 };
 
 const logoutUser = () => {
