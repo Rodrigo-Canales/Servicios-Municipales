@@ -10,6 +10,7 @@ const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { formatRut } = require('../utils/rutUtils');
+const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- Agregado para zona horaria
 
 // Función para crear carpetas si no existen (Sin Cambios)
 function crearCarpeta(ruta) {
@@ -444,10 +445,12 @@ router.post('/', upload.any(), async (req, res) => {
           [id_solicitud_num]
         );
         if (solRow.length > 0 && solRow[0].fecha_hora_envio) {
-          fechaEnvio = format(
-            new Date(solRow[0].fecha_hora_envio),
+          // Convertir a zona horaria de Chile
+          const fechaChile = utcToZonedTime(new Date(solRow[0].fecha_hora_envio), 'America/Santiago');
+          fechaEnvio = formatTz(
+            fechaChile,
             "dd 'de' MMMM 'de' yyyy, HH:mm:ss",
-            { locale: es }
+            { timeZone: 'America/Santiago', locale: es }
           );
         }
       } catch (fechaErr) {
@@ -622,7 +625,9 @@ router.post('/', upload.any(), async (req, res) => {
           try {
             const fechaObj = new Date(valor);
             if (!isNaN(fechaObj.getTime())) {
-              return format(fechaObj, "dd 'de' MMMM 'de' yyyy", { locale: es });
+              // Convertir a zona horaria de Chile
+              const fechaChile = utcToZonedTime(fechaObj, 'America/Santiago');
+              return formatTz(fechaChile, "dd 'de' MMMM 'de' yyyy", { timeZone: 'America/Santiago', locale: es });
             }
           } catch {}
         }

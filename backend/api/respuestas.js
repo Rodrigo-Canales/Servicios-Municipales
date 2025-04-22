@@ -8,6 +8,7 @@ const multer = require('multer');
 const path = require('path');
 const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
+const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- Agregado para zona horaria
 const nodemailer = require('nodemailer'); 
 require('dotenv').config(); // Carga variables de entorno
 const { protect, restrictTo } = require('../middleware/authMiddleware');
@@ -266,7 +267,9 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.font('Helvetica').text(` ${nombreCompletoTrabajador}`);
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Fecha y hora de respuesta:', { continued: true });
-        pdfDoc.font('Helvetica').text(` ${format(fechaRespuesta, 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
+        // Convertir a zona horaria de Chile
+        const fechaChileRespuesta = utcToZonedTime(fechaRespuesta, 'America/Santiago');
+        pdfDoc.font('Helvetica').text(` ${formatTz(fechaChileRespuesta, 'dd/MM/yyyy HH:mm:ss', { timeZone: 'America/Santiago', locale: es })}`);
         pdfDoc.moveDown(1.5);
       }
   
@@ -283,7 +286,9 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.font('Helvetica').text(` ${solicitud.nombre_tipo}`);
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Fecha y hora de solicitud:', { continued: true });
-        pdfDoc.font('Helvetica').text(` ${format(new Date(solicitud.fecha_hora_envio), 'dd/MM/yyyy HH:mm:ss', { locale: es })}`);
+        // Convertir a zona horaria de Chile
+        const fechaChileSolicitud = utcToZonedTime(new Date(solicitud.fecha_hora_envio), 'America/Santiago');
+        pdfDoc.font('Helvetica').text(` ${formatTz(fechaChileSolicitud, 'dd/MM/yyyy HH:mm:ss', { timeZone: 'America/Santiago', locale: es })}`);
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Correo de Notificación:', { continued: true });
         pdfDoc.font('Helvetica').text(` ${correoDestino || 'No proporcionado'}`);
@@ -352,7 +357,7 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
             subject: `Respuesta a su Solicitud #${solicitud.id_solicitud.toString().padStart(10, '0')} - ${solicitud.nombre_tipo}`,
             text: `Estimado(a) ${nombreCompletoCiudadano},\n\nSu solicitud de '${solicitud.nombre_tipo}' ha sido respondida (${estado_solicitud}).\n\nRespuesta:\n${respuesta_texto}\n\nSe adjuntan los detalles y archivos correspondientes.\n\nAtentamente,\nMunicipalidad de Pitrufquén`,
             html: `<p>Estimado(a) ${nombreCompletoCiudadano},</p>
-                   <p>Su solicitud de '${solicitud.nombre_tipo}' ha sido respondida y marcada como '<b>${estado_solicitud}</b>'.</p>
+                   <p>Su solicitud de '${solicitud.nombre_tipo}' ha sido '<b>${estado_solicitud}</b>'.</p>
                    <p><b>Respuesta:</b></p>
                    <p>${respuesta_texto.replace(/\n/g, '<br/>')}</p>
                    <p>Atentamente,<br/>Municipalidad de Pitrufquén</p>`,
