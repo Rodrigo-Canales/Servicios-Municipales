@@ -784,7 +784,7 @@ const hasAccentOrDiacritic = (name) => /[áéíóúÁÉÍÓÚñÑüÜ´`¨]/.tes
         if (reason && reason === 'backdropClick' && (isSubmitting || loadingDefinition)) {
              // Prevent closing on backdrop click ONLY while submitting/loading
             return;
-        }
+         }
          // Reset step, clear errors/touched, call onClose provided by parent
         setCurrentStep(0);
         setErrors({});
@@ -1279,7 +1279,10 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
     return (
         <Dialog
             open={open}
-            onClose={handleDialogClose}
+            onClose={(event, reason) => {
+                if (reason && reason === 'backdropClick') return; // Ignora clicks fuera
+                handleDialogClose(event, reason);
+            }}
             maxWidth="md"
             fullWidth
             scroll="paper"
@@ -1377,16 +1380,18 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             {/* Actions Area */}
             {!loadingDefinition && !definitionError && formFields.length > 0 && (
                 <DialogActions sx={{
-                    px: { xs: 2.5, sm: 3, md: 4 },
+                    px: { xs: 1.5, sm: 3, md: 4 },
                     py: 2,
                     bgcolor: 'background.paper',
                     borderTop: `1.5px solid ${theme.palette.divider}`,
                     boxShadow: 'none',
                     justifyContent: 'space-between',
                     color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
-                    ...darkModalTextSx(theme),
+                    flexWrap: 'wrap',
+                    flexDirection: { xs: 'row', sm: 'row' },
+                    alignItems: 'flex-end',
                 }}>
-                    <Box>
+                    <Box sx={{ flex: '1 1 0', display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-start' }, alignItems: 'flex-end' }}>
                         <Button
                             onClick={handleDialogClose}
                             variant="outlined"
@@ -1400,13 +1405,15 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                                 textTransform: 'none',
                                 fontSize: '1rem',
                                 transition: 'all 0.2s',
+                                minWidth: 110,
+                                width: { xs: 120, sm: 130 },
                             }}
                             disabled={isSubmitting}
                         >
                             Cancelar
                         </Button>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ flex: '2 1 0', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: { xs: 'flex-end', sm: 'flex-end' }, alignItems: { xs: 'flex-end', sm: 'center' }, gap: { xs: 1, sm: 2 } }}>
                         {currentStep > 0 && (
                             <Button
                                 onClick={handleBack}
@@ -1421,6 +1428,10 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                                     textTransform: 'none',
                                     fontSize: '1rem',
                                     transition: 'all 0.2s',
+                                    minWidth: 110,
+                                    width: { xs: 120, sm: 130 },
+                                    mb: { xs: 0, sm: 0 },
+                                    mr: { xs: 0, sm: 0 },
                                 }}
                                 disabled={isSubmitting}
                             >
@@ -1441,6 +1452,8 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                                     textTransform: 'none',
                                     fontSize: '1rem',
                                     transition: 'all 0.2s',
+                                    minWidth: 110,
+                                    width: { xs: 120, sm: 130 },
                                 }}
                                 disabled={isSubmitting}
                             >
@@ -1457,16 +1470,18 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                                     fontWeight: 700,
                                     px: 3,
                                     py: 1,
-                                    minWidth: '150px',
+                                    minWidth: 110,
+                                    width: { xs: 120, sm: 130 },
                                     boxShadow: 3,
                                     textTransform: 'none',
-                                    fontSize: '1.08rem',
+                                    fontSize: '1rem',
                                     transition: 'all 0.2s',
+                                    ml: { xs: 0, sm: 1 },
                                 }}
                                 startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
                                 disabled={isSubmitting || !formFields.length}
                             >
-                                {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                                {isSubmitting ? 'Enviando...' : 'Enviar'}
                             </Button>
                         )}
                     </Box>
