@@ -131,9 +131,8 @@ const DashboardFuncionario = () => ( <Box sx={{ p: 3, textAlign: 'center', color
 // ==========================================
 // --- Componente Principal Funcionario ---
 // ==========================================
-function Funcionario({ toggleTheme: toggleThemeProp }) {
+function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
     // --- Estados ---
-    const [mode, setMode] = useState('light');
     const [mobileOpen, setMobileOpen] = useState(false);
     const [currentSection, setCurrentSection] = useState(DEFAULT_SECTION_FUNCIONARIO);
     const [allSolicitudes, setAllSolicitudes] = useState([]);   // Guarda TODAS las solicitudes raw
@@ -190,7 +189,6 @@ function Funcionario({ toggleTheme: toggleThemeProp }) {
     // --- Handlers ---
     const handleToggleTheme = useCallback(() => {
         if (typeof toggleThemeProp === 'function') toggleThemeProp();
-        setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
     }, [toggleThemeProp]);
     const handleDrawerToggle = useCallback(() => setMobileOpen(p => !p), []);
     const handleDrawerClose = useCallback(() => setMobileOpen(false), []);

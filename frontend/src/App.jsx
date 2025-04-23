@@ -49,8 +49,8 @@ function App() {
                 <Router>
                     <Routes>
                          {/* --- Rutas Públicas --- */}
-                        <Route path="/" element={<ClaveUnica toggleTheme={toggleTheme} />} />
-                        <Route path="/login" element={<Login toggleTheme={toggleTheme} />} />
+                        <Route path="/" element={<ClaveUnica toggleTheme={toggleTheme} mode={mode} />} />
+                        <Route path="/login" element={<Login toggleTheme={toggleTheme} mode={mode} />} />
 
                         {/* --- Rutas Protegidas --- */}
 
@@ -58,7 +58,7 @@ function App() {
                         <Route
                             path="/vecinos"
                             element={
-                                <Vecinos toggleTheme={toggleTheme} />
+                                <Vecinos toggleTheme={toggleTheme} mode={mode} />
                             }
                         />
                         {/* Ruta para Funcionarios */}
@@ -66,7 +66,7 @@ function App() {
                             path="/funcionarios"
                             element={
                                 <ProtectedRoute allowedRoles={['Funcionario', 'Administrador']}> {/* Solo permite rol 'Funcionario' */}
-                                    <Funcionario toggleTheme={toggleTheme} />
+                                    <Funcionario toggleTheme={toggleTheme} mode={mode} />
                                 </ProtectedRoute>
                             }
                         />
@@ -75,7 +75,7 @@ function App() {
                             path="/admin"
                             element={
                                 <ProtectedRoute allowedRoles={['Administrador']}> {/* Solo permite rol 'Administrador' */}
-                                    <Administrador toggleTheme={toggleTheme} />
+                                    <Administrador toggleTheme={toggleTheme} mode={mode} />
                                 </ProtectedRoute>
                             }
                         />

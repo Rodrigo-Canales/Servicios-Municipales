@@ -45,9 +45,8 @@ const ESTADOS_SOLICITUD = ['Pendiente', 'Aprobada', 'Rechazada'];
 const DEFAULT_ROWS_PER_PAGE = 10;
 
 // --- Componente Principal ---
-function Administrador({ toggleTheme }) {
+function Administrador({ toggleTheme, mode }) {
     // --- Estados ---
-    const [mode, setMode] = useState("light");
     const [mobileOpen, setMobileOpen] = useState(false);
     const [currentSectionKey, setCurrentSectionKey] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -79,9 +78,7 @@ function Administrador({ toggleTheme }) {
 
     // --- Handlers Layout ---
     const handleToggleTheme = useCallback(() => {
-        const toggleFunc = typeof toggleTheme === 'function' ? toggleTheme : () => {};
-        toggleFunc();
-        setMode((prev) => (prev === "light" ? "dark" : "light"));
+        if (typeof toggleTheme === 'function') toggleTheme();
     }, [toggleTheme]);
 
     const handleDrawerToggle = useCallback(() => setMobileOpen(prev => !prev), []);

@@ -123,7 +123,7 @@ const ClaveUnica = ({ toggleTheme }) => {
                         </List>
 
                         {/* Botón Clave Única con estilo mejorado */}
-                        <Box sx={{ mt: 2 }}>
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -133,6 +133,7 @@ const ClaveUnica = ({ toggleTheme }) => {
                                     fontSize: '1rem',
                                     display: 'inline-flex', // Para que el botón se ajuste al contenido
                                     alignItems: 'center',
+                                    justifyContent: 'center',
                                     gap: 1, // Espacio entre icono y texto
                                     borderRadius: 2,
                                     fontWeight: 'bold',

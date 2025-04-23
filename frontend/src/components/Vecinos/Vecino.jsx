@@ -44,9 +44,8 @@ const fadeInUp = keyframes`
 `;
 
 // --- Component (Solo una definición) ---
-function Vecino({ toggleTheme: toggleThemeProp }) {
+function Vecino({ toggleTheme: toggleThemeProp, mode }) {
     // Estados (incluyendo los nuevos para el modal)
-    const [mode, setMode] = useState("light");
     const [mobileOpen, setMobileOpen] = useState(false);
     const [currentSection, setCurrentSection] = useState(DEFAULT_SECTION);
     const [loading, setLoading] = useState({ initial: true, content: false, form: false }); // Estado de carga para form
@@ -72,7 +71,9 @@ function Vecino({ toggleTheme: toggleThemeProp }) {
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     // --- Handlers (Existentes + Nuevos) ---
-    const handleToggleTheme = useCallback(() => { if (typeof toggleThemeProp === 'function') toggleThemeProp(); setMode((prev) => (prev === "light" ? "dark" : "light")); }, [toggleThemeProp]);
+    const handleToggleTheme = useCallback(() => {
+        if (typeof toggleThemeProp === 'function') toggleThemeProp();
+    }, [toggleThemeProp]);
     const handleDrawerToggle = useCallback(() => setMobileOpen(prev => !prev), []);
     const handleDrawerClose = useCallback(() => setMobileOpen(false), []);
     const handleSearchChange = useCallback((event) => setSearchTerm(event.target.value), []);
