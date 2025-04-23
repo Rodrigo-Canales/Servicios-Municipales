@@ -14,7 +14,8 @@ import {
     // MUI Form Components (para Search)
     TextField, InputAdornment,
     // ThemeProvider y CssBaseline usualmente están en App.jsx
-    ThemeProvider, CssBaseline
+    ThemeProvider, CssBaseline,
+    Snackbar, Alert as MuiAlert
 } from '@mui/material';
 // --- Icon Imports ---
 import { Visibility as VisibilityIcon, Reply as ReplyIcon, Search as SearchIcon, AccountBox, InfoOutlined as InfoOutlinedIcon } from '@mui/icons-material';
@@ -150,10 +151,32 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
     const [modalVerRespuestaOpen, setModalVerRespuestaOpen] = useState(false);
     const [solicitudVerDetalle, setSolicitudVerDetalle] = useState(null);
     const [respuestaDetalle, setRespuestaDetalle] = useState(null);
+    // --- Notificación SSE de nueva solicitud ---
+    const [notifOpen, setNotifOpen] = useState(false);
+    const { user, logout } = useAuth();
+    useEffect(() => {
+        if (!user?.area_id) return;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+        const sse = new window.EventSource(
+            `${backendUrl}/solicitudes/notificaciones/stream?area_id=${user.area_id}`,
+            { withCredentials: true }
+        );
+        sse.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'nueva_solicitud') {
+                    setNotifOpen(true);
+                }
+            } catch {
+                // intentionally empty
+            }
+        };
+        sse.onerror = () => { sse.close(); };
+        return () => { if (sse) sse.close(); };
+    }, [user?.area_id]);
 
     // --- Hooks ---
     const theme = useMemo(() => (mode === 'light' ? lightTheme : darkTheme), [mode]);
-    const { user, logout } = useAuth();
     const loadingTipos = false; // Si no tienes loading real, ponlo en false
 
     // --- Estilos Tabla ---
@@ -242,8 +265,8 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
             } else {
                 setRespuestaDetalle(respuesta);
             }
-        } catch (e) {
-            console.error('Error al obtener la respuesta:', e);
+        } catch {
+            console.error('Error al obtener la respuesta:');
             setRespuestaDetalle({ error: 'No se pudo cargar la respuesta del funcionario.' });
         }
     }, []);
@@ -525,6 +548,58 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
                         respuesta={respuestaDetalle}
                     />
                 )}
+                <Snackbar
+                    open={notifOpen}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                    onClose={() => setNotifOpen(false)}
+                    autoHideDuration={null}
+                >
+                    <MuiAlert
+                        severity="warning"
+                        variant="filled"
+                        sx={theme => ({
+                            backgroundColor: theme.palette.mode === 'dark' ? '#ffb300' : '#ff5722',
+                            color: '#fff',
+                            fontWeight: 800,
+                            fontSize: '1.15rem',
+                            boxShadow: 8,
+                            border: theme.palette.mode === 'dark' ? '2px solid #fffde7' : '2px solid #bf360c',
+                            letterSpacing: 0.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                        })}
+                        onClose={() => setNotifOpen(false)}
+                        action={
+                            <Button
+                                onClick={() => window.location.reload()}
+                                sx={theme => ({
+                                    bgcolor: theme.palette.mode === 'dark' ? '#fffde7' : '#fff3e0',
+                                    color: theme.palette.mode === 'dark' ? '#ff9800' : '#d84315',
+                                    fontWeight: 900,
+                                    fontSize: '1.08rem',
+                                    borderRadius: 2,
+                                    px: 2.5,
+                                    py: 1.2,
+                                    ml: 2,
+                                    boxShadow: 4,
+                                    border: `2px solid ${theme.palette.mode === 'dark' ? '#ff9800' : '#d84315'}`,
+                                    '&:hover': {
+                                        bgcolor: theme.palette.mode === 'dark' ? '#ffe082' : '#ffccbc',
+                                        color: theme.palette.mode === 'dark' ? '#bf360c' : '#bf360c',
+                                        borderColor: theme.palette.mode === 'dark' ? '#bf360c' : '#bf360c',
+                                    },
+                                    transition: 'all 0.2s',
+                                })}
+                                tabIndex={0}
+                                autoFocus
+                            >
+                                REINICIAR PÁGINA
+                            </Button>
+                        }
+                    >
+                        ¡Nueva solicitud recibida! Para verla, reinicia la página.
+                    </MuiAlert>
+                </Snackbar>
             </Box>
             <React.Fragment>
                 {console.log('%c[DEBUG] Estado actual de allSolicitudes:', 'color: orange;', allSolicitudes)}

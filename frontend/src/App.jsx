@@ -20,7 +20,7 @@ import { FontSizeProvider, useFontSize } from './contexts/FontSizeContext.jsx';
 import { lightTheme, darkTheme } from './theme';
 
  // Importar ProtectedRoute
- import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
+import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 
 function App() {
     // Leer preferencia de tema desde localStorage al iniciar

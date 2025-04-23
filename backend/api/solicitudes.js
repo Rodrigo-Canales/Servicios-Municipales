@@ -340,7 +340,7 @@ router.post('/', upload.any(), async (req, res) => {
 
     // 1) Obtener nombre del tipo de solicitud
     const [tipoResult] = await connection.query(
-      'SELECT nombre_tipo FROM Tipos_Solicitudes WHERE id_tipo = ?',
+      'SELECT nombre_tipo, area_id FROM Tipos_Solicitudes WHERE id_tipo = ?',
       [id_tipo]
     );
     if (tipoResult.length === 0) {
@@ -349,6 +349,7 @@ router.post('/', upload.any(), async (req, res) => {
       return res.status(400).json({ message: 'El tipo de solicitud especificado no existe.' });
     }
     const nombre_tipo = tipoResult[0].nombre_tipo;
+    const area_id = tipoResult[0].area_id;
     const estado_inicial = estado || 'Pendiente';
     const correo_para_insert = correo_notificacion || null;
 
@@ -791,6 +792,9 @@ router.post('/', upload.any(), async (req, res) => {
       }
     }
 
+    console.log('Llamando a notifyNewSolicitud, clientes conectados:', sseClients.length, 'área:', area_id);
+    notifyNewSolicitud({ id: id_solicitud_str, tipo: nombre_tipo, fecha: fecha.toISOString() }, area_id);
+
     res.status(201).json({
       message: 'Solicitud creada con éxito',
       id_solicitud: id_solicitud_str,
@@ -828,6 +832,35 @@ function normalizeFileName(name) {
   return name
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Elimina diacríticos
     .replace(/[^a-zA-Z0-9._-]/g, '_'); // Solo permite letras, números, punto, guion y guion bajo
+}
+
+// --- SSE: Notificaciones de nuevas solicitudes por área ---
+const sseClients = []; // [{ res, area_id }]
+
+router.get('/notificaciones/stream', (req, res) => {
+  const area_id = req.query.area_id;
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  res.flushHeaders();
+  res.write('retry: 10000\n\n');
+  sseClients.push({ res, area_id });
+  req.on('close', () => {
+    const idx = sseClients.findIndex(c => c.res === res);
+    if (idx !== -1) sseClients.splice(idx, 1);
+  });
+});
+
+function notifyNewSolicitud(solicitud, area_id) {
+  console.log('Enviando evento SSE a', sseClients.filter(c => String(c.area_id) === String(area_id)).length, 'clientes del área', area_id, solicitud);
+  const data = JSON.stringify({ type: 'nueva_solicitud', solicitud });
+  sseClients
+    .filter(client => String(client.area_id) === String(area_id))
+    .forEach(client => {
+      client.res.write(`data: ${data}\n\n`);
+    });
 }
 
 module.exports = router;

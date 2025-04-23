@@ -67,7 +67,7 @@ export const fields = [
         name: 'descripcionSolicitud', // Se mantiene siempre visible y requerido
         label: 'Descripción Detallada',
         type: 'textarea',
-        required: true,
+        required: false,
         requiredMessage: 'La descripción es obligatoria.',
         minLength: 15,
         minLengthMessage: 'Por favor, detalla un poco más tu solicitud (mín. 15 caracteres).',
