@@ -441,15 +441,28 @@ function Administrador({ toggleTheme, mode }) {
         // --- Sorting Logic (Remains the same functionally) ---
         const idKey = currentConfig.idKey;
         if (idKey && results.length > 0) {
-            results = [...results].sort((a, b) => {
-                const aValue = a[idKey]; const bValue = b[idKey];
-                if (aValue == null && bValue == null) return 0;
-                if (aValue == null) return -1;
-                if (bValue == null) return 1;
-                const numericA = Number(aValue); const numericB = Number(bValue);
-                if (!isNaN(numericA) && !isNaN(numericB)) return numericA - numericB;
-                return String(aValue).localeCompare(String(bValue));
-            });
+            // Solo aplicar orden descendente a solicitudes y respuestas
+            if (['solicitudes', 'respuestas'].includes(currentSectionKey)) {
+                results = [...results].sort((a, b) => {
+                    const aValue = a[idKey]; const bValue = b[idKey];
+                    if (aValue == null && bValue == null) return 0;
+                    if (aValue == null) return -1;
+                    if (bValue == null) return 1;
+                    const numericA = Number(aValue); const numericB = Number(bValue);
+                    if (!isNaN(numericA) && !isNaN(numericB)) return numericB - numericA;
+                    return String(bValue).localeCompare(String(aValue));
+                });
+            } else {
+                results = [...results].sort((a, b) => {
+                    const aValue = a[idKey]; const bValue = b[idKey];
+                    if (aValue == null && bValue == null) return 0;
+                    if (aValue == null) return -1;
+                    if (bValue == null) return 1;
+                    const numericA = Number(aValue); const numericB = Number(bValue);
+                    if (!isNaN(numericA) && !isNaN(numericB)) return numericA - numericB;
+                    return String(aValue).localeCompare(String(bValue));
+                });
+            }
         }
         return results;
     }, [currentSectionKey, currentConfig, searchTerm, solicitudes, areas, tiposSolicitudesAdmin, usuarios, respuestas, preguntasFrecuentes, contextForRender]); // Dependencias correctas

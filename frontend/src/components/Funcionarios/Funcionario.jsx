@@ -92,7 +92,7 @@ const ListaSolicitudes = React.memo(({
                         {/* Mensajes de Carga, Error o Vacío */}
                         {loading && ( <TableRow><TableCell colSpan={colSpan} align="center" sx={{ py: 4 }}><CircularProgress size={24} /><Typography variant="caption" sx={{ ml: 1 }}>Cargando...</Typography></TableCell></TableRow> )}
                         {error && !loading && ( <TableRow><TableCell colSpan={colSpan} align="center"><Alert severity="error" sx={{ my: 2 }}>{error}</Alert></TableCell></TableRow> )}
-                        {!loading && !error && (!solicitudes || solicitudes.length === 0) && ( <TableRow><TableCell colSpan={colSpan} align="center" sx={{ py: 4 }}><Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>No hay solicitudes que mostrar.</Typography></TableCell></TableRow> )}
+                        {!loading && !error && (!solicitudes || solicitudes.length === 0) && ( <TableRow><TableCell colSpan={colSpan} align="center" sx={{ py: 4 }}><Typography sx={{ fontStyle: 'italic', color: 'text.secondary' }}>No hay solicitudes pendientes</Typography></TableCell></TableRow> )}
                         {/* Mapeo de Datos */}
                         {!loading && !error && Array.isArray(solicitudes) && solicitudes.map((item, index) => (
                             <TableRow hover key={item.id_solicitud} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: theme.palette.action.hover }, transition: theme.transitions.create('background-color', { duration: theme.transitions.duration.shortest }), animation: `${fadeInUp} 0.3s ease-out forwards`, animationDelay: `${index * 0.03}s`, opacity: 0 }}>
@@ -441,7 +441,7 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
                     headerCellStyle={headerCellStyle}
                     bodyCellStyle={bodyCellStyle}
                     minWidth={650}
-                    noResultsMsg={searchTerm ? "No se encontraron solicitudes con la búsqueda." : "No hay solicitudes que mostrar."}
+                    noResultsMsg={searchTerm ? "No se encontraron solicitudes con la búsqueda." : "No hay solicitudes pendientes"}
                     totalCount={filteredAndSortedData.length}
                     page={page}
                     rowsPerPage={rowsPerPage}

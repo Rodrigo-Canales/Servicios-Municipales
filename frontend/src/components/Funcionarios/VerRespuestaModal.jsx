@@ -65,8 +65,8 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
 const VerRespuestaModal = ({ open, onClose, solicitudOriginal, respuesta }) => {
     const theme = useTheme();
     if (!open || !solicitudOriginal) return null;
-    // Manejo robusto: si respuesta es null o undefined, mostrar mensaje claro
-    if (!respuesta) {
+    // Manejo robusto: si respuesta es null o undefined, mostrar loader (no error)
+    if (respuesta === null || respuesta === undefined) {
         return (
             <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title"
                 TransitionComponent={Fade}
@@ -99,7 +99,7 @@ const VerRespuestaModal = ({ open, onClose, solicitudOriginal, respuesta }) => {
                     bgcolor: 'primary.main',
                     color: theme => theme.palette.mode === 'dark' ? '#fff' : 'primary.contrastText',
                     fontWeight: 700,
-                    fontSize: '1.08rem', // Más pequeño
+                    fontSize: '1.08rem',
                     letterSpacing: 0.5,
                     borderBottom: theme => `1.5px solid ${theme.palette.divider}`,
                     display: 'flex',
@@ -118,7 +118,89 @@ const VerRespuestaModal = ({ open, onClose, solicitudOriginal, respuesta }) => {
                     color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
                     ...darkModalTextSx(theme),
                 }}>
-                    <Alert severity="error">No se pudo cargar la respuesta del funcionario. Intente nuevamente.</Alert>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4 }}>
+                        <CircularProgress size={32} sx={{ mb: 2 }} />
+                        <Typography variant="body2" color="text.secondary">Cargando respuesta...</Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{
+                    px: { xs: 2.5, sm: 3, md: 4 },
+                    py: 2,
+                    bgcolor: 'background.paper',
+                    borderTop: theme => `1.5px solid ${theme.palette.divider}`,
+                    boxShadow: 'none',
+                    justifyContent: 'flex-end',
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                    ...darkModalTextSx(theme),
+                }}>
+                    <Button onClick={onClose} variant="outlined" color="secondary" sx={{
+                        borderRadius: 3,
+                        fontWeight: 600,
+                        px: 3,
+                        py: 1,
+                        boxShadow: 1,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        transition: 'all 0.2s',
+                    }}>Cerrar</Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
+    // Si hay error real en la respuesta
+    if (respuesta && respuesta.error) {
+        return (
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="ver-respuesta-dialog-title"
+                TransitionComponent={Fade}
+                transitionDuration={300}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 4,
+                        boxShadow: 8,
+                        bgcolor: 'background.paper',
+                        border: theme => `2.5px solid ${theme.palette.primary.main}`,
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&:before': {
+                            content: '""',
+                            display: 'block',
+                            width: '100%',
+                            height: 8,
+                            bgcolor: 'primary.main',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            zIndex: 2,
+                        },
+                    }
+                }}
+            >
+                <DialogTitle id="ver-respuesta-dialog-title" sx={{
+                    m: 0,
+                    p: '18px 32px 10px 32px',
+                    bgcolor: 'primary.main',
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : 'primary.contrastText',
+                    fontWeight: 700,
+                    fontSize: '1.08rem',
+                    letterSpacing: 0.5,
+                    borderBottom: theme => `1.5px solid ${theme.palette.divider}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textTransform: 'uppercase',
+                    boxShadow: 'none',
+                }}>
+                    Detalle de Solicitud Resuelta #{solicitudOriginal.id_formateado || solicitudOriginal.id_solicitud}
+                </DialogTitle>
+                <DialogContent dividers sx={{
+                    p: { xs: 2.5, sm: 3, md: 4 },
+                    bgcolor: 'background.default',
+                    border: 'none',
+                    minHeight: 180,
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : theme.palette.text.primary,
+                    ...darkModalTextSx(theme),
+                }}>
+                    <Alert severity="error" sx={{ mt: 2 }}>{respuesta.error}</Alert>
                 </DialogContent>
                 <DialogActions sx={{
                     px: { xs: 2.5, sm: 3, md: 4 },

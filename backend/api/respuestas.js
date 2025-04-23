@@ -13,6 +13,7 @@ const nodemailer = require('nodemailer');
 require('dotenv').config(); // Carga variables de entorno
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { formatRut } = require('../utils/rutUtils');
+const iconv = require('iconv-lite');
 
 // Utilidad para obtener la hora de Chile sin date-fns-tz
 function getChileDateString(date) {
@@ -217,13 +218,22 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
       const attachmentObjects = [];
       if (req.files && req.files.length > 0) {
         req.files.forEach(file => {
-          const filePath = path.join(rutaCarpetaRespuesta, file.originalname);
+          let safeName = file.originalname;
+          // Detectar y corregir nombres mal codificados (ej: tÃ­tulo)
+          if (/Ã|Â|Ð|ð/.test(safeName)) {
+            const buf = Buffer.from(safeName, 'binary');
+            const decoded = iconv.decode(buf, 'latin1');
+            if (/í|á|é|ó|ú|ñ|Ñ|Á|É|Ó|Ú|Í/.test(decoded)) {
+              safeName = decoded;
+            }
+          }
+          const filePath = path.join(rutaCarpetaRespuesta, safeName);
           try {
             fs.writeFileSync(filePath, file.buffer);
-            nombresArchivosAdjuntos.push(file.originalname);
-            attachmentObjects.push({ filename: file.originalname, content: file.buffer });
+            nombresArchivosAdjuntos.push(safeName);
+            attachmentObjects.push({ filename: safeName, content: file.buffer });
           } catch (writeError) {
-            console.error(`Error al guardar el archivo ${file.originalname}:`, writeError);
+            console.error(`Error al guardar el archivo ${safeName}:`, writeError);
             throw new Error(`Fallo al escribir archivo adjunto: ${writeError.message}`);
           }
         });
@@ -320,9 +330,18 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
       {
         if (nombresArchivosAdjuntos.length > 0) {
           pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos:', { underline: true }).moveDown(0.75);
-          pdfDoc.font('Helvetica').fontSize(10);
+          pdfDoc.font('NotoSans'); // Usar NotoSans para los nombres de archivos
+          pdfDoc.fontSize(10);
           nombresArchivosAdjuntos.forEach(nombre => {
-            pdfDoc.text(`- ${nombre}`);
+            let nombreArchivo = nombre ? nombre : 'archivo_sin_nombre';
+            if (/Ã|Â|Ð|ð/.test(nombreArchivo)) {
+              const buf = Buffer.from(nombreArchivo, 'binary');
+              const decoded = iconv.decode(buf, 'latin1');
+              if (/í|á|é|ó|ú|ñ|Ñ|Á|É|Ó|Ú|Í/.test(decoded)) {
+                nombreArchivo = decoded;
+              }
+            }
+            pdfDoc.text(`- ${nombreArchivo}`);
             pdfDoc.moveDown(0.4);
           });
           pdfDoc.moveDown(1);
@@ -435,7 +454,7 @@ router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Func
             JOIN Usuarios u ON s.RUT_ciudadano = u.RUT 
             JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo 
             WHERE s.estado = 'Pendiente' 
-            ORDER BY s.fecha_hora_envio ASC
+            ORDER BY s.fecha_hora_envio DESC
         `;
         const [solicitudesPendientes] = await db.query(query);
         res.status(200).json({ solicitudes: solicitudesPendientes });
@@ -460,7 +479,7 @@ router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req,
 router.get('/:id', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     const { id } = req.params; if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) { return res.status(400).json({ message: 'ID de respuesta inválido.' }); }
     try {
-        const query = ` SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador, ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador, s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado, ts.nombre_tipo AS nombre_tipo_solicitud, s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano, s.ruta_carpeta AS ruta_carpeta_solicitud FROM Respuestas r JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE r.id_respuesta = ? `;
+        const query = ` SELECT r.id_respuesta, LPAD(r.id_respuesta, 10, '0') AS id_respuesta_formateado, r.fecha_hora_respuesta, r.RUT_trabajador, ut.nombre AS nombre_trabajador, ut.apellido AS apellido_trabajador, s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_solicitud_formateado, ts.nombre_tipo AS nombre_tipo_solicitud, s.RUT_ciudadano, uc.nombre AS nombre_ciudadano, uc.apellido AS apellido_ciudadano, s.ruta_carpeta AS ruta_carpeta_solicitud FROM Respuestas r JOIN Solicitudes s ON r.id_solicitud = s.id_solicitud JOIN Usuarios ut ON r.RUT_trabajador = ut.RUT JOIN Usuarios uc ON s.RUT_ciudadano = uc.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE r.id_respuesta = ? ORDER BY r.fecha_hora_respuesta DESC `;
         const [respuesta] = await db.query(query, [id]);
         if (respuesta.length === 0) { return res.status(404).json({ message: 'Respuesta no encontrada' }); }
         res.status(200).json({ respuesta: respuesta[0] });
@@ -558,7 +577,7 @@ router.get('/by-solicitud/:id', async (req, res) => {
 // Obtener todas las respuestas de un ciudadano
 router.get('/solicitudes/pendientes', protect, restrictTo('Administrador', 'Funcionario'), async (req, res) => {
     try {
-        const query = ` SELECT s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado, s.RUT_ciudadano, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano, ts.nombre_tipo, s.fecha_hora_envio, s.estado, s.ruta_carpeta, s.correo_notificacion FROM Solicitudes s JOIN Usuarios u ON s.RUT_ciudadano = u.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE s.estado = 'Pendiente' ORDER BY s.fecha_hora_envio ASC `;
+        const query = ` SELECT s.id_solicitud, LPAD(s.id_solicitud, 10, '0') AS id_formateado, s.RUT_ciudadano, u.nombre AS nombre_ciudadano, u.apellido AS apellido_ciudadano, ts.nombre_tipo, s.fecha_hora_envio, s.estado, s.ruta_carpeta, s.correo_notificacion FROM Solicitudes s JOIN Usuarios u ON s.RUT_ciudadano = u.RUT JOIN Tipos_Solicitudes ts ON s.id_tipo = ts.id_tipo WHERE s.estado = 'Pendiente' ORDER BY s.fecha_hora_envio DESC `;
         const [solicitudesPendientes] = await db.query(query);
         res.status(200).json({ solicitudes: solicitudesPendientes });
     } catch (error) { console.error('Error al obtener solicitudes pendientes:', error); res.status(500).json({ message: 'Error interno al obtener solicitudes pendientes' }); }

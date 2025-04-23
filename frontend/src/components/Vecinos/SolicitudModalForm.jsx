@@ -99,6 +99,14 @@ const validateField = (name, value, fieldDefinition, formData) => {
                         return fieldDefinition.maxLengthMessage || `No debe exceder los ${maxLength} caracteres.`;
                     }
                     break; }
+                case 'rut':
+                    { const stringValue = String(value);
+                    if (!stringValue.includes('-')) {
+                        // Si no tiene guion, error (rojo)
+                        return fieldDefinition.patternMessage || 'El RUT debe contener un guion (-). Ejemplo: 12345678-9';
+                    }
+                    // Si tiene guion, es válido (verde si está tocado y sin error)
+                    break; }
             }
         } else if (required && type !== 'checkbox' && type !== 'file' && type !== 'location' && type !== 'multiselect') {
             return fieldDefinition.requiredMessage || 'Este campo es obligatorio.';
@@ -486,6 +494,12 @@ const SolicitudModalForm = ({
     }, [formFields, formData]);
 
 
+// --- Validación de nombre de archivo con tildes en el frontend ---
+
+
+// --- Validación de nombre de archivo: no permitir tildes ni diacríticos ---
+const hasAccentOrDiacritic = (name) => /[áéíóúÁÉÍÓÚñÑüÜ´`¨]/.test(name) || /[\u0300-\u036f]/.test(name);
+
     // --- File Change Handler ---
     const handleFileChange = useCallback((event, field) => {
         const { name, files } = event.target;
@@ -520,6 +534,11 @@ const SolicitudModalForm = ({
 
         if (files && files.length > 0) {
             const file = files[0];
+            // --- Validación: no permitir tildes ni diacríticos ---
+            if (hasAccentOrDiacritic(file.name)) {
+                setErrors(prevErrors => ({ ...prevErrors, [name]: 'El nombre del archivo no debe contener tildes, diéresis ni caracteres especiales. Por favor, renómbralo solo con letras simples, números, guion o guion bajo.' }));
+                return;
+            }
             // Basic file info
             const fileExtension = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
             const fileMimeType = file.type?.toLowerCase() || '';
@@ -809,16 +828,55 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
 
         // Determine visual states
         const showError = !!fieldError; // Mostrar error en tiempo real si hay error
-        // Show green if touched, no error, and optionally has a value (or is a checkbox/file input)
-        // Adjust the condition for isSuccess if you only want green on non-empty valid fields
-        const hasValue = !(currentValue === '' || currentValue === null || currentValue === undefined || (Array.isArray(currentValue) && currentValue.length === 0));
-        const isFileSelected = field.type === 'file' && !!fileInputs[fieldName];
-        const isCheckbox = field.type === 'checkbox'; // Checkboxes can be "valid" even if false (if not required)
+        // Nuevo: Solo es success si está tocado, no tiene error, y si es requerido tiene valor válido
+        let isSuccess = false;
+        if (isTouchedField && !fieldError) {
+            if (field.required) {
+                // Si es requerido, debe tener valor válido
+                isSuccess = !(currentValue === '' || currentValue === null || currentValue === undefined || (Array.isArray(currentValue) && currentValue.length === 0));
+            } else {
+                // Si no es requerido, solo es success si tiene valor válido (no vacío)
+                isSuccess = !(currentValue === '' || currentValue === null || currentValue === undefined || (Array.isArray(currentValue) && currentValue.length === 0));
+            }
+        }
+        // --- Success Styling ---
+        // Para RUT: marcar en verde solo si tiene guion y está tocado y sin error
+        let isRut = field.type === 'rut';
+        let isRutValid = isRut && isTouchedField && !fieldError && String(currentValue).includes('-');
+        const successSx = (isSuccess || isRutValid) ? {
+            '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                    borderColor: theme.palette.success.main,
+                },
+                '&:hover fieldset': {
+                    borderColor: theme.palette.success.dark,
+                },
+                '&.Mui-focused fieldset': {
+                    borderColor: theme.palette.success.main,
+                },
+            },
+            '& .MuiInputLabel-root': {
+                color: theme.palette.success.main,
+            },
+        } : {};
+        // --- Error Styling ---
+        const errorSx = showError ? {
+            '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                    borderColor: theme.palette.error.main,
+                },
+                '&:hover fieldset': {
+                    borderColor: theme.palette.error.dark,
+                },
+                '&.Mui-focused fieldset': {
+                    borderColor: theme.palette.error.main,
+                },
+            },
+            '& .MuiInputLabel-root': {
+                color: theme.palette.error.main,
+            },
+        } : {};
 
-        // Show success if touched, no error, and either it has a value, is a selected file, or is a checkbox
-        // (We show success for touched valid fields even if empty, unless they are required and empty which would be an error state)
-        const isSuccess = isTouchedField && !fieldError && (hasValue || isFileSelected || isCheckbox);
-        
         // Common props for FormControl wrapper
         const formControlProps = {
             key: fieldName,
@@ -839,40 +897,6 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             // 'required' and 'disabled' are usually handled by FormControl/wrapper
         };
 
-        // --- Success Styling ---
-        // Define common success styles to apply via sx prop
-        const successSx = {
-             // Target the outlined input border
-            '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                     borderColor: theme.palette.success.main, // Green border
-                },
-                '&:hover fieldset': {
-                      borderColor: theme.palette.success.dark, // Optional: Darker green on hover
-                },
-                '&.Mui-focused fieldset': {
-                      borderColor: theme.palette.success.main, // Keep green when focused
-                },
-            },
-             // Target the input label
-            '& .MuiInputLabel-root': {
-                  // Apply green color only when label is floated (not placeholder) or focused
-                  '&:not(.Mui-focused)': { // When not focused
-                    color: showError ? theme.palette.error.main : isSuccess ? theme.palette.success.main : undefined, // Green label if success, Red if error
-                },
-                 '&.Mui-focused': { // Keep green when focused
-                    color: theme.palette.success.main,
-                },
-            },
-              // Specific override for Select label color when success
-            '& .MuiInputLabel-root.Mui-focused': {
-                color: isSuccess ? theme.palette.success.main : undefined, // Explicitly keep label green on focus if success
-            },
-            '& .MuiFormLabel-root.Mui-focused': { // Handles RadioGroup/CheckboxGroup label
-                color: isSuccess ? theme.palette.success.main : undefined,
-            },
-        };
-
         // --- Render based on type ---
         switch (field.type) {
             case 'text':
@@ -881,7 +905,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             case 'url':
             case 'tel':
                 return (
-                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}} > {/* Apply success styles conditionally */}
+                    <FormControl {...formControlProps} sx={{...errorSx, ...successSx}} >
                         <TextField
                             {...inputProps} // Spread common input props
                             id={fieldName}
@@ -900,7 +924,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
 
             case 'number':
                 return (
-                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} sx={{...errorSx, ...successSx}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}
@@ -924,7 +948,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
 
             case 'textarea':
                 return (
-                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} sx={{...errorSx, ...successSx}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}
@@ -982,7 +1006,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
 
             case 'select':
                 return (
-                    <FormControl {...formControlProps} variant="outlined" size="small" sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} variant="outlined" size="small" sx={{...errorSx, ...successSx}}>
                         <InputLabel id={`${fieldName}-label`}>{inputProps.label}</InputLabel>
                         <Select
                             name={fieldName} // Ensure name is on Select for events
@@ -1012,7 +1036,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             case 'multiselect':
                 { const multiSelectValue = Array.isArray(currentValue) ? currentValue : [];
                 return (
-                    <FormControl {...formControlProps} variant="outlined" size="small" sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} variant="outlined" size="small" sx={{...errorSx, ...successSx}}>
                         <InputLabel id={`${fieldName}-label`}>{inputProps.label}</InputLabel>
                         <Select
                             name={fieldName}
@@ -1061,7 +1085,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                  // RadioGroup success/error state managed by FormControl error prop and HelperText.
                  // Success state can color the FormLabel.
                 return (
-                    <FormControl component="fieldset" {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl component="fieldset" {...formControlProps} sx={{...errorSx, ...successSx}}>
                          {/* Group label (legend) */}
                         <FormLabel
                             component="legend"
@@ -1100,7 +1124,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             case 'datetime-local':
             case 'time':
                 return (
-                    <FormControl {...formControlProps} sx={isSuccess ? successSx : {}}>
+                    <FormControl {...formControlProps} sx={{...errorSx, ...successSx}}>
                         <TextField
                             {...inputProps}
                             id={fieldName}

@@ -170,14 +170,21 @@ function TableCard({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.length > 0 ? rows.map((row, idx) => (
-                      <TableRow hover key={row.id || idx} sx={{ transition: 'background 0.2s', borderRadius: 2, '&:hover': { background: (theme) => theme.palette.action.hover } }}>
-                        {columns.map(col => (
-                          <TableCell key={col.id} sx={{ ...bodyCellStyle, ...(col.cellStyle || {}), border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, fontSize: '0.91rem', py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{col.render ? col.render(row, context) : (row[col.id] ?? '-')}</TableCell>
-                        ))}
-                        {renderActions && <TableCell sx={{ ...bodyCellStyle, textAlign: 'right', whiteSpace: 'nowrap', border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{renderActions(row)}</TableCell>}
-                      </TableRow>
-                    )) : (
+                    {rows.length > 0 ? (
+                      rows.map((row, idx) => (
+                        <TableRow hover key={row.id || idx} sx={{
+                          transition: 'background 0.2s',
+                          borderRadius: 2,
+                          '&:hover': { background: (theme) => theme.palette.action.hover },
+                          height: 56 // Aumenta el alto de la fila para mayor grosor solo en esta tabla
+                        }}>
+                          {columns.map(col => (
+                            <TableCell key={col.id} sx={{ ...bodyCellStyle, ...(col.cellStyle || {}), border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, fontSize: '0.91rem', py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{col.render ? col.render(row, context) : (row[col.id] ?? '-')}</TableCell>
+                          ))}
+                          {renderActions && <TableCell sx={{ ...bodyCellStyle, textAlign: 'right', whiteSpace: 'nowrap', border: 'none', borderBottom: (theme) => `1px solid ${theme.palette.primary.light}`, py: 0.7, px: 1.5, background: 'transparent', color: (theme) => theme.palette.text.primary, fontFamily: 'Montserrat, Arial, sans-serif' }}>{renderActions(row)}</TableCell>}
+                        </TableRow>
+                      ))
+                    ) : (
                       <TableRow>
                         <TableCell colSpan={columns.length + (renderActions ? 1 : 0)} align="center" sx={{ py: 3, fontStyle: 'italic', color: (theme) => theme.palette.text.secondary, borderBottom: 'none', fontWeight: 400, fontSize: '0.93rem', background: 'transparent', fontFamily: 'Montserrat, Arial, sans-serif' }}>{noResultsMsg}</TableCell>
                       </TableRow>

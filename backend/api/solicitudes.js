@@ -10,6 +10,7 @@ const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { formatRut } = require('../utils/rutUtils');
+const iconv = require('iconv-lite');
 // const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- zona horaria
 // Utilidad para obtener la hora de Chile sin date-fns-tz
 function getChileDateString(date) {
@@ -84,7 +85,7 @@ router.get('/', protect, restrictTo('Administrador', 'Funcionario'), async (req,
             FROM Solicitudes s
             JOIN Tipos_Solicitudes t ON s.id_tipo = t.id_tipo
             JOIN Usuarios u ON s.RUT_ciudadano = u.RUT
-            ORDER BY s.id_solicitud ASC
+            ORDER BY s.id_solicitud DESC
         `);
         res.status(200).json({ solicitudes });
     } catch (error) {
@@ -401,7 +402,9 @@ router.post('/', upload.any(), async (req, res) => {
     // 5) Guardar archivos adjuntos en disco
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const safeName = path.basename(file.originalname);
+        let safeName = file.originalname;
+        // Normaliza el nombre eliminando tildes y caracteres especiales
+        safeName = normalizeFileName(safeName);
         const filePath = path.join(rutaAbsolutaSolicitud, safeName);
         fs.writeFileSync(filePath, file.buffer);
       }
@@ -413,6 +416,9 @@ router.post('/', upload.any(), async (req, res) => {
       margins: { top: 50, bottom: FOOTER_HEIGHT, left: 60, right: 60 },
       bufferPages: true // Necesario para actualizar el footer en todas las páginas
     });
+
+    const fontPath = path.join(__dirname, '../fonts/NotoSans-Regular.ttf');
+    pdfDoc.registerFont('NotoSans', fontPath);
 
     pdfPath = path.join(rutaAbsolutaSolicitud, `solicitud_${id_solicitud_str}.pdf`);
     const writeStream = fs.createWriteStream(pdfPath);
@@ -701,9 +707,11 @@ router.post('/', upload.any(), async (req, res) => {
     {
       if (req.files && req.files.length > 0) {
         pdfDoc.font('Helvetica-Bold').fontSize(12).text('Archivos Adjuntos Registrados:', { underline: true }).moveDown(0.75);
-        pdfDoc.font('Helvetica').fontSize(10);
+        pdfDoc.font('NotoSans'); // Usar NotoSans para los nombres de archivos
+        pdfDoc.fontSize(10);
         req.files.forEach(f => {
-          const nombreArchivo = f.originalname ? path.basename(f.originalname) : 'archivo_sin_nombre';
+          let nombreArchivo = f.originalname ? f.originalname : 'archivo_sin_nombre';
+          nombreArchivo = normalizeFileName(nombreArchivo);
           pdfDoc.text(`- ${nombreArchivo}`);
           pdfDoc.moveDown(0.4);
         });
@@ -738,6 +746,51 @@ router.post('/', upload.any(), async (req, res) => {
     await connection.commit();
     connection.release();
 
+    // --- ENVÍO DE CORREO AL VECINO CON PDF Y ADJUNTOS ---
+    if (correo_para_insert) {
+      try {
+        // Buscar archivos adjuntos en la carpeta de la solicitud
+        const archivosAdjuntos = fs.readdirSync(rutaAbsolutaSolicitud)
+          .filter(f => !/^solicitud_.*\.pdf$/i.test(f))
+          .map(f => ({ filename: f, path: path.join(rutaAbsolutaSolicitud, f) }));
+        // PDF generado
+        const pdfFilename = `solicitud_${id_solicitud_str}.pdf`;
+        const pdfPathAbs = path.join(rutaAbsolutaSolicitud, pdfFilename);
+        const attachments = [
+          { filename: pdfFilename, path: pdfPathAbs },
+          ...archivosAdjuntos
+        ];
+        // Configurar nodemailer (igual que en respuestas.js)
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST,
+          port: parseInt(process.env.EMAIL_PORT || "587", 10),
+          secure: process.env.EMAIL_SECURE === 'true',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+        const mailOptions = {
+          from: `"Municipalidad de Pitrufquén" <${process.env.EMAIL_USER}>`,
+          to: correo_para_insert,
+          subject: `Copia de su Solicitud #${id_solicitud_str}`,
+          text: `Estimado(a):\n\nSu solicitud ha sido recibida exitosamente por la Municipalidad de Pitrufquén.\n\nAdjuntamos una copia en PDF de su solicitud y los archivos que usted proporcionó como respaldo.\n\nEste correo es una confirmación automática, no requiere respuesta.\n\nLe recordamos que será notificado(a) por este mismo medio cuando su solicitud sea respondida.\n\nAtentamente,\nMunicipalidad de Pitrufquén`,
+          html: `<p>Estimado(a):</p>
+                 <p>Su solicitud ha sido <b>recibida exitosamente</b> por la Municipalidad de Pitrufquén.</p>
+                 <p>Adjuntamos una copia en PDF de su solicitud y los archivos que usted proporcionó como respaldo.</p>
+                 <p><i>Este correo es una confirmación automática, no requiere respuesta.</i></p>
+                 <p>Le recordamos que será notificado(a) por este mismo medio cuando su solicitud sea respondida.</p>
+                 <p>Atentamente,<br/>Municipalidad de Pitrufquén</p>`,
+          attachments
+        };
+        await transporter.sendMail(mailOptions);
+      } catch (mailErr) {
+        console.error('Error al enviar correo de confirmación de solicitud:', mailErr);
+        // No interrumpe el flujo principal
+      }
+    }
+
     res.status(201).json({
       message: 'Solicitud creada con éxito',
       id_solicitud: id_solicitud_str,
@@ -768,6 +821,14 @@ router.post('/', upload.any(), async (req, res) => {
     res.status(statusCode).json({ message });
   }
 });
+
+// --- Normalizador de nombre de archivo: elimina tildes y caracteres especiales problemáticos ---
+function normalizeFileName(name) {
+  // Reemplaza tildes y diacríticos por su versión simple
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Elimina diacríticos
+    .replace(/[^a-zA-Z0-9._-]/g, '_'); // Solo permite letras, números, punto, guion y guion bajo
+}
 
 module.exports = router;
 

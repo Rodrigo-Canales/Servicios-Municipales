@@ -41,18 +41,6 @@ export const fields = [
         step: 1
     },
     {
-        name: 'correo_notificacion',
-        label: 'Correo Electrónico',
-        type: 'email',
-        required: false,
-        requiredMessage: 'El correo electrónico es obligatorio.',
-        emailMessage: 'El formato del correo electrónico no es válido.',
-        placeholder: 'usuario@ejemplo.com',
-        helperText: 'Usaremos este correo para notificarle una respuesta.',
-        gridProps: { xs: 12, sm: 6 },
-        step: 1
-    },
-    {
         name: 'ubicacionIncidente', // Este se mantiene siempre visible (según la definición original)
         label: 'Ubicación General del Incidente (Opcional)',
         type: 'location',
@@ -332,4 +320,24 @@ export const fields = [
         gridProps: { xs: 12 },
         step: 4
     },
+    {
+        name: 'correo_notificacion',
+        label: 'Correo Electrónico',
+        type: 'email',
+        required: true,
+        requiredMessage: 'El correo electrónico es obligatorio.',
+        emailMessage: 'El formato del correo electrónico no es válido.',
+        placeholder: 'usuario@ejemplo.com',
+        helperText: 'Usaremos este correo para notificarle una respuesta.',
+        gridProps: { xs: 12, sm: 6 },
+        step: 4
+    },
+    {
+        name: 'infoInicial',
+        label: 'Información Importante:',
+        type: 'static-text',
+        text: 'Al momento de enviar la solicitud, recibirás un correo electrónico con un número de seguimiento.\n \nPor favor, verifique que su correo de notificación sea el correcto.',
+        gridProps: { xs: 12 },
+        step: 4 //indica la página del modal
+    }, 
 ];
