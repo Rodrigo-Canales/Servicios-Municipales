@@ -8,7 +8,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 // import { useTheme } from "@mui/material/styles"; // useTheme ya está importado arriba
 import ThemeToggle from "../ThemeToggle"; // Asumiendo que este componente existe y funciona y la ruta es correcta
-import Swal from "sweetalert2";
+import { mostrarAlertaError, mostrarAlertaExito } from '../../utils/alertUtils'; // Importar funciones de alertUtils
 // *** RUTA CORREGIDA para importar useAuth desde su propio archivo ***
 import { useAuth } from '../../contexts/useAuth.jsx'; // O .js si así se llama el archivo
 
@@ -60,13 +60,7 @@ const Login = ({ toggleTheme }) => {
 
         // Verificar errores antes de enviar (sin cambios)
         if (currentEmailError || currentPasswordError || !email) {
-            Swal.fire({
-                title: 'Error de Validación',
-                text: 'Por favor, ingrese un correo y contraseña válidos.',
-                icon: 'warning',
-                confirmButtonText: 'Cerrar',
-                confirmButtonColor: theme.palette.primary.main,
-            });
+            mostrarAlertaError('Error de Validación', 'Por favor, ingrese un correo y contraseña válidos.');
             return;
         }
 
@@ -107,13 +101,7 @@ const Login = ({ toggleTheme }) => {
                 destino = "/funcionarios";
             } else {
                 // Manejo rol no permitido (sin cambios)
-                Swal.fire({
-                    title: 'Acceso Denegado',
-                    text: 'Rol no permitido para esta sección.',
-                    icon: 'error',
-                    confirmButtonText: 'Cerrar',
-                    confirmButtonColor: theme.palette.primary.main,
-                });
+                mostrarAlertaError('Acceso Denegado', 'Rol no permitido para esta sección.');
                 setLoading(false);
                 return;
             }
@@ -122,27 +110,15 @@ const Login = ({ toggleTheme }) => {
             login(data.user, data.token); // <--- ¡Se pasan ambos argumentos!
 
             // Mostrar alerta y navegar (sin cambios)
-            Swal.fire({
-                title: '¡Bienvenido!',
-                text: mensaje,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false,
-                willClose: () => {
-                    navigate(destino);
-                }
-            });
+            mostrarAlertaExito('¡Bienvenido!', mensaje);
+            setTimeout(() => {
+                navigate(destino);
+            }, 1500);
 
         } catch (error) {
             // Manejo de errores (sin cambios)
             console.error("Error en el login:", error.message);
-            Swal.fire({
-                title: 'Error de Inicio de Sesión',
-                text: error.message || "Ocurrió un error inesperado. Intenta nuevamente.",
-                icon: 'error',
-                confirmButtonText: 'Cerrar',
-                confirmButtonColor: theme.palette.primary.main,
-            });
+            mostrarAlertaError('Error de Inicio de Sesión', error.message || "Ocurrió un error inesperado. Intenta nuevamente.");
         } finally {
             // Detener la carga (sin cambios)
             setLoading(false);

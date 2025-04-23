@@ -25,7 +25,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Navbar from "../Navbar";
 import Sidebar from '../common/Sidebar';
 import { lightTheme, darkTheme } from "../../theme";
-import { mostrarAlertaExito, mostrarAlertaError } from "../../utils/alertUtils";
+import { mostrarAlertaExito, mostrarAlertaError, mostrarConfirmacion } from "../../utils/alertUtils";
 import { formatRut } from "../../utils/rutUtils";
 import TableCard from '../common/TableCard';
 
@@ -509,10 +509,24 @@ function Administrador({ toggleTheme, mode }) {
 
     const handleFormChange = useCallback((event) => {
         const { name, value, type, checked } = event.target;
+        let newValue = type === 'checkbox' ? checked : value;
+
+        // --- BLOQUEO DE PUNTOS EN RUT ---
+        if (name === 'rut' && typeof newValue === 'string') {
+            // Elimina todos los puntos automáticamente
+            newValue = newValue.replace(/\./g, '');
+            // Si el usuario intenta escribir un punto, simplemente no lo agrega
+            if (value.includes('.')) {
+                event.target.value = newValue;
+            }
+        }
+        // --- FIN BLOQUEO DE PUNTOS EN RUT ---
+
         setFormData(prev => {
-            const newState = { ...prev, [name]: type === 'checkbox' ? checked : value };
+            const newState = { ...prev, [name]: newValue };
             if (currentSectionKey === 'usuarios' && name === 'deletePassword' && checked) {
-                newState.password = ''; setShowPassword(false);
+                newState.password = '';
+                setShowPassword(false);
             }
             if (currentSectionKey === 'usuarios' && name === 'password' && value.trim() !== '') {
                 newState.deletePassword = false;
@@ -656,30 +670,20 @@ function Administrador({ toggleTheme, mode }) {
 
         if (!itemId) { console.error("No se pudo obtener el ID para eliminar"); return; }
 
-        Swal.fire({
-            title: '¿Estás seguro?',
-            html: `Se eliminará ${itemDescription}.<br/><strong>Esta acción no se puede deshacer.</strong>`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: currentTheme.palette.error.main,
-            cancelButtonColor: currentTheme.palette.grey[600],
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            customClass: {
-                popup: `swal2-popup swal2-${mode}`,
-                title: `swal2-title swal2-title-${mode}`,
-                htmlContainer: `swal2-html-container swal2-html-container-${mode}`,
-                confirmButton: 'swal2-confirm',
-                cancelButton: 'swal2-cancel'
-            },
-            showClass: { popup: 'swal2-show', backdrop: 'swal2-backdrop-show', icon: 'swal2-icon-show' },
-            hideClass: { popup: 'swal2-hide', backdrop: 'swal2-backdrop-hide', icon: 'swal2-icon-hide' }
-        }).then((result) => {
-            if (result.isConfirmed) {
+        mostrarConfirmacion(
+            '¿Estás seguro?',
+            `Se eliminará ${itemDescription}.\n\nEsta acción no se puede deshacer.`,
+            'Sí, eliminar',
+            'Cancelar',
+            'error', // icono rojo
+            '#d33',  // botón confirmar rojo
+            (currentTheme.palette.mode === 'dark' ? '#424242' : '#bdbdbd') // botón cancelar mejorado
+        ).then((isConfirmed) => {
+            if (isConfirmed) {
                 handleDeleteItem(itemId);
             }
         });
-    }, [currentConfig, isDeleting, currentTheme, mode, handleDeleteItem]); // Dependencias correctas
+    }, [currentConfig, isDeleting, currentTheme.palette.mode, handleDeleteItem]); // Dependencias correctas
 
     // --- Estilos Celdas ---
     const headerCellStyle = useMemo(() => ({

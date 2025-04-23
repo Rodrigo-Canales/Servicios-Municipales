@@ -14,6 +14,7 @@ import Funcionario from './components/Funcionarios/Funcionario';
 
 // Contexto de Autenticación
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { FontSizeProvider, useFontSize } from './contexts/FontSizeContext.jsx';
 
 // Temas
 import { lightTheme, darkTheme } from './theme';
@@ -37,9 +38,18 @@ function App() {
         });
     };
 
+    // Obtener fontSize del contexto
+    const { fontSize } = useFontSize();
+
     const currentTheme = useMemo(
-        () => (mode === "light" ? lightTheme : darkTheme),
-        [mode]
+        () => ({
+            ...(mode === "light" ? lightTheme : darkTheme),
+            typography: {
+                ...(mode === "light" ? lightTheme.typography : darkTheme.typography),
+                fontSize: fontSize, // Aplica el tamaño de fuente global
+            },
+        }),
+        [mode, fontSize]
     );
 
     return (
@@ -94,4 +104,11 @@ function App() {
     );
 }
 
-export default App;
+// Envolver App con FontSizeProvider
+export default function AppWithFontSizeProvider() {
+    return (
+        <FontSizeProvider>
+            <App />
+        </FontSizeProvider>
+    );
+}

@@ -12,16 +12,16 @@ export const fields = [
         type: 'static-text',
         text: 'Para concretar tu solicitud tienes que completar el formulario que aparece a continuación.\n\nRecuerda adjuntar todos los documentos necesarios para agilizar el proceso.',
         gridProps: { xs: 12 },
-        step: 1
-    },
+        step: 1 //indica la página del modal
+    }, 
     {
         name: 'rut_ciudadano',
         label: 'RUT',
         type: 'text',
         required: true,
-        requiredMessage: 'Por favor, ingrese su RUT sin puntos y con guión. (si tiene una "k" en mínuscula, por favor cámbiela a mayúscula)',
-        minLength: 8,
-        maxLength: 12,
+        requiredMessage: 'Por favor, ingrese su RUT sin puntos y con guión.',
+        minLength: 8, //minimo de caracteres
+        maxLength: 12, //maximo de caracteres
         placeholder: 'Ej: 12345678-9',
         gridProps: { xs: 12, sm: 6 },
         step: 1
@@ -48,7 +48,7 @@ export const fields = [
         requiredMessage: 'El correo electrónico es obligatorio.',
         emailMessage: 'El formato del correo electrónico no es válido.',
         placeholder: 'usuario@ejemplo.com',
-        helperText: 'Usaremos este correo para contactarte.',
+        helperText: 'Usaremos este correo para notificarle una respuesta.',
         gridProps: { xs: 12, sm: 6 },
         step: 1
     },
@@ -97,7 +97,6 @@ export const fields = [
         required: false,
         requiredMessage: 'Debes seleccionar la fecha del incidente.',
         helperText: 'Selecciona la fecha en que ocurrió.',
-        defaultValue: new Date().toISOString().split('T')[0],
         gridProps: { xs: 12, sm: 4 },
         step: 2
     },

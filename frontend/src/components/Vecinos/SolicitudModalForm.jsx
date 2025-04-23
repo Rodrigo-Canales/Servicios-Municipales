@@ -643,7 +643,7 @@ const SolicitudModalForm = ({
         } else {
             mostrarAlertaAdvertencia(
                 'Campos Incompletos o Inválidos',
-                'Por favor, revise los campos marcados en rojo en este paso.'
+                'Por favor, revise y complete los campos obligatorios.'
             );
         }
     };
@@ -686,6 +686,7 @@ const SolicitudModalForm = ({
                 const value = formData[key];
 
                 // Skip file type fields here, handle them next
+
                 if (field.type === 'file') return;
 
                 // Append the value using the appropriate logic based on type
@@ -807,7 +808,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
         const isTouchedField = touched[fieldName]; // Boolean: true if interacted with
 
         // Determine visual states
-        const showError = isTouchedField && !!fieldError; // Show red if touched and has error
+        const showError = !!fieldError; // Mostrar error en tiempo real si hay error
         // Show green if touched, no error, and optionally has a value (or is a checkbox/file input)
         // Adjust the condition for isSuccess if you only want green on non-empty valid fields
         const hasValue = !(currentValue === '' || currentValue === null || currentValue === undefined || (Array.isArray(currentValue) && currentValue.length === 0));
@@ -824,7 +825,7 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
             fullWidth: true,
             margin: "dense",
             disabled: isSubmitting || loadingDefinition,
-            error: showError, // MUI handles error state based on this
+            error: showError, // MUI maneja el error en tiempo real
             required: field.required,
         };
 

@@ -255,6 +255,19 @@ const RespuestaModalForm = ({
         event.preventDefault();
 
         if (!validateForm()) {
+            // Mostrar alerta con los campos obligatorios faltantes o inválidos
+            const missingFields = formFields
+                .filter(field => !field.type || field.type === 'static-text' ? false : errors[field.name])
+                .map(field => `- ${field.label || field.name}`);
+            if (missingFields.length > 0) {
+                const msg = `Por favor completa o corrige los siguientes campos obligatorios:\n\n${missingFields.join('\n')}`;
+                window.Swal.fire({
+                    icon: 'warning',
+                    title: 'Campos obligatorios incompletos o inválidos',
+                    html: `<pre style='text-align:left;font-size:1rem;'>${msg}</pre>`,
+                    confirmButtonText: 'Entendido',
+                });
+            }
             return;
         }
 
@@ -295,7 +308,7 @@ const RespuestaModalForm = ({
         }
 
         onSubmit(formDataToSend);
-    }, [validateForm, isSubmitting, currentUserRut, solicitudOriginal, formFields, fileInputs, formData, onSubmit]);
+    }, [validateForm, isSubmitting, currentUserRut, solicitudOriginal.id_solicitud, formFields, onSubmit, errors, fileInputs, formData]);
 
     // --- Dialog Close Handler ---
     const handleDialogClose = (event, reason) => {

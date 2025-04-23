@@ -8,6 +8,9 @@ import {
 import { Menu as MenuIcon, Logout as LogoutIcon } from "@mui/icons-material";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from '../contexts/useAuth';
+import { useFontSize } from '../contexts/FontSizeContext';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 
 // Helper function to get initials
 const getInitials = (nombre = '', apellido = '') => {
@@ -19,6 +22,7 @@ const getInitials = (nombre = '', apellido = '') => {
 const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink = "/" }) => {
     const { logout, user } = useAuth();
     const navigate = useNavigate();
+    const { increaseFontSize, decreaseFontSize } = useFontSize();
 
     const handleLogout = () => {
         logout();
@@ -115,6 +119,17 @@ const Navbar = ({ toggleTheme, toggleSidebar, title = "Municipalidad", logoLink 
 
                 {/* Right Side: Controls */}
                 <Stack direction="row" spacing={1} alignItems="center" ml={1} sx={{ flexShrink: 0 }}>
+                    {/* Font Size Controls */}
+                    <Tooltip title="Aumentar tamaño de letra">
+                        <IconButton color="inherit" onClick={increaseFontSize} size="small">
+                            <Typography sx={{ fontWeight: 700, fontSize: 20, lineHeight: 1 }}>A+</Typography>
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Disminuir tamaño de letra">
+                        <IconButton color="inherit" onClick={decreaseFontSize} size="small">
+                            <Typography sx={{ fontWeight: 700, fontSize: 20, lineHeight: 1 }}>A-</Typography>
+                        </IconButton>
+                    </Tooltip>
                     {/* Theme Toggle */}
                     {typeof toggleTheme === 'function' && <ThemeToggle toggleTheme={toggleTheme} />}
 

@@ -739,7 +739,7 @@ router.post('/', upload.any(), async (req, res) => {
     connection.release();
 
     res.status(201).json({
-      message: 'Solicitud creada exitosamente',
+      message: 'Solicitud creada con éxito',
       id_solicitud: id_solicitud_str,
       ruta_carpeta: rutaSolicitud,
       pdf_path: path.join(rutaSolicitud, `solicitud_${id_solicitud_str}.pdf`)

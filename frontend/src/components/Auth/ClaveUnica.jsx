@@ -4,6 +4,7 @@ import { Box, Button, Grid, Typography, List, ListItem, Fade } from '@mui/materi
 import LoginIcon from '@mui/icons-material/Login';
 import { useTheme } from '@mui/material/styles';
 import ThemeToggle from '../ThemeToggle'; // Asumiendo que este componente existe
+import { mostrarAlertaError, mostrarAlertaExito } from '../../utils/alertUtils';
 
 const ClaveUnica = ({ toggleTheme }) => {
     const theme = useTheme();
@@ -15,15 +16,18 @@ const ClaveUnica = ({ toggleTheme }) => {
             const response = await axios.get('http://localhost:3001/api/auth/claveunica/login');
             // Redirigir al usuario a la URL de Clave Única proporcionada por el backend
             if (response.data.redirectUrl) {
-                window.location.href = response.data.redirectUrl;
+                mostrarAlertaExito('Redirección', 'Serás redirigido al portal de Clave Única.');
+                setTimeout(() => {
+                    window.location.href = response.data.redirectUrl;
+                }, 1200);
             } else {
                 console.error('No se recibió URL de redirección desde el backend.');
-                // Podrías mostrar un error al usuario aquí si lo deseas
+                mostrarAlertaError('Error', 'No se recibió URL de redirección desde el backend.');
             }
         } catch (error) {
             console.error('Error al iniciar sesión con Clave Única:', error);
             // Mostrar un mensaje de error al usuario (ej: usando Swal o un Alert de MUI)
-            alert(`Error al intentar iniciar sesión con Clave Única: ${error.message || 'Error desconocido'}`);
+            mostrarAlertaError('Error', `Error al intentar iniciar sesión con Clave Única: ${error.message || 'Error desconocido'}`);
         }
     };
 
