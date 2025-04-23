@@ -22,10 +22,19 @@ import { lightTheme, darkTheme } from './theme';
  import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 
 function App() {
-    const [mode, setMode] = useState("light");
+    // Leer preferencia de tema desde localStorage al iniciar
+    const getInitialMode = () => {
+        const savedMode = localStorage.getItem('themeMode');
+        return savedMode === 'dark' ? 'dark' : 'light';
+    };
+    const [mode, setMode] = useState(getInitialMode);
 
     const toggleTheme = () => {
-        setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
+        setMode((prevMode) => {
+            const newMode = prevMode === 'light' ? 'dark' : 'light';
+            localStorage.setItem('themeMode', newMode); // Guardar preferencia
+            return newMode;
+        });
     };
 
     const currentTheme = useMemo(
@@ -40,7 +49,7 @@ function App() {
                 <Router>
                     <Routes>
                          {/* --- Rutas Públicas --- */}
-                        <Route path="/" element={<ClaveUnica />} />
+                        <Route path="/" element={<ClaveUnica toggleTheme={toggleTheme} />} />
                         <Route path="/login" element={<Login toggleTheme={toggleTheme} />} />
 
                         {/* --- Rutas Protegidas --- */}

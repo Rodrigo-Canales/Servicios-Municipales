@@ -78,7 +78,7 @@ const ClaveUnica = ({ toggleTheme }) => {
             >
                 {/* Botón para cambiar tema */}
                 <Box sx={{ position: 'absolute', top: { xs: 16, md: 24 }, right: { xs: 16, md: 24 } }}>
-                    <ThemeToggle toggleTheme={toggleTheme} />
+                    {typeof toggleTheme === 'function' && <ThemeToggle toggleTheme={toggleTheme} />}
                 </Box>
 
                 {/* Contenedor Central (Reemplaza el formulario) */}
@@ -86,17 +86,17 @@ const ClaveUnica = ({ toggleTheme }) => {
                     <Box
                         sx={{
                             width: '100%',
-                            maxWidth: 600, // Un poco más ancho para el texto
+                            maxWidth: 600, // Más ancho que el login
                             mx: 'auto',
                             backgroundColor: 'background.paper',
-                            boxShadow: { xs: 3, md: 6 },
-                            borderRadius: 2,
+                            boxShadow: { xs: 2, md: 4 },
+                            borderRadius: 3,
                             p: { xs: 3, md: 4 },
-                            border: `1px solid ${theme.palette.divider}`,
-                            textAlign: 'center' // Centrar contenido interno
+                            border: `1.5px solid ${theme.palette.primary.light}`,
+                            fontFamily: 'Montserrat, Arial, sans-serif',
                         }}
                     >
-                        <Typography variant="h5" fontWeight="bold" gutterBottom component="h2">
+                        <Typography variant="h5" fontWeight="bold" gutterBottom component="h2" sx={{ color: 'primary.main' }}>
                             Sistema de Solicitudes Ciudadanas
                         </Typography>
                         <Typography variant="body1" sx={{ mt: 2, mb: 2 }}>

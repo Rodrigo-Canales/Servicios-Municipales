@@ -151,44 +151,44 @@ const Login = ({ toggleTheme }) => {
 
     // --- JSX (Renderizado) - Restaurado completamente ---
     return (
-        <Grid container sx={{ minHeight: '100vh' }}>
+        <Grid container sx={{ minHeight: '100vh', fontFamily: 'Montserrat, Arial, sans-serif', bgcolor: 'background.default' }}>
             {/* Panel Izquierdo (Información) */}
             <Grid
                 item xs={12} md={5}
                 sx={{
-                    bgcolor: 'primary.main', // Mantenido color primario
+                    bgcolor: 'primary.main',
                     color: theme.palette.primary.contrastText,
                     p: { xs: 3, md: 4 },
                     display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                    borderRight: { md: `1px solid ${theme.palette.divider}` }
+                    borderRight: { md: `1.5px solid ${theme.palette.primary.light}` },
+                    boxShadow: { md: theme.shadows[4] },
                 }}
             >
                 <Fade in={true} timeout={1000}>
                     <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 3 } }}>
                         <Box
                             component="img"
-                            src="/LOGO PITRUFQUEN.png" // Asegúrate que la ruta sea correcta
+                            src="/LOGO PITRUFQUEN.png"
                             alt="Logo Municipalidad"
-                            sx={{ width: { xs: '150px', md: '200px' }, mb: 2 }}
+                            sx={{ width: { xs: '120px', md: '140px' }, mb: 2, mx: 'auto', display: 'block' }}
                         />
-                        <Typography variant="h4" fontWeight="bold" gutterBottom component="h1">
+                        <Typography variant="h4" fontWeight={800} gutterBottom component="h1" sx={{ letterSpacing: 0.7, textTransform: 'uppercase', color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             Municipalidad de Pitrufquén
                         </Typography>
                     </Box>
                 </Fade>
-
                 <Fade in={true} timeout={1500}>
                     <Box sx={{ textAlign: 'center', mt: 2 }}>
-                        <Typography variant="h5" fontWeight="bold">
+                        <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: 0.7, textTransform: 'uppercase', color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             Sistema de Gestión de Solicitudes
                         </Typography>
-                        <Typography variant="body1" sx={{ mt: 2 }}>
+                        <Typography variant="body1" sx={{ mt: 2, color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             Estimado funcionario, utilice esta nueva plataforma para gestionar sus Solicitudes Respetivas.
                         </Typography>
-                        <Typography fontWeight="bold" variant="body1" sx={{ mt: 2 }}>
+                        <Typography fontWeight={700} variant="body1" sx={{ mt: 2, color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             Por favor siga los pasos detallados a continuación:
                         </Typography>
-                        <List sx={{ mt: 2, mb: 2, listStyleType: 'disc', pl: 4, textAlign: 'left', maxWidth: 450, mx:'auto' }}>
+                        <List sx={{ mt: 2, mb: 2, listStyleType: 'disc', pl: 4, textAlign: 'left', maxWidth: 450, mx:'auto', color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             <ListItem sx={{ display: 'list-item', py: 0.5 }}>
                                 Ingrese su correo institucional en el campo "Correo Institucional".
                             </ListItem>
@@ -202,13 +202,12 @@ const Login = ({ toggleTheme }) => {
                                 Una vez completado el proceso de inicio de sesión, podrá acceder a la plataforma y gestionar sus solicitudes.
                             </ListItem>
                         </List>
-                        <Typography fontWeight="bold" variant="body1" sx={{ mt: 2 }}>
+                        <Typography fontWeight={700} variant="body1" sx={{ mt: 2, color: 'textWhite', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             En caso de haber olvidado algún dato, por favor comunicarse con el administrador del sistema.
                         </Typography>
                     </Box>
                 </Fade>
             </Grid>
-
             {/* Panel Derecho (Formulario de Login) */}
             <Grid
                 item xs={12} md={7}
@@ -220,15 +219,13 @@ const Login = ({ toggleTheme }) => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    position: 'relative'
+                    position: 'relative',
                 }}
             >
                 {/* Botón para cambiar tema */}
                 <Box sx={{ position: 'absolute', top: { xs: 16, md: 24 }, right: { xs: 16, md: 24 } }}>
-                    {/* Asegúrate que toggleTheme se pase como prop a Login */}
                     {typeof toggleTheme === 'function' && <ThemeToggle toggleTheme={toggleTheme} />}
                 </Box>
-
                 {/* Contenedor del Formulario */}
                 <Fade in={true} timeout={1000}>
                     <Box
@@ -237,16 +234,16 @@ const Login = ({ toggleTheme }) => {
                             maxWidth: 420,
                             mx: 'auto',
                             backgroundColor: 'background.paper',
-                            boxShadow: { xs: 3, md: 6 },
-                            borderRadius: 2,
+                            boxShadow: { xs: 2, md: 4 },
+                            borderRadius: 3,
                             p: { xs: 3, md: 4 },
-                            border: `1px solid ${theme.palette.divider}`
+                            border: `1.5px solid ${theme.palette.primary.light}`,
+                            fontFamily: 'Montserrat, Arial, sans-serif',
                         }}
                     >
-                        <Typography variant="h5" fontWeight="bold" gutterBottom align="center" component="h2">
+                        <Typography variant="h5" fontWeight={800} gutterBottom align="center" component="h2" sx={{ letterSpacing: 0.7, textTransform: 'uppercase', color: 'primary.main', fontFamily: 'Montserrat, Arial, sans-serif' }}>
                             Iniciar Sesión
                         </Typography>
-
                         {/* Formulario */}
                         <form onSubmit={handleSubmit} noValidate>
                             <TextField
@@ -257,9 +254,16 @@ const Login = ({ toggleTheme }) => {
                                 value={email}
                                 onChange={handleEmailChange}
                                 error={!!errors.email}
-                                helperText={errors.email || " "} // Mantiene espacio para evitar saltos
+                                helperText={errors.email || " "}
                                 autoComplete="email"
-                                sx={{ borderRadius: 1 }}
+                                sx={{ borderRadius: 2, fontFamily: 'Montserrat, Arial, sans-serif' }}
+                                InputProps={{
+                                    sx: {
+                                        borderRadius: 2,
+                                        fontFamily: 'Montserrat, Arial, sans-serif',
+                                    },
+                                }}
+                                InputLabelProps={{ sx: { fontFamily: 'Montserrat, Arial, sans-serif' } }}
                             />
                             <TextField
                                 label="Contraseña"
@@ -270,9 +274,9 @@ const Login = ({ toggleTheme }) => {
                                 value={password}
                                 onChange={handlePasswordChange}
                                 error={!!errors.password}
-                                helperText={errors.password || " "} // Mantiene espacio
+                                helperText={errors.password || " "}
                                 autoComplete="current-password"
-                                sx={{ borderRadius: 1 }}
+                                sx={{ borderRadius: 2, fontFamily: 'Montserrat, Arial, sans-serif' }}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
@@ -280,8 +284,13 @@ const Login = ({ toggleTheme }) => {
                                                 {showPassword ? <VisibilityOff /> : <Visibility />}
                                             </IconButton>
                                         </InputAdornment>
-                                    )
+                                    ),
+                                    sx: {
+                                        borderRadius: 2,
+                                        fontFamily: 'Montserrat, Arial, sans-serif',
+                                    },
                                 }}
+                                InputLabelProps={{ sx: { fontFamily: 'Montserrat, Arial, sans-serif' } }}
                             />
                             {/* Botón de Ingreso con indicador de carga */}
                             <Box sx={{ mt: 3, position: 'relative' }}>
@@ -292,25 +301,28 @@ const Login = ({ toggleTheme }) => {
                                     fullWidth
                                     sx={{
                                         py: 1.5,
-                                        borderRadius: 2,
-                                        fontWeight: 'bold',
-                                        transition: 'transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+                                        borderRadius: 3,
+                                        fontWeight: 700,
+                                        fontFamily: 'Montserrat, Arial, sans-serif',
+                                        fontSize: '1.08rem',
+                                        letterSpacing: 0.5,
+                                        boxShadow: theme.shadows[2],
+                                        transition: 'transform 0.15s, box-shadow 0.15s',
                                         '&:hover': {
-                                            transform: 'translateY(-1px)',
+                                            transform: 'translateY(-1px) scale(1.03)',
                                             boxShadow: theme.shadows[4],
+                                            bgcolor: 'primary.dark',
                                         },
                                     }}
-                                    // Deshabilitar si hay errores, campos vacíos o está cargando
                                     disabled={!!errors.email || !!errors.password || !email || !password || loading}
                                 >
                                     {loading ? 'Ingresando...' : 'Ingresar'}
                                 </Button>
-                                {/* Indicador de carga posicionado sobre el botón */}
                                 {loading && (
                                     <CircularProgress
                                         size={24}
                                         sx={{
-                                            color: theme.palette.primary.contrastText, // Buen contraste sobre botón primario
+                                            color: theme.palette.primary.contrastText,
                                             position: 'absolute',
                                             top: '50%',
                                             left: '50%',

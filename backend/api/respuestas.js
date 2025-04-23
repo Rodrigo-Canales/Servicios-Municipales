@@ -8,13 +8,16 @@ const multer = require('multer');
 const path = require('path');
 const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
-const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- Agregado para zona horaria
+// const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- Agregado para zona horaria
 const nodemailer = require('nodemailer'); 
 require('dotenv').config(); // Carga variables de entorno
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { formatRut } = require('../utils/rutUtils');
 
-
+// Utilidad para obtener la hora de Chile sin date-fns-tz
+function getChileDateString(date) {
+    return date.toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+}
 
 // --- Configuración del Transporter de Nodemailer ---
 const transporter = nodemailer.createTransport({
@@ -278,8 +281,8 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Fecha y hora de respuesta:', { continued: true });
         // Convertir a zona horaria de Chile
-        const fechaChileRespuesta = utcToZonedTime(fechaRespuesta, 'America/Santiago');
-        pdfDoc.font('Helvetica').text(` ${formatTz(fechaChileRespuesta, 'dd/MM/yyyy HH:mm:ss', { timeZone: 'America/Santiago', locale: es })}`);
+        const fechaChileRespuesta = getChileDateString(fechaRespuesta);
+        pdfDoc.font('Helvetica').text(` ${fechaChileRespuesta}`);
         pdfDoc.moveDown(1.5);
       }
   
@@ -297,8 +300,8 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Fecha y hora de solicitud:', { continued: true });
         // Convertir a zona horaria de Chile
-        const fechaChileSolicitud = utcToZonedTime(new Date(solicitud.fecha_hora_envio), 'America/Santiago');
-        pdfDoc.font('Helvetica').text(` ${formatTz(fechaChileSolicitud, 'dd/MM/yyyy HH:mm:ss', { timeZone: 'America/Santiago', locale: es })}`);
+        const fechaChileSolicitud = getChileDateString(new Date(solicitud.fecha_hora_envio));
+        pdfDoc.font('Helvetica').text(` ${fechaChileSolicitud}`);
         pdfDoc.moveDown(0.2);
         pdfDoc.font('Helvetica-Bold').text('Correo de Notificación:', { continued: true });
         pdfDoc.font('Helvetica').text(` ${correoDestino || 'No proporcionado'}`);

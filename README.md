@@ -277,13 +277,7 @@ docker run --name mysql_servicios_municipales \
 
 ---
 
-
-
-
-
-
-
-C## Documentación de comandos de despliegue Docker y configuración de servidores
+## Documentación de comandos de despliegue Docker y configuración de servidores
 
 Este documento recopila los comandos utilizados para la gestión de contenedores Docker, configuración de Apache y Nginx dentro de contenedores, y operaciones relacionadas con el firewall y la red. Se presentan en el orden en que fueron ejecutados, con una breve descripción de lo que hace cada uno y su propósito.
 
@@ -408,7 +402,6 @@ docker logs backend_servicios_municipales
 - **Qué hace**: Muestra los logs del contenedor `backend_servicios_municipales`.
 - **Para qué sirve**: Revisar errores o información de arranque del backend.
 
-
 ### 18. Copiar configuración de Apache nuevamente
 ```bash
 docker cp /root/sgd/000-default.conf.editable sgd_fe:/etc/apache2/sites-available/000-default.conf
@@ -454,21 +447,10 @@ docker exec sgd_gtw nginx -s reload
 
 ---
 
-
 docker network ls
 docker network connect servicios_municipales_net sgd_gtw
 docker exec -it sgd_gtw curl http://backend_servicios_municipales:3000/api
 cat /etc/apache2/apache2.conf
-
-
-
-
-
-
-
-
-
-
 
 Para parar y eliminar los contenedores
 
@@ -478,12 +460,16 @@ Para los contenedores de Docker Compose
 
     docker-compose up -d --build
 
-
 Cuando hago un cambio en el front
 
     docker compose up -d --no-deps --build frontend
 
-
 Cuando hago un cambio en el back
 
     docker compose restart backend
+
+Cuando agregas o cambias dependencias en el backend (por ejemplo, si agregas date-fns-tz en package.json), debes reconstruir la imagen del backend para que se instalen correctamente:
+
+    docker compose up -d --no-deps --build backend
+
+Esto fuerza la reconstrucción solo del backend y asegura que todas las dependencias estén instaladas en el contenedor.

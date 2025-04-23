@@ -10,7 +10,11 @@ const { format } = require('date-fns');
 const { es } = require('date-fns/locale');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { formatRut } = require('../utils/rutUtils');
-const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- Agregado para zona horaria
+// const { utcToZonedTime, format: formatTz } = require('date-fns-tz'); // <-- zona horaria
+// Utilidad para obtener la hora de Chile sin date-fns-tz
+function getChileDateString(date) {
+    return date.toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+}
 
 // Función para crear carpetas si no existen (Sin Cambios)
 function crearCarpeta(ruta) {
@@ -453,13 +457,8 @@ router.post('/', upload.any(), async (req, res) => {
           [id_solicitud_num]
         );
         if (solRow.length > 0 && solRow[0].fecha_hora_envio) {
-          // Convertir a zona horaria de Chile
-          const fechaChile = utcToZonedTime(new Date(solRow[0].fecha_hora_envio), 'America/Santiago');
-          fechaEnvio = formatTz(
-            fechaChile,
-            "dd 'de' MMMM 'de' yyyy, HH:mm:ss",
-            { timeZone: 'America/Santiago', locale: es }
-          );
+          // Convertir a zona horaria de Chile sin date-fns-tz
+          fechaEnvio = getChileDateString(new Date(solRow[0].fecha_hora_envio));
         }
       } catch (fechaErr) {
         console.error("Error obteniendo fecha_hora_envio:", fechaErr);
@@ -633,9 +632,8 @@ router.post('/', upload.any(), async (req, res) => {
           try {
             const fechaObj = new Date(valor);
             if (!isNaN(fechaObj.getTime())) {
-              // Convertir a zona horaria de Chile
-              const fechaChile = utcToZonedTime(fechaObj, 'America/Santiago');
-              return formatTz(fechaChile, "dd 'de' MMMM 'de' yyyy", { timeZone: 'America/Santiago', locale: es });
+              // Convertir a zona horaria de Chile sin date-fns-tz
+              return getChileDateString(fechaObj);
             }
           } catch {}
         }
