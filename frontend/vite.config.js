@@ -2,10 +2,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Define el puerto donde corre tu backend API
-// Asegúrate de que este sea el puerto correcto donde escucha tu servidor Node/Express
 const backendPort = 3001;
-const backendUrl = `http://localhost:${backendPort}`;
+const backendUrl = `http://localhost:${backendPort}`; //CAMBIARLO
 
 export default defineConfig({
     plugins: [react()],

@@ -22,6 +22,7 @@ const Login = ({ toggleTheme }) => {
     const navigate = useNavigate();
     // Obtener la función 'login' del contexto usando el hook 'useAuth'
     const { login } = useAuth();
+    const apiUrl = import.meta.env.VITE_BACKEND_API_URL || '';
 
     // Validación de correo electrónico (sin cambios)
     const validateEmail = (email) => /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email);
@@ -69,7 +70,7 @@ const Login = ({ toggleTheme }) => {
         try {
 
             // Llamada a la API (sin cambios)
-            const response = await fetch('http://localhost:3001/api/auth/trabajadores/login', {
+            const response = await fetch(`${apiUrl}/auth/trabajadores/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ correo_electronico: email, password: password }),
