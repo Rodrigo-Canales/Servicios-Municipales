@@ -156,7 +156,7 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
     const { user, logout } = useAuth();
     useEffect(() => {
         if (!user?.area_id) return;
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+        const backendUrl = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api';
         const sse = new window.EventSource(
             `${backendUrl}/solicitudes/notificaciones/stream?area_id=${user.area_id}`,
             { withCredentials: true }

@@ -246,6 +246,8 @@ router.post('/', uploadRespuesta.array('archivosRespuesta'), async (req, res) =>
         margins: { top: 50, bottom: FOOTER_HEIGHT, left: 60, right: 60 },
         bufferPages: true
       });
+      // Registrar la fuente NotoSans para PDFKit
+      pdfDoc.registerFont('NotoSans', path.join(__dirname, '../fonts/NotoSans-Regular.ttf'));
       // Puedes formar el nombre del PDF según prefieras; a modo de ejemplo usamos "respuesta.pdf"
       pdfPath = path.join(rutaCarpetaRespuesta, `respuesta_${id_respuesta_formateado}.pdf`);
       const writeStream = fs.createWriteStream(pdfPath);
