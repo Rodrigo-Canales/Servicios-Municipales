@@ -14,4 +14,4 @@ services:
 
   frontend:
     ports:
-      - "${SM_FRONTEND_HOST_PORT:-8080}:${SM_FRONTEND_INTERNAL_PORT:-80}"
+      - "${SM_FRONTEND_HOST_PORT:-8080}:${SM_FRONTEND_INTERNAL_PORT:-8080}"

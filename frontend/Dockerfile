@@ -32,8 +32,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Los copiamos al directorio raíz por defecto de Nginx.
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Exponer el puerto 80 (puerto por defecto de Nginx)
-EXPOSE 80
+# Exponer el puerto 8080 (puerto por defecto de Nginx)
+EXPOSE 8080
 
 # Nginx se inicia automáticamente por defecto, pero especificamos el comando
 # para asegurarnos de que se mantenga en primer plano.

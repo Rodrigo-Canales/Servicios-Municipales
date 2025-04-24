@@ -60,6 +60,8 @@ services:
         SM_REACT_APP_API_URL: ${SM_REACT_APP_API_URL:-http://localhost:${SM_BACKEND_HOST_PORT}/api}
     container_name: frontend_servicios_municipales
     restart: always
+    ports:
+      - "8080:8080"
     networks:
       - servicios_municipales_net
 

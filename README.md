@@ -473,3 +473,12 @@ Cuando agregas o cambias dependencias en el backend (por ejemplo, si agregas dat
     docker compose up -d --no-deps --build backend
 
 Esto fuerza la reconstrucción solo del backend y asegura que todas las dependencias estén instaladas en el contenedor.
+
+
+
+
+
+
+
+Crear la red docker
+docker network create servicios_municipales_net
