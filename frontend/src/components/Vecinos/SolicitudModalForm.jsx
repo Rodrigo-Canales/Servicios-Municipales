@@ -10,6 +10,7 @@ import {
 import { normalizeToCamelCase } from '../../utils/stringUtils';
 import { mostrarAlertaAdvertencia } from '../../utils/alertUtils';
 import LocationInput from '../LocationInput'; 
+import { Close as CloseIcon } from '@mui/icons-material';
 
 // --- Helper: Validation Function ---
 const validateField = (name, value, fieldDefinition, formData) => {
@@ -231,6 +232,8 @@ const SolicitudModalForm = ({
     const [currentStep, setCurrentStep] = useState(0);
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+    // --- Refs para inputs de archivo ---
+    const fileInputRefs = React.useRef({});
 
     // --- Other hooks and functions (useMemo, getFieldsForStep, useEffect, etc.) ---
     // (Keep these as they were in your provided code)
@@ -536,7 +539,7 @@ const hasAccentOrDiacritic = (name) => /[áéíóúÁÉÍÓÚñÑüÜ´`¨]/.tes
             const file = files[0];
             // --- Validación: no permitir tildes ni diacríticos ---
             if (hasAccentOrDiacritic(file.name)) {
-                setErrors(prevErrors => ({ ...prevErrors, [name]: 'El nombre del archivo no debe contener tildes, diéresis ni caracteres especiales. Por favor, renómbralo solo con letras simples, números, guion o guion bajo.' }));
+                setErrors(prevErrors => ({ ...prevErrors, [name]: 'El nombre del archivo no debe contener tildes ni caracteres especiales. Por favor, renómbrelo' }));
                 return;
             }
             // Basic file info
@@ -596,6 +599,15 @@ const hasAccentOrDiacritic = (name) => /[áéíóúÁÉÍÓÚñÑüÜ´`¨]/.tes
 
     }, [formFields, formData]); // Added formFields, formData
 
+    // --- File Remove Handler ---
+    const handleRemoveFile = useCallback((fieldName) => {
+        setFileInputs(prev => ({ ...prev, [fieldName]: undefined }));
+        setTouched(prev => ({ ...prev, [fieldName]: false }));
+        setErrors(prev => ({ ...prev, [fieldName]: null }));
+        // Limpia el input visualmente
+        const fileInput = document.getElementById(`${fieldName}`);
+        if (fileInput) fileInput.value = null;
+    }, []);
 
     // --- Step Validation Logic ---
     const validateStep = useCallback((stepIndex) => {
@@ -1140,59 +1152,79 @@ const darkModalTextSx = theme => theme.palette.mode === 'dark' ? {
                 );
 
             case 'file': {
-                // File input needs custom styling for success/error states on its wrapper/label
-                const fileFieldError = errors[fieldName]; // Specific file errors (size, type, required)
+                const fileFieldError = errors[fieldName];
                 const showFileError = touched[fieldName] && !!fileFieldError;
-                const isFileSuccess = touched[fieldName] && !fileFieldError && !!fileInputs[fieldName]; // Success only if a file is selected and valid
+                const isFileSuccess = touched[fieldName] && !fileFieldError && !!fileInputs[fieldName];
                 const currentFile = fileInputs[fieldName];
 
+                // Usar un ref por campo, inicializar si no existe
+                if (!fileInputRefs.current[fieldName]) {
+                    fileInputRefs.current[fieldName] = React.createRef();
+                }
+                const fileInputRef = fileInputRefs.current[fieldName];
+
                 return (
-                    // Use FormControl for layout, state, and text
                     <FormControl fullWidth margin="dense" required={field.required} disabled={isSubmitting || loadingDefinition} error={showFileError}>
-                         {/* Label for the file input */}
                         <FormLabel
                             sx={{
                                 mb: 0.5,
                                 fontSize: '0.875rem',
-                                color: showFileError ? 'error.main' : isFileSuccess ? 'success.main' : 'text.secondary' // Conditional label color
+                                color: showFileError ? 'error.main' : isFileSuccess ? 'success.main' : 'text.secondary'
                             }}
                         >
                             {field.label || fieldName}{field.required ? ' *' : ''}
                         </FormLabel>
-                        {/* Basic Input type="file" with custom border */}
-                        <Input
-                            key={`${fieldName}-input`} // Add key suffix to ensure reset on error
-                            name={fieldName}
-                            id={fieldName}
-                            type="file"
-                            onChange={(e) => handleFileChange(e, field)}
-                            onBlur={() => handleBlur(fieldName)} // Mark touched on blur
-                            inputProps={{ // Attributes for the hidden <input type="file">
-                                accept: field.accept || undefined, // Allowed file types
-                                // multiple: field.multiple || false, // Handle multiple if needed
-                            }}
-                             // Style the visible wrapper of the Input component
-                            sx={{
-                                border: `1px solid ${showFileError ? theme.palette.error.main : isFileSuccess ? theme.palette.success.main : theme.palette.divider}`,
-                                borderRadius: theme.shape.borderRadius,
-                                p: 1,
-                                '&::before, &::after': { display: 'none' }, // Hide default underline
-                                color: 'text.primary', // Ensure text inside is readable
-                                 // Add hover styles if desired
-                                    '&:hover': {
-                                        borderColor: showFileError ? theme.palette.error.dark : isFileSuccess ? theme.palette.success.dark : theme.palette.action.hover,
-                                    },
-                            }}
-                            aria-describedby={`${fieldName}-helper-text`}
-                             // Value is uncontrolled for native file input
-                        />
-                         {/* Helper text: Show error, selected file name, or default helper */}
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            border: `1px solid ${showFileError ? theme.palette.error.main : isFileSuccess ? theme.palette.success.main : theme.palette.divider}`,
+                            borderRadius: theme.shape.borderRadius,
+                            p: 1,
+                            '&:hover': {
+                                borderColor: showFileError ? theme.palette.error.dark : isFileSuccess ? theme.palette.success.dark : theme.palette.action.hover,
+                            },
+                            background: isFileSuccess ? theme.palette.action.selected : undefined,
+                        }}>
+                            <input
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                name={fieldName}
+                                id={fieldName}
+                                type="file"
+                                onChange={(e) => handleFileChange(e, field)}
+                                onBlur={() => handleBlur(fieldName)}
+                                accept={field.accept || undefined}
+                                aria-describedby={`${fieldName}-helper-text`}
+                            />
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                sx={{ mr: 2 }}
+                                disabled={isSubmitting || loadingDefinition}
+                            >
+                                Examinar...
+                            </Button>
+                            {isFileSuccess && currentFile && (
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 600, mr: 1 }}>
+                                        {currentFile.name}
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={() => handleRemoveFile(fieldName)}
+                                        sx={{ minWidth: 0, p: 0.5, color: 'error.main' }}
+                                        aria-label="Quitar archivo"
+                                    >
+                                        <CloseIcon fontSize="small" />
+                                    </Button>
+                                </Box>
+                            )}
+                        </Box>
                         <FormHelperText id={`${fieldName}-helper-text`} error={showFileError}>
                             {showFileError
-                                 ? fileFieldError // Display specific validation error
-                                : currentFile
-                                     ? `Archivo seleccionado: ${currentFile.name}` // Show file name on success
-                                     : (field.helperText || '') // Show field's helper text
+                                ? fileFieldError
+                                : (!isFileSuccess && field.helperText)
                             }
                         </FormHelperText>
                     </FormControl>

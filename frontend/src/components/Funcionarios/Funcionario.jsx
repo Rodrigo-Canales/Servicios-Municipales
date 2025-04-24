@@ -565,7 +565,7 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
                             color: '#333',
                             fontWeight: 700,
                             fontSize: { xs: '0.98rem', sm: '1.05rem' },
-                            boxShadow: 8,
+                            boxShadow: 4,
                             border: '2px solid #FFB300',
                             letterSpacing: 0.2,
                             display: 'flex',
@@ -574,69 +574,68 @@ function Funcionario({ toggleTheme: toggleThemeProp, mode }) {
                             minWidth: { xs: 220, sm: 320 },
                             maxWidth: 380,
                             width: { xs: '90vw', sm: 360 },
-                            px: { xs: 1.5, sm: 2.5 },
-                            py: { xs: 1.5, sm: 2 },
-                            borderRadius: 2.5,
+                            px: { xs: 2, sm: 3 },
+                            py: { xs: 2, sm: 2.5 },
+                            borderRadius: 1.5,
                             flexDirection: 'column',
                         }}
-                        onClose={(_event, reason) => {
-                            if (reason === 'clickaway') return;
-                            setNotifOpen(false);
-                        }}
-                        action={
-                            <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', mt: { xs: 0.5, sm: 0 }, ml: 0 }}>
-                                <Button
-                                    onClick={() => window.location.reload()}
-                                    sx={{
-                                        bgcolor: '#FFF9C4',
-                                        color: '#FF8F00',
-                                        fontWeight: 800,
-                                        fontSize: { xs: '0.93rem', sm: '1.01rem' },
-                                        borderRadius: 2,
-                                        px: 2,
-                                        py: 1,
-                                        boxShadow: 3,
-                                        border: '2px solid #FFB300',
-                                        '&:hover': {
-                                            bgcolor: '#FFE082',
-                                            color: '#BF360C',
-                                            borderColor: '#BF360C',
-                                        },
-                                        transition: 'all 0.2s',
-                                    }}
-                                    tabIndex={0}
-                                >
-                                    REINICIAR PÁGINA
-                                </Button>
-                                <Button
-                                    onClick={() => setNotifOpen(false)}
-                                    sx={{
-                                        minWidth: 0,
-                                        width: 28,
-                                        height: 28,
-                                        ml: 1,
-                                        color: '#333',
-                                        fontWeight: 900,
-                                        fontSize: '1.1rem',
-                                        borderRadius: '50%',
-                                        background: 'rgba(255, 214, 0, 0.18)',
-                                        boxShadow: 1,
-                                        zIndex: 10,
-                                        alignSelf: 'flex-start',
-                                        '&:hover': {
-                                            background: 'rgba(255, 214, 0, 0.32)',
-                                        },
-                                        transition: 'all 0.2s',
-                                    }}
-                                    aria-label="Cerrar notificación"
-                                >
-                                    ×
-                                </Button>
-                            </Box>
-                        }
+                        // ¡NO PASAR onClose aquí para evitar la X de abajo!
+                        action={null}
                     >
-                        <Box sx={{ width: '100%', textAlign: 'left', mb: 1, wordBreak: 'break-word', fontSize: { xs: '0.98rem', sm: '1.05rem' } }}>
+                        {/* Botón X absolutamente posicionado */}
+                        <Button
+                            onClick={() => setNotifOpen(false)}
+                            sx={{
+                                minWidth: 0,
+                                width: 32,
+                                height: 32,
+                                p: 0,
+                                color: '#333',
+                                fontWeight: 900,
+                                fontSize: '1.3rem',
+                                borderRadius: '50%',
+                                background: 'rgba(255, 214, 0, 0.18)',
+                                boxShadow: 1,
+                                zIndex: 20,
+                                position: 'absolute',
+                                top: 10,
+                                right: 10,
+                                '&:hover': {
+                                    background: 'rgba(255, 214, 0, 0.32)',
+                                },
+                                transition: 'all 0.2s',
+                            }}
+                            aria-label="Cerrar notificación"
+                        >
+                            ×
+                        </Button>
+                        <Box sx={{ width: '100%', textAlign: 'left', mb: 2, wordBreak: 'break-word', fontSize: { xs: '0.98rem', sm: '1.05rem' } }}>
                             ¡Nueva solicitud recibida! Para verla, reinicia la página.
+                        </Box>
+                        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mt: 1 }}>
+                            <Button
+                                onClick={() => window.location.reload()}
+                                sx={{
+                                    bgcolor: '#FFF9C4',
+                                    color: '#FF8F00',
+                                    fontWeight: 800,
+                                    fontSize: { xs: '0.93rem', sm: '1.01rem' },
+                                    borderRadius: 1.5,
+                                    px: 2,
+                                    py: 1,
+                                    boxShadow: 2,
+                                    border: '2px solid #FFB300',
+                                    '&:hover': {
+                                        bgcolor: '#FFE082',
+                                        color: '#BF360C',
+                                        borderColor: '#BF360C',
+                                    },
+                                    transition: 'all 0.2s',
+                                }}
+                                tabIndex={0}
+                            >
+                                REINICIAR PÁGINA
+                            </Button>
                         </Box>
                     </MuiAlert>
                 </Snackbar>

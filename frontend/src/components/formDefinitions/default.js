@@ -20,8 +20,8 @@ export const fields = [
         type: 'text',
         required: true,
         requiredMessage: 'Por favor, ingrese su RUT sin puntos y con guión.',
-        minLength: 8, //minimo de caracteres
-        maxLength: 12, //maximo de caracteres
+        minLength: 10, //minimo de caracteres
+        maxLength: 10, //maximo de caracteres
         placeholder: 'Ej: 12345678-9',
         gridProps: { xs: 12, sm: 6 },
         step: 1
@@ -269,9 +269,9 @@ export const fields = [
         label: 'Adjuntar Documento General (Opcional)',
         type: 'file',
         required: false,
-        accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx",
+        accept: ".pdf,.jpg,.jpeg,.png",
         maxSizeMB: 10,
-        helperText: 'Tipos permitidos: PDF, JPG, PNG, DOC, DOCX. Máx: 10MB.',
+        helperText: 'Tipos permitidos: PDF, JPG, PNG, Máx: 10MB.',
         gridProps: { xs: 12, sm: 6 },
         step: 4
     },
@@ -289,7 +289,7 @@ export const fields = [
         gridProps: { xs: 12, sm: 6 },
         step: 4
     },
-     {
+    {
         name: 'planoUbicacionEvento', // ** TARGET FIELD 4.3 ** (Depende de requierePermisoEvento - PASO 3)
         label: 'Adjuntar Plano/Croquis del Evento (Recomendado)',
         type: 'file',
